@@ -180,7 +180,7 @@ export default function Home() {
         </div>
 
         <footer className="mt-8 flex items-center justify-between text-xs text-neutral-500">
-          <span>Tip: add to Home Screen for an app-like feel.</span>
+          <span>Tip: add to Home Screen for a real app feel (iOS Safari).</span>
           <span className="space-x-3">
             <a className="hover:text-neutral-300" href="/privacy">
               Privacy
