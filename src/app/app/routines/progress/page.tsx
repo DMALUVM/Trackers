@@ -158,6 +158,50 @@ export default function RoutinesProgressPage() {
     ).length;
   }, [logs, weekFromKey, weekToKey]);
 
+  const todayKey = useMemo(() => format(now, "yyyy-MM-dd"), [now]);
+
+  const coreItemIds = useMemo(() => {
+    return routineItems.filter((i) => i.is_non_negotiable).map((i) => i.id);
+  }, [routineItems]);
+
+  const coreHitRateThisWeek = useMemo(() => {
+    if (coreItemIds.length === 0) return null;
+    let total = 0;
+    let done = 0;
+    for (const c of checks) {
+      if (c.date < weekFromKey || c.date > weekToKey) continue;
+      if (!coreItemIds.includes(c.routine_item_id)) continue;
+      total += 1;
+      if (c.done) done += 1;
+    }
+    if (total === 0) return 0;
+    return Math.round((done / total) * 100);
+  }, [checks, coreItemIds, weekFromKey, weekToKey]);
+
+  const coreStreak = useMemo(() => {
+    if (coreItemIds.length === 0) return 0;
+
+    const dayColor = (dk: string): DayColor =>
+      computeDayColor({
+        dateKey: dk,
+        routineItems,
+        checks: checksByDate.get(dk) ?? [],
+        log: logMap.get(dk) ?? null,
+      });
+
+    // Count consecutive green days ending today.
+    let streak = 0;
+    let cursor = new Date(`${todayKey}T12:00:00`);
+    for (let i = 0; i < 366; i++) {
+      const dk = format(cursor, "yyyy-MM-dd");
+      const color = dayColor(dk);
+      if (color !== "green") break;
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }, [todayKey, routineItems, checksByDate, logMap, coreItemIds]);
+
   const neuroItemId = useMemo(() => {
     const neuro = routineItems.find((i) => i.label.toLowerCase().includes("neuro"));
     return neuro?.id ?? null;
@@ -264,6 +308,21 @@ export default function RoutinesProgressPage() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Core streak</p>
+            <p className="mt-1 text-lg font-semibold">{coreStreak} day{coreStreak === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-xs text-neutral-500">Consecutive green days ending today.</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Core hit-rate (this week)</p>
+            <p className="mt-1 text-lg font-semibold">
+              {coreHitRateThisWeek === null ? "—" : `${coreHitRateThisWeek}%`}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">Core checkmarks completed this week.</p>
+          </div>
+        </div>
+
         <div>
           <h2 className="text-base font-medium">Weekly goals (Mon–Sun)</h2>
           <p className="mt-1 text-sm text-neutral-400">Ideal is 5x/week. Minimum is 3x/week.</p>
