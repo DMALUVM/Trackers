@@ -173,25 +173,21 @@ export default function Home() {
 
                   <div className="mt-3 space-y-2">
                     {[
-                      { t: "🚶 Walk 30 min", core: true, done: true },
+                      { t: "🚶 Walk", core: true, done: true },
                       { t: "🏋️ Strength", core: true, done: false },
                       { t: "💧 Water", core: true, done: true },
-                      { t: "💊 AM supplements", core: false, done: true },
-                      { t: "🧘 10 min meditation", core: false, done: false },
-                      { t: "🛌 Early bedtime", core: true, done: false },
+                      { t: "💊 Supplements", core: false, done: true },
+                      { t: "🧘 Meditate", core: false, done: false },
+                      { t: "🛌 Bedtime", core: true, done: false },
                     ].map((row) => (
                       <div
                         key={row.t}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                        className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                       >
-                        <span
-                          className={
-                            row.done ? "text-xs text-neutral-300 line-through" : "text-xs text-neutral-100"
-                          }
-                        >
+                        <span className="min-w-0 flex-1 truncate text-xs text-neutral-100">
                           {row.t}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                           {row.core ? (
                             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-neutral-200">
                               CORE
@@ -261,10 +257,10 @@ export default function Home() {
                         key={idx}
                         className={
                           c === "green"
-                            ? "h-7 w-7 rounded-lg bg-emerald-500/70"
+                            ? "h-6 w-6 rounded-lg bg-emerald-500/70"
                             : c === "yellow"
-                              ? "h-7 w-7 rounded-lg bg-amber-400/70"
-                              : "h-7 w-7 rounded-lg bg-rose-500/60"
+                              ? "h-6 w-6 rounded-lg bg-amber-400/70"
+                              : "h-6 w-6 rounded-lg bg-rose-500/60"
                         }
                       />
                     ))}
