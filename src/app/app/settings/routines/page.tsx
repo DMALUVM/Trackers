@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -15,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import {
   createRoutineItem,
   listRoutineItems,
@@ -25,14 +26,22 @@ import type { RoutineItemRow } from "@/lib/types";
 
 function SortRow({
   item,
+  index,
+  total,
   onToggleNon,
   onUpdate,
   onArchive,
+  onMove,
+  onBlurSave,
 }: {
   item: RoutineItemRow;
+  index: number;
+  total: number;
   onToggleNon: (item: RoutineItemRow) => void;
   onUpdate: (item: RoutineItemRow, patch: Partial<RoutineItemRow>) => void;
   onArchive: (item: RoutineItemRow) => void;
+  onMove: (from: number, to: number) => void;
+  onBlurSave: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -55,20 +64,44 @@ function SortRow({
           className="rounded-lg p-2 text-neutral-400 hover:bg-white/10"
           {...attributes}
           {...listeners}
+          title="Drag (press and hold on mobile)"
         >
           <GripVertical size={18} />
         </button>
+
+        <div className="flex flex-col">
+          <button
+            type="button"
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 disabled:opacity-30"
+            onClick={() => onMove(index, index - 1)}
+            disabled={index === 0}
+            title="Move up"
+          >
+            <ArrowUp size={14} />
+          </button>
+          <button
+            type="button"
+            className="rounded-lg p-1 text-neutral-400 hover:bg-white/10 disabled:opacity-30"
+            onClick={() => onMove(index, index + 1)}
+            disabled={index === total - 1}
+            title="Move down"
+          >
+            <ArrowDown size={14} />
+          </button>
+        </div>
 
         <input
           className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-neutral-500"
           value={item.label.toLowerCase() === "sex" ? "❤️" : item.label}
           onChange={(e) => onUpdate(item, { label: e.target.value })}
+          onBlur={() => onBlurSave(item.id)}
         />
 
         <input
           className="w-20 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-neutral-500"
           value={item.emoji ?? ""}
           onChange={(e) => onUpdate(item, { emoji: e.target.value })}
+          onBlur={() => onBlurSave(item.id)}
           placeholder="😀"
         />
 
@@ -105,7 +138,10 @@ export default function RoutinesSettingsPage() {
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  );
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
 
@@ -133,16 +169,17 @@ export default function RoutinesSettingsPage() {
     setItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, ...patch } : p)));
   };
 
-  const onBlurSave = async (item: RoutineItemRow) => {
+  const onFieldBlurSave = async (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
     setStatus("Saving...");
     try {
       await persistPatch(item.id, {
         label: item.label,
         emoji: item.emoji,
-        is_non_negotiable: item.is_non_negotiable,
       });
       setStatus("Saved.");
-      setTimeout(() => setStatus(""), 1000);
+      setTimeout(() => setStatus(""), 800);
     } catch (e: any) {
       setStatus(`Save failed: ${e?.message ?? String(e)}`);
     }
@@ -195,6 +232,14 @@ export default function RoutinesSettingsPage() {
     }
   };
 
+  const persistOrder = async (next: RoutineItemRow[]) => {
+    try {
+      await Promise.all(next.map((it, idx) => updateRoutineItem(it.id, { sort_order: idx })));
+    } catch (e: any) {
+      setStatus(`Reorder save failed: ${e?.message ?? String(e)}`);
+    }
+  };
+
   const onDragEnd = async (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -203,15 +248,14 @@ export default function RoutinesSettingsPage() {
     const newIndex = items.findIndex((i) => i.id === over.id);
     const next = arrayMove(items, oldIndex, newIndex);
     setItems(next);
+    await persistOrder(next);
+  };
 
-    // Persist order (best-effort)
-    try {
-      await Promise.all(
-        next.map((it, idx) => updateRoutineItem(it.id, { sort_order: idx }))
-      );
-    } catch {
-      // ignore for now
-    }
+  const onMove = async (from: number, to: number) => {
+    if (to < 0 || to >= items.length) return;
+    const next = arrayMove(items, from, to);
+    setItems(next);
+    await persistOrder(next);
   };
 
   return (
@@ -252,13 +296,17 @@ export default function RoutinesSettingsPage() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {items.map((i) => (
-              <div key={i.id} onBlur={() => onBlurSave(i)}>
+            {items.map((i, idx) => (
+              <div key={i.id}>
                 <SortRow
                   item={i}
+                  index={idx}
+                  total={items.length}
                   onToggleNon={onToggleNon}
                   onUpdate={onUpdate}
                   onArchive={onArchive}
+                  onMove={onMove}
+                  onBlurSave={onFieldBlurSave}
                 />
               </div>
             ))}
