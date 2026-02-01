@@ -46,11 +46,11 @@ export default function Home() {
   };
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 p-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col gap-6 bg-neutral-50 p-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Daily Routines</h1>
         <p className="text-sm text-neutral-600">
-          Mobile-first tracker. Auth is powered by Supabase.
+          Fast, mobile-first daily trackers.
         </p>
       </header>
 
@@ -60,29 +60,25 @@ export default function Home() {
             Signed in as <span className="font-medium">{signedInEmail}</span>
           </p>
           <div className="mt-4 flex gap-3">
+            <a
+              className="flex-1 rounded-lg bg-black px-4 py-2 text-center text-sm font-medium text-white"
+              href="/app/routines"
+            >
+              Open app
+            </a>
             <button
-              className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white"
+              className="rounded-lg border px-4 py-2 text-sm font-medium"
               onClick={signOut}
             >
               Sign out
             </button>
-          </div>
-
-          <div className="mt-6 space-y-2 text-sm text-neutral-700">
-            <p className="font-medium">Next up (we’ll build this out):</p>
-            <ul className="list-disc pl-5">
-              <li>Routine module</li>
-              <li>Rowing module</li>
-              <li>Neurofeedback module</li>
-              <li>Passkeys (Face ID) after basic auth is solid</li>
-            </ul>
           </div>
         </section>
       ) : (
         <section className="rounded-xl border bg-white p-4 shadow-sm">
           <h2 className="text-base font-medium">Sign in</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            For now, use an email magic link. We can add passkeys after.
+            Use an email magic link (passkeys/Face ID next).
           </p>
 
           <label className="mt-4 block text-sm font-medium">Email</label>
@@ -109,8 +105,7 @@ export default function Home() {
       )}
 
       <footer className="text-xs text-neutral-500">
-        Setup required: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-        in Vercel env vars.
+        Tip: add this to your Home Screen for an app-like experience.
       </footer>
     </main>
   );
