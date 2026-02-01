@@ -125,3 +125,32 @@ export async function loadDayState(dateKey: string) {
     checks: (checks ?? []) as Array<{ routine_item_id: string; done: boolean }>,
   };
 }
+
+export async function loadRangeStates(opts: { from: string; to: string }) {
+  const userId = await getUserId();
+
+  const { data: logs, error: logsErr } = await supabase
+    .from("daily_logs")
+    .select("date,day_mode,sex,did_rowing,did_weights")
+    .eq("user_id", userId)
+    .gte("date", opts.from)
+    .lte("date", opts.to);
+  if (logsErr) throw logsErr;
+
+  const { data: checks, error: checksErr } = await supabase
+    .from("daily_checks")
+    .select("date,routine_item_id,done")
+    .eq("user_id", userId)
+    .gte("date", opts.from)
+    .lte("date", opts.to);
+  if (checksErr) throw checksErr;
+
+  return {
+    logs: (logs ?? []) as DailyLogRow[],
+    checks: (checks ?? []) as Array<{
+      date: string;
+      routine_item_id: string;
+      done: boolean;
+    }>,
+  };
+}
