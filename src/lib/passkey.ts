@@ -20,6 +20,12 @@ export function isPasskeyEnabled() {
   return localStorage.getItem(LS_ENABLED) === "1";
 }
 
+export function clearPasskey() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(LS_ENABLED);
+  localStorage.removeItem(LS_UNLOCK_UNTIL);
+}
+
 export function setPasskeyEnabled(enabled: boolean) {
   if (typeof window === "undefined") return;
   localStorage.setItem(LS_ENABLED, enabled ? "1" : "0");

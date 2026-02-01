@@ -2,19 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { registerPasskey } from "@/lib/passkey";
+import { clearPasskey, isPasskeyEnabled, registerPasskey } from "@/lib/passkey";
 
 export default function SecuritySettingsPage() {
   const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     const run = async () => {
       const { data } = await supabase.auth.getSession();
       setSignedIn(!!data.session);
       setEmail(data.session?.user.email ?? null);
+      setEnabled(isPasskeyEnabled());
     };
     void run();
   }, []);
@@ -28,6 +30,7 @@ export default function SecuritySettingsPage() {
     setStatus("Enabling Face ID...");
     try {
       await registerPasskey({ email });
+      setEnabled(true);
       setStatus("Enabled. Next time, the app can unlock with Face ID.");
       setTimeout(() => setStatus(""), 2000);
     } catch (e: any) {
@@ -69,10 +72,26 @@ export default function SecuritySettingsPage() {
             type="button"
             className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
             onClick={enablePasskey}
-            disabled={busy}
+            disabled={busy || enabled}
           >
-            {busy ? "Enabling..." : "Enable Face ID login"}
+            {enabled ? "Face ID is enabled" : busy ? "Enabling..." : "Enable Face ID login"}
           </button>
+
+          {enabled ? (
+            <button
+              type="button"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+              onClick={() => {
+                clearPasskey();
+                setEnabled(false);
+                setStatus("Face ID disabled.");
+                setTimeout(() => setStatus(""), 1500);
+              }}
+              disabled={busy}
+            >
+              Disable Face ID
+            </button>
+          ) : null}
 
           {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
 
