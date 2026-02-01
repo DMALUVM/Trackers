@@ -38,6 +38,7 @@ export default function TemplatePickerPage() {
         })),
       });
 
+      localStorage.removeItem("routines365:gettingStarted:dismissed");
       router.replace("/app/routines");
     } catch (e: any) {
       setError(e?.message ?? String(e));
@@ -65,7 +66,7 @@ export default function TemplatePickerPage() {
             onClick={() => applyTemplate(p.id)}
             className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10 disabled:opacity-60"
           >
-            <div className="flex itemsCenter justify-between">
+            <div className="flex items-center justify-between">
               <p className="text-base font-semibold">{p.title}</p>
               {busy === p.id ? (
                 <span className="text-xs text-neutral-400">Applying…</span>

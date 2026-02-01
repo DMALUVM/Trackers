@@ -53,6 +53,7 @@ export default function RoutinesPage() {
   const [items, setItems] = useState<UiItem[]>([]);
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
 
   const [undoSnapshot, setUndoSnapshot] = useState<UiItem[] | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
@@ -63,6 +64,9 @@ export default function RoutinesPage() {
   );
 
   useEffect(() => {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("routines365:gettingStarted:dismissed") : "1";
+    setShowGettingStarted(raw !== "1");
+
     const run = async () => {
       setLoading(true);
       try {
@@ -169,6 +173,56 @@ export default function RoutinesPage() {
 
   return (
     <div className="space-y-5">
+      {showGettingStarted ? (
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold">Getting started</h2>
+              <p className="mt-1 text-sm text-neutral-400">
+                Make it yours in 60 seconds. Then just tap and go.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+              onClick={() => {
+                localStorage.setItem("routines365:gettingStarted:dismissed", "1");
+                setShowGettingStarted(false);
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <a
+              className="rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-black"
+              href="/app/settings/routines"
+            >
+              Set Core habits
+            </a>
+            <a
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-white/10"
+              href="/app/settings/modules"
+            >
+              Choose tabs
+            </a>
+            <a
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-white/10"
+              href="/app/routines/progress"
+            >
+              View Progress
+            </a>
+            <a
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-white hover:bg-white/10"
+              href="/app/settings/security"
+            >
+              Enable Face ID
+            </a>
+          </div>
+        </section>
+      ) : null}
+
       <header className="space-y-1">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
