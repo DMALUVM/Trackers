@@ -54,6 +54,9 @@ export default function RoutinesPage() {
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
+  const [undoSnapshot, setUndoSnapshot] = useState<UiItem[] | null>(null);
+  const [undoVisible, setUndoVisible] = useState(false);
+
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
     [items]
@@ -100,6 +103,20 @@ export default function RoutinesPage() {
     setItems((prev) =>
       prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i))
     );
+  };
+
+  const markAllCoreDone = () => {
+    setUndoSnapshot(items);
+    setItems((prev) => prev.map((i) => (i.isNonNegotiable ? { ...i, done: true } : i)));
+    setUndoVisible(true);
+    setTimeout(() => setUndoVisible(false), 8000);
+  };
+
+  const undo = () => {
+    if (!undoSnapshot) return;
+    setItems(undoSnapshot);
+    setUndoSnapshot(null);
+    setUndoVisible(false);
   };
 
   const cycleDayMode = () => {
@@ -171,15 +188,25 @@ export default function RoutinesPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="text-base font-medium">Today</h2>
-            <button
-              className="mt-1 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-neutral-200"
-              onClick={cycleDayMode}
-              type="button"
-            >
-              {dayMode === "travel" ? <Plane size={14} /> : null}
-              {dayMode === "sick" ? <ThermometerSnowflake size={14} /> : null}
-              <span>{labelForMode(dayMode)}</span>
-            </button>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <button
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs text-neutral-200"
+                onClick={cycleDayMode}
+                type="button"
+              >
+                {dayMode === "travel" ? <Plane size={14} /> : null}
+                {dayMode === "sick" ? <ThermometerSnowflake size={14} /> : null}
+                <span>{labelForMode(dayMode)}</span>
+              </button>
+
+              <button
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={markAllCoreDone}
+                type="button"
+              >
+                Mark all Core done
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-300">
             <Flame size={16} className="text-orange-400" />
@@ -188,6 +215,19 @@ export default function RoutinesPage() {
             </span>
           </div>
         </div>
+
+        {undoVisible ? (
+          <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-emerald-500/10 px-3 py-2">
+            <p className="text-xs text-emerald-200">Core habits marked done.</p>
+            <button
+              type="button"
+              className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-black"
+              onClick={undo}
+            >
+              Undo
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-4 space-y-2">
           {items.map((item) => (
