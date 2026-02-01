@@ -1,4 +1,4 @@
-import { parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { endOfWeek, parseISO, startOfWeek } from "date-fns";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
 
 export type DayColor = "green" | "yellow" | "red" | "empty";
@@ -41,16 +41,33 @@ export function computeDayColor(opts: {
   return "red";
 }
 
-export function inCurrentWeek(dateKey: string, now = new Date()) {
-  const d = parseISO(dateKey);
+export function weekBounds(now: Date) {
   const start = startOfWeek(now, { weekStartsOn: 1 });
   const end = endOfWeek(now, { weekStartsOn: 1 });
-  return d >= start && d <= end;
+  return { start, end };
 }
 
-export function inCurrentMonth(dateKey: string, now = new Date()) {
+export function inRange(dateKey: string, from: Date, to: Date) {
   const d = parseISO(dateKey);
-  const start = startOfMonth(now);
-  const end = endOfMonth(now);
-  return d >= start && d <= end;
+  return d >= from && d <= to;
+}
+
+export function countWeeklyMetric(opts: {
+  logs: DailyLogRow[];
+  now: Date;
+  metric: "rowing" | "neuro";
+}) {
+  const { start, end } = weekBounds(opts.now);
+  const fromKey = start.toISOString().slice(0, 10);
+  const toKey = end.toISOString().slice(0, 10);
+
+  if (opts.metric === "rowing") {
+    return opts.logs.filter(
+      (l) => l.date >= fromKey && l.date <= toKey && !!l.did_rowing
+    ).length;
+  }
+
+  // Neuro: currently inferred from daily_checks against a routine item.
+  // We'll compute neuro count in the page by looking for a checked routine item label that includes "neuro".
+  return 0;
 }

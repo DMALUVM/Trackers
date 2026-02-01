@@ -4,7 +4,7 @@ import { format, isSameMonth } from "date-fns";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { computeDayColor, type DayColor } from "@/lib/progress";
+import { computeDayColor, weekBounds, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
@@ -74,11 +74,12 @@ export default function RoutinesProgressPage() {
   }, [checks]);
 
   const rowingCountThisWeek = useMemo(() => {
-    // simple: count did_rowing within the loaded range that overlaps current week
-    const weekStart = new Date();
-    // weekStart/End already handled by compute page earlier; keep for now as a placeholder
-    return logs.filter((l) => l.did_rowing).length;
-  }, [logs]);
+    const { start, end } = weekBounds(now);
+    const fromKey = format(start, "yyyy-MM-dd");
+    const toKey = format(end, "yyyy-MM-dd");
+    return logs.filter((l) => l.date >= fromKey && l.date <= toKey && !!l.did_rowing)
+      .length;
+  }, [logs, now]);
 
   return (
     <div className="space-y-5">
