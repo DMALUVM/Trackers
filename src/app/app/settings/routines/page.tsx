@@ -135,6 +135,8 @@ export default function RoutinesSettingsPage() {
   const [items, setItems] = useState<RoutineItemRow[]>([]);
   const [status, setStatus] = useState<string>("");
 
+  const [search, setSearch] = useState<string>("");
+
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
 
@@ -143,7 +145,17 @@ export default function RoutinesSettingsPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
   );
 
-  const ids = useMemo(() => items.map((i) => i.id), [items]);
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((i) => {
+      const label = (i.label ?? "").toLowerCase();
+      const emoji = (i.emoji ?? "").toLowerCase();
+      return label.includes(q) || emoji.includes(q);
+    });
+  }, [items, search]);
+
+  const ids = useMemo(() => filteredItems.map((i) => i.id), [filteredItems]);
 
   const refresh = async () => {
     const data = await listRoutineItems();
@@ -268,7 +280,17 @@ export default function RoutinesSettingsPage() {
         {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
       </header>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div>
+          <label className="text-xs font-medium text-neutral-300">Search</label>
+          <input
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white placeholder:text-neutral-500"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search routines…"
+          />
+        </div>
+
         <div className="flex gap-2">
           <input
             className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white placeholder:text-neutral-500"
@@ -296,20 +318,24 @@ export default function RoutinesSettingsPage() {
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {items.map((i, idx) => (
-              <div key={i.id}>
-                <SortRow
-                  item={i}
-                  index={idx}
-                  total={items.length}
-                  onToggleNon={onToggleNon}
-                  onUpdate={onUpdate}
-                  onArchive={onArchive}
-                  onMove={onMove}
-                  onBlurSave={onFieldBlurSave}
-                />
-              </div>
-            ))}
+            {filteredItems.length === 0 ? (
+              <p className="text-sm text-neutral-400">No matches.</p>
+            ) : (
+              filteredItems.map((i, idx) => (
+                <div key={i.id}>
+                  <SortRow
+                    item={i}
+                    index={idx}
+                    total={filteredItems.length}
+                    onToggleNon={onToggleNon}
+                    onUpdate={onUpdate}
+                    onArchive={onArchive}
+                    onMove={onMove}
+                    onBlurSave={onFieldBlurSave}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </SortableContext>
       </DndContext>
