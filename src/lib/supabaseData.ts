@@ -2,9 +2,11 @@ import { supabase } from "@/lib/supabaseClient";
 import { format } from "date-fns";
 import type { DayMode, DailyLogRow, RoutineItemRow } from "@/lib/types";
 import { daveSeedRoutineItems, daveSeedWeeklyGoals } from "@/lib/seeds";
+import { tzDateKey } from "@/lib/time";
 
 export function toDateKey(d: Date) {
-  return format(d, "yyyy-MM-dd");
+  // Normalize to app timezone (America/New_York) so "days" don't drift while traveling.
+  return tzDateKey(d);
 }
 
 export async function getUserId() {
@@ -24,6 +26,14 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function updateRoutineItem(
+  id: string,
+  patch: Partial<Pick<RoutineItemRow, "label" | "emoji" | "is_non_negotiable" | "days_of_week" | "is_active" | "section">>
+) {
+  const { error } = await supabase.from("routine_items").update(patch).eq("id", id);
+  if (error) throw error;
 }
 
 export async function ensureSeedData() {

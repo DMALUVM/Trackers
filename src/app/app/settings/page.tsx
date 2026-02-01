@@ -11,6 +11,15 @@ export default function SettingsPage() {
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <a
+          className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
+          href="/app/settings/routines"
+        >
+          Edit routines + non-negotiables
+        </a>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <button
           className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black"
           onClick={() => supabase.auth.signOut()}
@@ -21,7 +30,7 @@ export default function SettingsPage() {
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-xs text-neutral-400">
-          Build: <span className="text-neutral-200">UX-v0</span>
+          Build: <span className="text-neutral-200">UX-v1</span>
         </p>
       </section>
     </div>

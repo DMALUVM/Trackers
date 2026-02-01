@@ -19,6 +19,7 @@ import {
   upsertDailyChecks,
   upsertDailyLog,
 } from "@/lib/supabaseData";
+import { tzIsoDow } from "@/lib/time";
 
 type UiItem = {
   id: string;
@@ -35,13 +36,8 @@ function labelForMode(mode: DayMode) {
   return "Normal day";
 }
 
-function isoDow(d: Date) {
-  const day = d.getDay(); // 0=Sun
-  return day === 0 ? 7 : day;
-}
-
 function shouldShow(item: RoutineItemRow, today: Date) {
-  const dow = isoDow(today);
+  const dow = tzIsoDow(today);
   const allowed = item.days_of_week;
   if (!allowed || allowed.length === 0) return true;
   return allowed.includes(dow);
@@ -75,7 +71,7 @@ export default function RoutinesPage() {
           .filter((ri) => shouldShow(ri, today))
           .map((ri) => ({
             id: ri.id,
-            label: ri.label,
+            label: ri.label.toLowerCase() === "sex" ? "❤️" : ri.label,
             emoji: ri.emoji ?? undefined,
             section: ri.section,
             isNonNegotiable: ri.is_non_negotiable,
@@ -204,6 +200,11 @@ export default function RoutinesPage() {
                   <span className={item.done ? "text-neutral-300 line-through" : ""}>
                     {item.label}
                   </span>
+                  {item.isNonNegotiable ? (
+                    <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
+                      NON
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </button>
