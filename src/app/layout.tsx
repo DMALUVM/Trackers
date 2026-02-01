@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Daily Routines",
-  description: "Personal daily trackers: routines, rowing, and neurofeedback.",
-  applicationName: "Daily Routines",
+  title: "routines365",
+  description: "A daily routines tracker with cloud sync and beautiful progress.",
+  applicationName: "routines365",
 };
 
 export default function RootLayout({
