@@ -230,8 +230,19 @@ export default function RoutinesProgressPage() {
         <p className="text-sm text-neutral-400">
           Tap a day to edit it. Green/yellow/red is based on your non-negotiables.
         </p>
-        {error ? <p className="text-xs text-rose-300">Error: {error}</p> : null}
-        {/* debug removed */}
+        {error ? (
+          <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3">
+            <p className="text-xs text-rose-200">{error}</p>
+            {String(error).toLowerCase().includes("auth") ? (
+              <a
+                className="mt-2 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black"
+                href="/"
+              >
+                Sign in
+              </a>
+            ) : null}
+          </div>
+        ) : null}
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
