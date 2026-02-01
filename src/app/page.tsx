@@ -7,6 +7,7 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string>("");
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -44,13 +45,19 @@ export default function Home() {
   };
 
   const signOut = async () => {
+    if (signingOut) return;
+    setSigningOut(true);
     setStatus("Signing out...");
     try {
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setStatus("");
+      // Supabase can return a benign error if the session is already gone.
+      if (error && !String(error.message).toLowerCase().includes("session")) throw error;
+      // Ensure UI resets even if auth event is slow.
+      setSignedInEmail(null);
+      window.location.href = "/";
     } catch (e: any) {
       setStatus(`Sign out failed: ${e?.message ?? String(e)}`);
+      setSigningOut(false);
     }
   };
 
@@ -103,11 +110,12 @@ export default function Home() {
                   Open app
                 </a>
                 <button
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
                   onClick={signOut}
                   type="button"
+                  disabled={signingOut}
                 >
-                  Sign out
+                  {signingOut ? "Signing out..." : "Sign out"}
                 </button>
               </div>
             </section>
