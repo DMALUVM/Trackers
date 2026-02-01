@@ -72,6 +72,31 @@ export async function createRoutineItem(opts: {
   if (error) throw error;
 }
 
+export async function createRoutineItemsBulk(opts: {
+  items: Array<{
+    label: string;
+    emoji?: string | null;
+    section?: string;
+    isNonNegotiable?: boolean;
+    daysOfWeek?: number[] | null;
+    sortOrder?: number | null;
+  }>;
+}) {
+  const userId = await getUserId();
+  const { error } = await supabase.from("routine_items").insert(
+    opts.items.map((it) => ({
+      user_id: userId,
+      label: it.label,
+      emoji: it.emoji ?? null,
+      section: it.section ?? "anytime",
+      is_non_negotiable: it.isNonNegotiable ?? false,
+      days_of_week: it.daysOfWeek ?? null,
+      sort_order: it.sortOrder ?? null,
+    }))
+  );
+  if (error) throw error;
+}
+
 export async function ensureSeedData() {
   const userId = await getUserId();
 

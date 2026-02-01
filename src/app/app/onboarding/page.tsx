@@ -54,7 +54,7 @@ export default function OnboardingPage() {
         <button
           type="button"
           className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10"
-          onClick={() => alert("Template library is next (shipping shortly).")}
+          onClick={() => router.push("/app/onboarding/templates")}
         >
           <p className="text-base font-semibold">Choose a template</p>
           <p className="mt-1 text-sm text-neutral-400">
