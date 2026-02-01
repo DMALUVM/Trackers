@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -16,10 +16,19 @@ export const metadata: Metadata = {
   title: "routines365",
   description: "A daily routines tracker with cloud sync and beautiful progress.",
   applicationName: "routines365",
+  appleWebApp: {
+    capable: true,
+    title: "routines365",
+    statusBarStyle: "black-translucent",
+  },
   icons: {
     icon: "/brand/routines365-logo.png",
     apple: "/brand/routines365-logo.png",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
 };
 
 export default function RootLayout({

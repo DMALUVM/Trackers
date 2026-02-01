@@ -44,7 +44,14 @@ export default function Home() {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    setStatus("Signing out...");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setStatus("");
+    } catch (e: any) {
+      setStatus(`Sign out failed: ${e?.message ?? String(e)}`);
+    }
   };
 
   return (
@@ -98,6 +105,7 @@ export default function Home() {
                 <button
                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
                   onClick={signOut}
+                  type="button"
                 >
                   Sign out
                 </button>
