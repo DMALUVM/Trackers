@@ -43,7 +43,6 @@ export function AppNav() {
   const items = useMemo(() => {
     const enabledSet = new Set(["routines", ...(enabled ?? [])]);
     const filtered = allItems.filter((i) => enabledSet.has(i.key));
-    // cap at 4 visible tabs for now (luxury + thumb-friendly)
     const ordered = [
       filtered.find((i) => i.key === "routines"),
       filtered.find((i) => i.key === "progress"),
@@ -54,7 +53,8 @@ export function AppNav() {
       ),
     ].filter(Boolean) as unknown as Array<(typeof allItems)[number]>;
 
-    return ordered.slice(0, 4);
+    // If the user enables more than 4 modules, show 5 tabs and drop labels (icons only).
+    return ordered.slice(0, 5);
   }, [enabled]);
 
   return (
@@ -62,11 +62,18 @@ export function AppNav() {
       <div
         className={cn(
           "mx-auto grid max-w-md gap-1 p-2",
-          items.length === 3 ? "grid-cols-3" : items.length === 2 ? "grid-cols-2" : "grid-cols-4"
+          items.length === 5
+            ? "grid-cols-5"
+            : items.length === 3
+              ? "grid-cols-3"
+              : items.length === 2
+                ? "grid-cols-2"
+                : "grid-cols-4"
         )}
       >
         {items.map(({ href, label, Icon }) => {
           const active = pathname === href;
+          const showLabel = items.length !== 5;
           return (
             <Link
               key={href}
@@ -76,9 +83,11 @@ export function AppNav() {
                 "transition-colors",
                 active && "bg-white/10 text-white"
               )}
+              aria-label={label}
+              title={label}
             >
               <Icon size={18} className={cn(active ? "text-white" : "text-neutral-400")} />
-              <span className="leading-none">{label}</span>
+              {showLabel ? <span className="leading-none">{label}</span> : null}
             </Link>
           );
         })}
