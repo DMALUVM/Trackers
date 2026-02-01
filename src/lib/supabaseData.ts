@@ -20,9 +20,10 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   const { data, error } = await supabase
     .from("routine_items")
     .select(
-      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week"
+      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
     )
     .eq("is_active", true)
+    .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data ?? [];
@@ -30,9 +31,44 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
 
 export async function updateRoutineItem(
   id: string,
-  patch: Partial<Pick<RoutineItemRow, "label" | "emoji" | "is_non_negotiable" | "days_of_week" | "is_active" | "section">>
+  patch: Partial<
+    Pick<
+      RoutineItemRow,
+      | "label"
+      | "emoji"
+      | "is_non_negotiable"
+      | "days_of_week"
+      | "is_active"
+      | "section"
+      | "sort_order"
+    >
+  >
 ) {
-  const { error } = await supabase.from("routine_items").update(patch).eq("id", id);
+  const { error } = await supabase
+    .from("routine_items")
+    .update(patch)
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function createRoutineItem(opts: {
+  label: string;
+  emoji?: string | null;
+  section?: string;
+  isNonNegotiable?: boolean;
+  daysOfWeek?: number[] | null;
+  sortOrder?: number | null;
+}) {
+  const userId = await getUserId();
+  const { error } = await supabase.from("routine_items").insert({
+    user_id: userId,
+    label: opts.label,
+    emoji: opts.emoji ?? null,
+    section: opts.section ?? "anytime",
+    is_non_negotiable: opts.isNonNegotiable ?? false,
+    days_of_week: opts.daysOfWeek ?? null,
+    sort_order: opts.sortOrder ?? null,
+  });
   if (error) throw error;
 }
 
@@ -41,13 +77,14 @@ export async function ensureSeedData() {
 
   const items = await listRoutineItems();
   if (items.length === 0) {
-    const inserts = daveSeedRoutineItems.map((i) => ({
+    const inserts = daveSeedRoutineItems.map((i, idx) => ({
       user_id: userId,
       label: i.label,
       emoji: i.emoji ?? null,
       section: i.section ?? "anytime",
       is_non_negotiable: i.isNonNegotiable ?? false,
       days_of_week: i.daysOfWeek ?? null,
+      sort_order: idx,
     }));
 
     const { error } = await supabase.from("routine_items").insert(inserts);
