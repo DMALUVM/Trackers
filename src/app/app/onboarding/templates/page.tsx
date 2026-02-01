@@ -39,7 +39,8 @@ export default function TemplatePickerPage() {
       });
 
       localStorage.removeItem("routines365:gettingStarted:dismissed");
-      router.replace("/app/routines");
+      // Send users to mark Core habits right away (reduces guesswork).
+      router.replace("/app/settings/routines");
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
