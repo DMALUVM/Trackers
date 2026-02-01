@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "routines365",
   description: "A daily routines tracker with cloud sync and beautiful progress.",
   applicationName: "routines365",
+  icons: {
+    icon: "/brand/routines365-logo.png",
+    apple: "/brand/routines365-logo.png",
+  },
 };
 
 export default function RootLayout({
