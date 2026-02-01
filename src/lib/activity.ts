@@ -2,8 +2,8 @@ import { format } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { getUserId } from "@/lib/supabaseData";
 
-export type ActivityKey = "rowing" | "walking" | "running";
-export type ActivityUnit = "meters" | "miles";
+export type ActivityKey = "rowing" | "walking" | "running" | "neuro";
+export type ActivityUnit = "meters" | "miles" | "sessions";
 
 export function dateKey(d: Date) {
   return format(d, "yyyy-MM-dd");
@@ -77,4 +77,22 @@ export async function listActivityLogs(opts: {
 export async function deleteActivityLog(id: string) {
   const { error } = await supabase.from("activity_logs").delete().eq("id", id);
   if (error) throw error;
+}
+
+export async function deleteActivityLogsForDate(opts: {
+  dateKey: string;
+  activityKey: ActivityKey;
+}) {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("activity_key", opts.activityKey)
+    .eq("date", opts.dateKey);
+  if (error) throw error;
+  const ids = (data ?? []).map((r: any) => r.id).filter(Boolean);
+  if (ids.length === 0) return;
+  const { error: delErr } = await supabase.from("activity_logs").delete().in("id", ids);
+  if (delErr) throw delErr;
 }
