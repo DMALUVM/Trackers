@@ -23,11 +23,21 @@ function dotClasses(color: DayColor) {
 
 export default function RoutinesProgressPage() {
   const now = useMemo(() => new Date(), []);
-  const start = startOfMonth(subMonths(now, 1));
-  const end = endOfMonth(now);
+
+  // IMPORTANT: memoize range boundaries so effects don't retrigger every render
+  const range = useMemo(() => {
+    const start = startOfMonth(subMonths(now, 1));
+    const end = endOfMonth(now);
+    return {
+      start,
+      end,
+      fromKey: format(start, "yyyy-MM-dd"),
+      toKey: format(end, "yyyy-MM-dd"),
+    };
+  }, [now]);
 
   const days: Date[] = [];
-  for (let d = start; d <= end; d = addDays(d, 1)) days.push(d);
+  for (let d = range.start; d <= range.end; d = addDays(d, 1)) days.push(d);
 
   const [routineItems, setRoutineItems] = useState<RoutineItemRow[]>([]);
   const [logs, setLogs] = useState<DailyLogRow[]>([]);
@@ -42,16 +52,13 @@ export default function RoutinesProgressPage() {
       setLoading(true);
       setError("");
       try {
-        const [items, range] = await Promise.all([
+        const [items, dataRange] = await Promise.all([
           listRoutineItems(),
-          loadRangeStates({
-            from: format(start, "yyyy-MM-dd"),
-            to: format(end, "yyyy-MM-dd"),
-          }),
+          loadRangeStates({ from: range.fromKey, to: range.toKey }),
         ]);
         setRoutineItems(items);
-        setLogs(range.logs);
-        setChecks(range.checks);
+        setLogs(dataRange.logs);
+        setChecks(dataRange.checks);
       } catch (e: any) {
         setError(e?.message ?? String(e));
       } finally {
@@ -60,7 +67,7 @@ export default function RoutinesProgressPage() {
     };
 
     void run();
-  }, [start, end]);
+  }, [range.fromKey, range.toKey]);
 
   const logMap = useMemo(() => {
     const m = new Map<string, DailyLogRow>();
