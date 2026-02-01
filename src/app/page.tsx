@@ -257,10 +257,10 @@ export default function Home() {
                         key={idx}
                         className={
                           c === "green"
-                            ? "h-6 w-6 rounded-lg bg-emerald-500/70"
+                            ? "h-5 w-5 rounded-md bg-emerald-500/70"
                             : c === "yellow"
-                              ? "h-6 w-6 rounded-lg bg-amber-400/70"
-                              : "h-6 w-6 rounded-lg bg-rose-500/60"
+                              ? "h-5 w-5 rounded-md bg-amber-400/70"
+                              : "h-5 w-5 rounded-md bg-rose-500/60"
                         }
                       />
                     ))}
