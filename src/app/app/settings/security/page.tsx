@@ -2,23 +2,39 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { registerPasskey } from "@/lib/passkey";
 
 export default function SecuritySettingsPage() {
   const [signedIn, setSignedIn] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const [status, setStatus] = useState<string>("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const run = async () => {
       const { data } = await supabase.auth.getSession();
       setSignedIn(!!data.session);
+      setEmail(data.session?.user.email ?? null);
     };
     void run();
   }, []);
 
   const enablePasskey = async () => {
-    // Placeholder: next commit wires real passkey / WebAuthn.
-    setStatus("Passkeys (Face ID) are being wired up next. Stand by.");
-    setTimeout(() => setStatus(""), 2500);
+    if (!email) {
+      setStatus("Please sign in again.");
+      return;
+    }
+    setBusy(true);
+    setStatus("Enabling Face ID...");
+    try {
+      await registerPasskey({ email });
+      setStatus("Enabled. Next time, the app can unlock with Face ID.");
+      setTimeout(() => setStatus(""), 2000);
+    } catch (e: any) {
+      setStatus(e?.message ?? String(e));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -51,10 +67,11 @@ export default function SecuritySettingsPage() {
 
           <button
             type="button"
-            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black"
+            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
             onClick={enablePasskey}
+            disabled={busy}
           >
-            Enable Face ID login
+            {busy ? "Enabling..." : "Enable Face ID login"}
           </button>
 
           {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
