@@ -153,27 +153,135 @@ export default function Home() {
 
           <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <h3 className="text-sm font-semibold">See it</h3>
+            <p className="mt-1 text-sm text-neutral-400">
+              Here’s what a filled-in week looks like.
+            </p>
+
             <div className="mt-3 grid grid-cols-2 gap-2">
+              {/* Mock: Routines */}
               <a
                 href="/app/routines"
                 className="rounded-2xl border border-white/10 bg-black/20 p-2 hover:bg-white/5"
               >
-                <img
-                  src="/brand/screenshots/routines.png"
-                  alt="Routines screen"
-                  className="h-64 w-full rounded-xl object-cover"
-                />
+                <div className="h-64 w-full rounded-xl border border-white/10 bg-black/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-white">Routines</p>
+                    <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] text-neutral-300">
+                      Today
+                    </span>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    {[
+                      { t: "🚶 Walk 30 min", core: true, done: true },
+                      { t: "🏋️ Strength", core: true, done: false },
+                      { t: "💧 Water", core: true, done: true },
+                      { t: "💊 AM supplements", core: false, done: true },
+                      { t: "🧘 10 min meditation", core: false, done: false },
+                      { t: "🛌 Early bedtime", core: true, done: false },
+                    ].map((row) => (
+                      <div
+                        key={row.t}
+                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                      >
+                        <span
+                          className={
+                            row.done ? "text-xs text-neutral-300 line-through" : "text-xs text-neutral-100"
+                          }
+                        >
+                          {row.t}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {row.core ? (
+                            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold text-neutral-200">
+                              CORE
+                            </span>
+                          ) : null}
+                          <span
+                            className={
+                              row.done
+                                ? "h-2.5 w-2.5 rounded-full bg-emerald-400"
+                                : "h-2.5 w-2.5 rounded-full bg-white/15"
+                            }
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <p className="mt-2 text-xs text-neutral-400">Routines</p>
               </a>
+
+              {/* Mock: Progress */}
               <a
                 href="/app/routines/progress"
                 className="rounded-2xl border border-white/10 bg-black/20 p-2 hover:bg-white/5"
               >
-                <img
-                  src="/brand/screenshots/progress.png"
-                  alt="Progress screen"
-                  className="h-64 w-full rounded-xl object-cover object-top"
-                />
+                <div className="h-64 w-full rounded-xl border border-white/10 bg-black/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-white">Progress</p>
+                    <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] text-emerald-200">
+                      Core streak: 3
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-7 gap-1">
+                    {[
+                      "green",
+                      "green",
+                      "yellow",
+                      "green",
+                      "red",
+                      "green",
+                      "green",
+                      "green",
+                      "yellow",
+                      "green",
+                      "green",
+                      "green",
+                      "yellow",
+                      "green",
+                      "green",
+                      "green",
+                      "green",
+                      "red",
+                      "green",
+                      "green",
+                      "green",
+                      "yellow",
+                      "green",
+                      "green",
+                      "green",
+                      "green",
+                      "yellow",
+                      "green",
+                    ].map((c, idx) => (
+                      <div
+                        key={idx}
+                        className={
+                          c === "green"
+                            ? "h-7 w-7 rounded-lg bg-emerald-500/70"
+                            : c === "yellow"
+                              ? "h-7 w-7 rounded-lg bg-amber-400/70"
+                              : "h-7 w-7 rounded-lg bg-rose-500/60"
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                      <p className="text-[10px] text-neutral-400">Rowing</p>
+                      <p className="text-sm font-semibold">3/5</p>
+                    </div>
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-2">
+                      <p className="text-[10px] text-neutral-400">Walking</p>
+                      <p className="text-sm font-semibold">12.4 mi</p>
+                    </div>
+                  </div>
+                </div>
+
                 <p className="mt-2 text-xs text-neutral-400">Progress</p>
               </a>
             </div>
