@@ -10,12 +10,18 @@ export default function SettingsPage() {
         <p className="text-sm text-neutral-400">Account and app preferences.</p>
       </header>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-2">
         <a
           className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
           href="/app/settings/routines"
         >
           Edit routines + non-negotiables
+        </a>
+        <a
+          className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
+          href="/app/settings/modules"
+        >
+          Customize bottom tabs
         </a>
       </section>
 
