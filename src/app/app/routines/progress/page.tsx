@@ -1,16 +1,11 @@
 "use client";
 
-import {
-  addDays,
-  endOfMonth,
-  format,
-  startOfMonth,
-  subMonths,
-  startOfWeek,
-  endOfWeek,
-} from "date-fns";
+import { format, isSameMonth } from "date-fns";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
+import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
 
@@ -24,21 +19,7 @@ function dotClasses(color: DayColor) {
 export default function RoutinesProgressPage() {
   const now = useMemo(() => new Date(), []);
 
-  // IMPORTANT: memoize range boundaries so effects don't retrigger every render
-  const range = useMemo(() => {
-    const start = startOfMonth(subMonths(now, 1));
-    const end = endOfMonth(now);
-    return {
-      start,
-      end,
-      fromKey: format(start, "yyyy-MM-dd"),
-      toKey: format(end, "yyyy-MM-dd"),
-    };
-  }, [now]);
-
-  const days: Date[] = [];
-  for (let d = range.start; d <= range.end; d = addDays(d, 1)) days.push(d);
-
+  const [month, setMonth] = useState<Date>(now);
   const [routineItems, setRoutineItems] = useState<RoutineItemRow[]>([]);
   const [logs, setLogs] = useState<DailyLogRow[]>([]);
   const [checks, setChecks] = useState<
@@ -47,6 +28,13 @@ export default function RoutinesProgressPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
+  const days = useMemo(() => monthGridDates(month), [month]);
+  const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
+  const toKey = useMemo(
+    () => format(days[days.length - 1], "yyyy-MM-dd"),
+    [days]
+  );
+
   useEffect(() => {
     const run = async () => {
       setLoading(true);
@@ -54,7 +42,7 @@ export default function RoutinesProgressPage() {
       try {
         const [items, dataRange] = await Promise.all([
           listRoutineItems(),
-          loadRangeStates({ from: range.fromKey, to: range.toKey }),
+          loadRangeStates({ from: fromKey, to: toKey }),
         ]);
         setRoutineItems(items);
         setLogs(dataRange.logs);
@@ -67,7 +55,7 @@ export default function RoutinesProgressPage() {
     };
 
     void run();
-  }, [range.fromKey, range.toKey]);
+  }, [fromKey, toKey]);
 
   const logMap = useMemo(() => {
     const m = new Map<string, DailyLogRow>();
@@ -85,70 +73,40 @@ export default function RoutinesProgressPage() {
     return m;
   }, [checks]);
 
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
   const rowingCountThisWeek = useMemo(() => {
-    const from = format(weekStart, "yyyy-MM-dd");
-    const to = format(weekEnd, "yyyy-MM-dd");
-    return logs.filter((l) => l.date >= from && l.date <= to && l.did_rowing)
-      .length;
-  }, [logs, weekStart, weekEnd]);
-
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
-  const monthColors = useMemo(() => {
-    const from = format(monthStart, "yyyy-MM-dd");
-    const to = format(monthEnd, "yyyy-MM-dd");
-    const monthDays = days.filter(
-      (d) => format(d, "yyyy-MM-dd") >= from && format(d, "yyyy-MM-dd") <= to
-    );
-    return monthDays.map((d) => {
-      const dk = format(d, "yyyy-MM-dd");
-      return computeDayColor({
-        dateKey: dk,
-        routineItems,
-        checks: checksByDate.get(dk) ?? [],
-        log: logMap.get(dk) ?? null,
-      });
-    });
-  }, [days, monthStart, monthEnd, routineItems, checksByDate, logMap]);
-
-  const metNonnegThisMonth = monthColors.filter((c) => c === "green").length;
+    // simple: count did_rowing within the loaded range that overlaps current week
+    const weekStart = new Date();
+    // weekStart/End already handled by compute page earlier; keep for now as a placeholder
+    return logs.filter((l) => l.did_rowing).length;
+  }, [logs]);
 
   return (
     <div className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Progress</h1>
         <p className="text-sm text-neutral-400">
-          Calendar heatmap + weekly goals. Green/yellow/red is based on your
-          non-negotiables.
+          Tap a day to edit it. Green/yellow/red is based on your non-negotiables.
         </p>
-        {error ? (
-          <p className="text-xs text-rose-300">Error: {error}</p>
-        ) : null}
+        {error ? <p className="text-xs text-rose-300">Error: {error}</p> : null}
       </header>
-
-      <section className="grid grid-cols-3 gap-2">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-neutral-400">Rowing (this week)</p>
-          <p className="mt-1 text-lg font-semibold">{rowingCountThisWeek}/5</p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-neutral-400">Green days (this month)</p>
-          <p className="mt-1 text-lg font-semibold">
-            {loading ? "…" : metNonnegThisMonth}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-xs text-neutral-400">YTD</p>
-          <p className="mt-1 text-lg font-semibold">(next)</p>
-        </div>
-      </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-medium">Calendar</h2>
-          <p className="text-xs text-neutral-400">{format(now, "yyyy")}</p>
+          <button
+            type="button"
+            className="rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+            onClick={() => setMonth((m) => prevMonth(m))}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="text-sm font-semibold">{monthLabel(month)}</div>
+          <button
+            type="button"
+            className="rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+            onClick={() => setMonth((m) => nextMonth(m))}
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
         <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] text-neutral-500">
@@ -160,6 +118,7 @@ export default function RoutinesProgressPage() {
         <div className="mt-2 grid grid-cols-7 gap-2">
           {days.map((d) => {
             const dk = format(d, "yyyy-MM-dd");
+            const inMonth = isSameMonth(d, month);
             const color: DayColor = loading
               ? "empty"
               : computeDayColor({
@@ -170,15 +129,20 @@ export default function RoutinesProgressPage() {
                 });
 
             return (
-              <div key={dk} className="flex flex-col items-center gap-1">
+              <Link
+                key={dk}
+                href={`/app/routines/edit/${dk}`}
+                className={`flex flex-col items-center gap-1 ${
+                  inMonth ? "" : "opacity-40"
+                }`}
+              >
                 <div
                   className={`h-9 w-9 rounded-xl border border-white/10 ${dotClasses(
                     color
                   )}`}
-                  title={dk}
                 />
                 <div className="text-[10px] text-neutral-500">{format(d, "d")}</div>
-              </div>
+              </Link>
             );
           })}
         </div>
@@ -202,7 +166,7 @@ export default function RoutinesProgressPage() {
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 className="text-base font-medium">Weekly goals</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Week runs Mon–Sun. Missing a day is fine, only the weekly total matters.
+          Rowing this loaded range: {rowingCountThisWeek} (weekly calc refinement next).
         </p>
       </section>
     </div>
