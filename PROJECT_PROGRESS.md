@@ -40,10 +40,10 @@ A world-class, mobile-first tracking app with:
 - Supabase migration added (RLS): `supabase/migrations/001_init.sql` (commit: c445414)
 
 ## Current task (ONE)
-Wire Supabase persistence (auth-scoped) for:
-- routine_items (seed defaults for Dave)
-- daily_logs (day_mode, sex, did_rowing, did_weights)
-- daily_checks (per item per day)
+Onboarding + defaults:
+- Stop auto-seeding Dave defaults for NEW users.
+- Add onboarding gate when routine_items is empty (Start blank / Choose template).
+- Ensure RLS isolation is correct and no cross-user leakage is possible.
 
 ## Next tasks (queue)
 1) Apply migration in Supabase and verify RLS with a real user (auth.uid scoping).

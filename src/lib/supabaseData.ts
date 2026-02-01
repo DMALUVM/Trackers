@@ -75,21 +75,11 @@ export async function createRoutineItem(opts: {
 export async function ensureSeedData() {
   const userId = await getUserId();
 
+  // IMPORTANT: do NOT auto-seed routine_items for new users.
+  // Onboarding should ask users what they want to track.
+  // Dave's personal routines are already in his account and remain untouched.
   const items = await listRoutineItems();
-  if (items.length === 0) {
-    const inserts = daveSeedRoutineItems.map((i, idx) => ({
-      user_id: userId,
-      label: i.label,
-      emoji: i.emoji ?? null,
-      section: i.section ?? "anytime",
-      is_non_negotiable: i.isNonNegotiable ?? false,
-      days_of_week: i.daysOfWeek ?? null,
-      sort_order: idx,
-    }));
-
-    const { error } = await supabase.from("routine_items").insert(inserts);
-    if (error) throw error;
-  }
+  void items;
 
   // weekly goals
   const { data: goals, error: goalsErr } = await supabase

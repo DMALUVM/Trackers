@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Circle,
@@ -44,6 +45,7 @@ function shouldShow(item: RoutineItemRow, today: Date) {
 }
 
 export default function RoutinesPage() {
+  const router = useRouter();
   const today = useMemo(() => new Date(), []);
   const dateKey = useMemo(() => toDateKey(today), [today]);
 
@@ -63,6 +65,12 @@ export default function RoutinesPage() {
       try {
         await ensureSeedData();
         const routineItems = await listRoutineItems();
+
+        // Onboarding gate: new users should not inherit Dave's routines.
+        if (routineItems.length === 0) {
+          router.replace("/app/onboarding");
+          return;
+        }
 
         const { log, checks } = await loadDayState(dateKey);
         const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
@@ -86,7 +94,7 @@ export default function RoutinesPage() {
     };
 
     void run();
-  }, [dateKey, today]);
+  }, [dateKey, today, router]);
 
   const toggleItem = (id: string) => {
     setItems((prev) =>
