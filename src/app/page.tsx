@@ -151,7 +151,7 @@ export default function Home() {
                 <img
                   src="/brand/screenshots/routines.png"
                   alt="Routines screen"
-                  className="w-full rounded-xl"
+                  className="h-64 w-full rounded-xl object-cover"
                 />
                 <p className="mt-2 text-xs text-neutral-400">Routines</p>
               </a>
@@ -162,7 +162,7 @@ export default function Home() {
                 <img
                   src="/brand/screenshots/progress.png"
                   alt="Progress screen"
-                  className="w-full rounded-xl"
+                  className="h-64 w-full rounded-xl object-cover object-top"
                 />
                 <p className="mt-2 text-xs text-neutral-400">Progress</p>
               </a>
