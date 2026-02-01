@@ -107,7 +107,7 @@ export default function Home() {
             <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <h2 className="text-base font-semibold">Sign in / Sign up</h2>
               <p className="mt-1 text-sm text-neutral-400">
-                Enter your email. We’ll send a magic link. After that you stay signed in.
+                Enter your email. We’ll send a magic link. After that, you stay signed in.
               </p>
 
               <label className="mt-4 block text-xs font-medium text-neutral-300">Email</label>
@@ -132,6 +132,34 @@ export default function Home() {
               {status ? <p className="mt-3 text-xs text-neutral-400">{status}</p> : null}
             </section>
           )}
+
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <h3 className="text-sm font-semibold">See it</h3>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <a
+                href="/app/routines"
+                className="rounded-2xl border border-white/10 bg-black/20 p-2 hover:bg-white/5"
+              >
+                <img
+                  src="/brand/screenshots/routines.png"
+                  alt="Routines screen"
+                  className="w-full rounded-xl"
+                />
+                <p className="mt-2 text-xs text-neutral-400">Routines</p>
+              </a>
+              <a
+                href="/app/routines/progress"
+                className="rounded-2xl border border-white/10 bg-black/20 p-2 hover:bg-white/5"
+              >
+                <img
+                  src="/brand/screenshots/progress.png"
+                  alt="Progress screen"
+                  className="w-full rounded-xl"
+                />
+                <p className="mt-2 text-xs text-neutral-400">Progress</p>
+              </a>
+            </div>
+          </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <h3 className="text-sm font-semibold">Built for real life</h3>
