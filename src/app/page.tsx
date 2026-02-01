@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function Home() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string>("");
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
@@ -26,6 +28,16 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    // If we just arrived via magic link and session is now established, push into the app.
+    if (signedInEmail) {
+      const t = setTimeout(() => {
+        router.replace("/app/routines");
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [signedInEmail, router]);
+
   const signInWithEmail = async () => {
     setStatus("Sending magic link...");
     const siteUrl =
@@ -36,7 +48,9 @@ export default function Home() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: siteUrl ? `${siteUrl}/app/routines` : undefined,
+        // Important: iOS PWAs can fail to persist sessions if the magic link lands directly on an app route.
+        // Landing on / lets Supabase establish the session cleanly, then we redirect into the app.
+        emailRedirectTo: siteUrl ? `${siteUrl}/` : undefined,
       },
     });
     if (error) {
