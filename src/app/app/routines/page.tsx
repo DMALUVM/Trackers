@@ -1,44 +1,75 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   Circle,
   Flame,
   Plane,
   ThermometerSnowflake,
+  TrendingUp,
 } from "lucide-react";
+import { dateKey } from "@/lib/date";
+import { safeJsonParse, storageKeys } from "@/lib/storage";
 
 type DayMode = "normal" | "travel" | "sick";
 
 type RoutineItem = {
   id: string;
   label: string;
+  emoji?: string;
   done: boolean;
 };
 
 const seedItems: RoutineItem[] = [
-  { id: "am-natto", label: "Morning: Nattokinase", done: false },
-  {
-    id: "am-lymph",
-    label: "Morning: Lymphatic flow movement routine",
-    done: false,
-  },
-  { id: "am-workout", label: "Morning: Workout", done: false },
+  { id: "am-natto", emoji: "🧬", label: "Nattokinase", done: false },
+  { id: "am-lymph", emoji: "🌀", label: "Lymphatic flow", done: false },
+  { id: "am-workout", emoji: "🏋️", label: "Workout", done: false },
   {
     id: "am-collagen",
-    label: "Morning: Collagen + creatine",
+    emoji: "🥤",
+    label: "Collagen + creatine",
     done: false,
   },
-  { id: "any-breath", label: "Anytime: Breathwork", done: false },
-  { id: "any-row", label: "Anytime: Rowing (20 min)", done: false },
-  { id: "pm-mag", label: "Night: Magnesium", done: false },
+  { id: "any-breath", emoji: "🌬️", label: "Breathwork", done: false },
+  { id: "any-neuro", emoji: "🧠", label: "Neurofeedback", done: false },
+  { id: "any-row", emoji: "🚣", label: "Rowing (20 min)", done: false },
+  { id: "any-cf", emoji: "🏟️", label: "CrossFit", done: false },
+  { id: "any-sauna", emoji: "🔥", label: "Sauna", done: false },
+  { id: "any-cold", emoji: "🧊", label: "Cold plunge", done: false },
+  { id: "pm-mag", emoji: "💤", label: "Magnesium", done: false },
+  { id: "pm-read", emoji: "📚", label: "Reading", done: false },
+  { id: "pm-sex", emoji: "❤️", label: "Sex", done: false },
 ];
 
+function labelForMode(mode: DayMode) {
+  if (mode === "travel") return "Travel day";
+  if (mode === "sick") return "Sick day";
+  return "Normal day";
+}
+
 export default function RoutinesPage() {
+  const today = useMemo(() => new Date(), []);
+  const key = useMemo(() => dateKey(today), [today]);
+
   const [items, setItems] = useState<RoutineItem[]>(seedItems);
   const [dayMode, setDayMode] = useState<DayMode>("normal");
   const [status, setStatus] = useState<string>("");
+
+  // Load from localStorage (temporary) so it feels real today.
+  useEffect(() => {
+    const storedItems = safeJsonParse<RoutineItem[]>(
+      localStorage.getItem(storageKeys.checklist(key)),
+      seedItems
+    );
+    const storedMode = safeJsonParse<DayMode>(
+      localStorage.getItem(storageKeys.dayMode(key)),
+      "normal"
+    );
+    setItems(storedItems);
+    setDayMode(storedMode);
+  }, [key]);
 
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
@@ -52,23 +83,32 @@ export default function RoutinesPage() {
   };
 
   const save = () => {
-    // Placeholder: next step will persist to Supabase.
+    localStorage.setItem(storageKeys.checklist(key), JSON.stringify(items));
+    localStorage.setItem(storageKeys.dayMode(key), JSON.stringify(dayMode));
     setStatus(`Saved. ${completed}/${items.length} complete.`);
     setTimeout(() => setStatus(""), 1500);
   };
 
   const cycleDayMode = () => {
-    setDayMode((m) => (m === "normal" ? "travel" : m === "travel" ? "sick" : "normal"));
+    setDayMode((m) =>
+      m === "normal" ? "travel" : m === "travel" ? "sick" : "normal"
+    );
   };
-
-  const dayModeLabel = dayMode === "normal" ? "Normal day" : dayMode === "travel" ? "Travel day" : "Sick day";
 
   return (
     <div className="space-y-5">
       <header className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
+          <Link
+            href="/app/routines/progress"
+            className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs text-neutral-200 hover:bg-white/15"
+          >
+            <TrendingUp size={14} /> Progress
+          </Link>
+        </div>
         <p className="text-sm text-neutral-400">
-          Tap items to check them off. (Persistence to Supabase is next.)
+          Tap to check off. Save writes to your phone for now (Supabase sync next).
         </p>
       </header>
 
@@ -83,7 +123,7 @@ export default function RoutinesPage() {
             >
               {dayMode === "travel" ? <Plane size={14} /> : null}
               {dayMode === "sick" ? <ThermometerSnowflake size={14} /> : null}
-              <span>{dayModeLabel}</span>
+              <span>{labelForMode(dayMode)}</span>
             </button>
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-300">
@@ -109,6 +149,7 @@ export default function RoutinesPage() {
                   ) : (
                     <Circle size={18} className="text-neutral-500" />
                   )}
+                  <span className="text-base">{item.emoji ?? ""}</span>
                   <span className={item.done ? "text-neutral-300 line-through" : ""}>
                     {item.label}
                   </span>
@@ -141,13 +182,6 @@ export default function RoutinesPage() {
         {status ? (
           <p className="mt-3 text-xs text-neutral-400">{status}</p>
         ) : null}
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-medium">Progress</h2>
-        <p className="mt-1 text-sm text-neutral-400">
-          Weekly, monthly, and YTD cards plus a calendar heatmap will live here.
-        </p>
       </section>
     </div>
   );
