@@ -28,13 +28,15 @@ export default function Home() {
 
   const signInWithEmail = async () => {
     setStatus("Sending magic link...");
+    const siteUrl =
+      (process.env.NEXT_PUBLIC_SITE_URL &&
+        process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")) ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo:
-          typeof window !== "undefined"
-            ? `${window.location.origin}/app/routines`
-            : undefined,
+        emailRedirectTo: siteUrl ? `${siteUrl}/app/routines` : undefined,
       },
     });
     if (error) {
@@ -184,6 +186,18 @@ export default function Home() {
               <li>• Track workouts and cardio with weekly/monthly totals.</li>
               <li>• Export your data anytime (you own your progress).</li>
             </ul>
+          </section>
+
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <h3 className="text-sm font-semibold">Install on iPhone</h3>
+            <ol className="mt-3 space-y-2 text-sm text-neutral-300">
+              <li>1) Open this site in Safari.</li>
+              <li>2) Tap the Share button, then “Add to Home Screen”.</li>
+              <li>3) Launch from your Home Screen like a real app.</li>
+            </ol>
+            <p className="mt-3 text-xs text-neutral-500">
+              Passkeys (Face ID) login is next.
+            </p>
           </section>
         </div>
 
