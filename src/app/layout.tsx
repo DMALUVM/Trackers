@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: "/brand/routines365-logo.png",
-    apple: "/brand/routines365-logo.png",
+    icon: "/brand/pwa/icon-192.png",
+    apple: "/brand/pwa/apple-touch-icon.png",
   },
 };
 
