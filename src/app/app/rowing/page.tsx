@@ -103,8 +103,14 @@ export default function RowingPage() {
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 className="text-base font-medium">Totals</h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Weekly/monthly/YTD/all-time totals are coming next.
+          View totals in Progress.
         </p>
+        <a
+          className="mt-3 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black"
+          href="/app/routines/progress"
+        >
+          Open Progress
+        </a>
       </section>
     </div>
   );
