@@ -10,38 +10,24 @@ import {
   ThermometerSnowflake,
   TrendingUp,
 } from "lucide-react";
-import { dateKey } from "@/lib/date";
-import { safeJsonParse, storageKeys } from "@/lib/storage";
+import type { DayMode, RoutineItemRow } from "@/lib/types";
+import {
+  ensureSeedData,
+  listRoutineItems,
+  loadDayState,
+  toDateKey,
+  upsertDailyChecks,
+  upsertDailyLog,
+} from "@/lib/supabaseData";
 
-type DayMode = "normal" | "travel" | "sick";
-
-type RoutineItem = {
+type UiItem = {
   id: string;
   label: string;
   emoji?: string;
+  section: string;
+  isNonNegotiable: boolean;
   done: boolean;
 };
-
-const seedItems: RoutineItem[] = [
-  { id: "am-natto", emoji: "🧬", label: "Nattokinase", done: false },
-  { id: "am-lymph", emoji: "🌀", label: "Lymphatic flow", done: false },
-  { id: "am-workout", emoji: "🏋️", label: "Workout", done: false },
-  {
-    id: "am-collagen",
-    emoji: "🥤",
-    label: "Collagen + creatine",
-    done: false,
-  },
-  { id: "any-breath", emoji: "🌬️", label: "Breathwork", done: false },
-  { id: "any-neuro", emoji: "🧠", label: "Neurofeedback", done: false },
-  { id: "any-row", emoji: "🚣", label: "Rowing (20 min)", done: false },
-  { id: "any-cf", emoji: "🏟️", label: "CrossFit", done: false },
-  { id: "any-sauna", emoji: "🔥", label: "Sauna", done: false },
-  { id: "any-cold", emoji: "🧊", label: "Cold plunge", done: false },
-  { id: "pm-mag", emoji: "💤", label: "Magnesium", done: false },
-  { id: "pm-read", emoji: "📚", label: "Reading", done: false },
-  { id: "pm-sex", emoji: "❤️", label: "Sex", done: false },
-];
 
 function labelForMode(mode: DayMode) {
   if (mode === "travel") return "Travel day";
@@ -49,32 +35,62 @@ function labelForMode(mode: DayMode) {
   return "Normal day";
 }
 
+function isoDow(d: Date) {
+  const day = d.getDay(); // 0=Sun
+  return day === 0 ? 7 : day;
+}
+
+function shouldShow(item: RoutineItemRow, today: Date) {
+  const dow = isoDow(today);
+  const allowed = item.days_of_week;
+  if (!allowed || allowed.length === 0) return true;
+  return allowed.includes(dow);
+}
+
 export default function RoutinesPage() {
   const today = useMemo(() => new Date(), []);
-  const key = useMemo(() => dateKey(today), [today]);
+  const dateKey = useMemo(() => toDateKey(today), [today]);
 
-  const [items, setItems] = useState<RoutineItem[]>(seedItems);
   const [dayMode, setDayMode] = useState<DayMode>("normal");
+  const [items, setItems] = useState<UiItem[]>([]);
   const [status, setStatus] = useState<string>("");
-
-  // Load from localStorage (temporary) so it feels real today.
-  useEffect(() => {
-    const storedItems = safeJsonParse<RoutineItem[]>(
-      localStorage.getItem(storageKeys.checklist(key)),
-      seedItems
-    );
-    const storedMode = safeJsonParse<DayMode>(
-      localStorage.getItem(storageKeys.dayMode(key)),
-      "normal"
-    );
-    setItems(storedItems);
-    setDayMode(storedMode);
-  }, [key]);
+  const [loading, setLoading] = useState(true);
 
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
     [items]
   );
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      try {
+        await ensureSeedData();
+        const routineItems = await listRoutineItems();
+
+        const { log, checks } = await loadDayState(dateKey);
+        const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
+
+        const ui: UiItem[] = routineItems
+          .filter((ri) => shouldShow(ri, today))
+          .map((ri) => ({
+            id: ri.id,
+            label: ri.label,
+            emoji: ri.emoji ?? undefined,
+            section: ri.section,
+            isNonNegotiable: ri.is_non_negotiable,
+            done: checkMap.get(ri.id) ?? false,
+          }));
+
+        setItems(ui);
+        setDayMode((log?.day_mode as DayMode) ?? "normal");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void run();
+  }, [dateKey, today]);
 
   const toggleItem = (id: string) => {
     setItems((prev) =>
@@ -82,18 +98,53 @@ export default function RoutinesPage() {
     );
   };
 
-  const save = () => {
-    localStorage.setItem(storageKeys.checklist(key), JSON.stringify(items));
-    localStorage.setItem(storageKeys.dayMode(key), JSON.stringify(dayMode));
-    setStatus(`Saved. ${completed}/${items.length} complete.`);
-    setTimeout(() => setStatus(""), 1500);
-  };
-
   const cycleDayMode = () => {
     setDayMode((m) =>
       m === "normal" ? "travel" : m === "travel" ? "sick" : "normal"
     );
   };
+
+  const save = async () => {
+    setStatus("Saving...");
+    try {
+      const didRowing = items.some(
+        (i) => i.label.toLowerCase().startsWith("rowing") && i.done
+      );
+      const didWeights = items.some(
+        (i) => i.label.toLowerCase().includes("workout") && i.done
+      );
+      const sex = items.some((i) => i.label.toLowerCase() === "sex" && i.done);
+
+      await upsertDailyLog({
+        dateKey,
+        dayMode,
+        sex,
+        didRowing,
+        didWeights,
+      });
+
+      await upsertDailyChecks({
+        dateKey,
+        checks: items.map((i) => ({ routineItemId: i.id, done: i.done })),
+      });
+
+      setStatus("Saved.");
+      setTimeout(() => setStatus(""), 1500);
+    } catch (e: any) {
+      setStatus(`Save failed: ${e?.message ?? String(e)}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <header className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
+          <p className="text-sm text-neutral-400">Loading…</p>
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -108,7 +159,7 @@ export default function RoutinesPage() {
           </Link>
         </div>
         <p className="text-sm text-neutral-400">
-          Tap to check off. Save writes to your phone for now (Supabase sync next).
+          Tap to check off. Save syncs to Supabase.
         </p>
       </header>
 
@@ -154,9 +205,6 @@ export default function RoutinesPage() {
                     {item.label}
                   </span>
                 </div>
-                <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] text-neutral-300 group-hover:bg-white/15">
-                  Tap
-                </span>
               </div>
             </button>
           ))}
@@ -172,10 +220,10 @@ export default function RoutinesPage() {
           </button>
           <button
             className="rounded-xl border border-white/15 bg-transparent px-4 py-2.5 text-sm font-medium text-white"
-            onClick={() => setItems(seedItems)}
+            onClick={() => window.location.reload()}
             type="button"
           >
-            Reset
+            Refresh
           </button>
         </div>
 
