@@ -113,9 +113,9 @@ function SortRow({
               ? "rounded-full bg-emerald-500/20 px-2 py-2 text-[11px] font-semibold text-emerald-200"
               : "rounded-full bg-white/10 px-2 py-2 text-[11px] font-semibold text-neutral-300"
           }
-          title="Toggle non-negotiable"
+          title="Mark as Core habit"
         >
-          {item.is_non_negotiable ? "NON" : "OPT"}
+          {item.is_non_negotiable ? "CORE" : "OPT"}
         </button>
 
         <button
@@ -275,7 +275,7 @@ export default function RoutinesSettingsPage() {
       <header className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Routine settings</h1>
         <p className="text-sm text-neutral-400">
-          Edit labels/emojis, toggle NON, and drag to reorder.
+          Edit labels/emojis, mark Core habits, and drag to reorder.
         </p>
         {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
       </header>

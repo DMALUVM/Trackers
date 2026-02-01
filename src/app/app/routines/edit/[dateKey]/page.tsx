@@ -195,7 +195,7 @@ export default function EditDayPage() {
                   </span>
                   {item.isNonNegotiable ? (
                     <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
-                      NON
+                      CORE
                     </span>
                   ) : null}
                 </div>
