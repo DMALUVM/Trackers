@@ -163,7 +163,7 @@ export default function RoutinesPage() {
           </Link>
         </div>
         <p className="text-sm text-neutral-400">
-          Tap to check off. Save syncs to Supabase.
+          Tap to check off. Save syncs to cloud.
         </p>
       </header>
 
