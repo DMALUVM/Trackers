@@ -46,21 +46,3 @@ export async function sumActivity(opts: {
   if (error) throw error;
   return (data ?? []).reduce((sum, row: any) => sum + Number(row.value ?? 0), 0);
 }
-
-export async function listActivityLogs(opts: {
-  from: string;
-  to: string;
-  activityKey: ActivityKey;
-}) {
-  const userId = await getUserId();
-  const { data, error } = await supabase
-    .from("activity_logs")
-    .select("id,date,activity_key,value,unit,notes")
-    .eq("user_id", userId)
-    .eq("activity_key", opts.activityKey)
-    .gte("date", opts.from)
-    .lte("date", opts.to)
-    .order("date", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
-}

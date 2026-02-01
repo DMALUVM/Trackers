@@ -34,6 +34,16 @@ export default function RoutinesProgressPage() {
   const [rowingMetersYtd, setRowingMetersYtd] = useState<number>(0);
   const [rowingMetersAll, setRowingMetersAll] = useState<number>(0);
 
+  const [walkingMilesWeek, setWalkingMilesWeek] = useState<number>(0);
+  const [walkingMilesMonth, setWalkingMilesMonth] = useState<number>(0);
+  const [walkingMilesYtd, setWalkingMilesYtd] = useState<number>(0);
+  const [walkingMilesAll, setWalkingMilesAll] = useState<number>(0);
+
+  const [runningMilesWeek, setRunningMilesWeek] = useState<number>(0);
+  const [runningMilesMonth, setRunningMilesMonth] = useState<number>(0);
+  const [runningMilesYtd, setRunningMilesYtd] = useState<number>(0);
+  const [runningMilesAll, setRunningMilesAll] = useState<number>(0);
+
   const days = useMemo(() => monthGridDates(month), [month]);
   const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
   const toKey = useMemo(
@@ -56,22 +66,58 @@ export default function RoutinesProgressPage() {
         const allFrom = "1900-01-01";
 
         const toToday = format(now, "yyyy-MM-dd");
-        const [items, dataRange, mWeek, mMonth, mYtd, mAll] = await Promise.all([
+        const [
+          items,
+          dataRange,
+          mWeek,
+          mMonth,
+          mYtd,
+          mAll,
+          wWeek,
+          wMonth,
+          wYtd,
+          wAll,
+          rWeek,
+          rMonth,
+          rYtd,
+          rAll,
+        ] = await Promise.all([
           listRoutineItems(),
           loadRangeStates({ from: fromKey, to: toKey }),
           sumActivity({ from: weekFrom, to: weekTo, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: monthFrom, to: monthTo, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: ytdFrom, to: toToday, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: allFrom, to: toToday, activityKey: "rowing", unit: "meters" }),
+
+          sumActivity({ from: weekFrom, to: weekTo, activityKey: "walking", unit: "miles" }),
+          sumActivity({ from: monthFrom, to: monthTo, activityKey: "walking", unit: "miles" }),
+          sumActivity({ from: ytdFrom, to: toToday, activityKey: "walking", unit: "miles" }),
+          sumActivity({ from: allFrom, to: toToday, activityKey: "walking", unit: "miles" }),
+
+          sumActivity({ from: weekFrom, to: weekTo, activityKey: "running", unit: "miles" }),
+          sumActivity({ from: monthFrom, to: monthTo, activityKey: "running", unit: "miles" }),
+          sumActivity({ from: ytdFrom, to: toToday, activityKey: "running", unit: "miles" }),
+          sumActivity({ from: allFrom, to: toToday, activityKey: "running", unit: "miles" }),
         ]);
 
         setRoutineItems(items);
         setLogs(dataRange.logs);
         setChecks(dataRange.checks);
+
         setRowingMetersWeek(mWeek);
         setRowingMetersMonth(mMonth);
         setRowingMetersYtd(mYtd);
         setRowingMetersAll(mAll);
+
+        setWalkingMilesWeek(wWeek);
+        setWalkingMilesMonth(wMonth);
+        setWalkingMilesYtd(wYtd);
+        setWalkingMilesAll(wAll);
+
+        setRunningMilesWeek(rWeek);
+        setRunningMilesMonth(rMonth);
+        setRunningMilesYtd(rYtd);
+        setRunningMilesAll(rAll);
       } catch (e: any) {
         setError(e?.message ?? String(e));
       } finally {
@@ -265,12 +311,42 @@ export default function RoutinesProgressPage() {
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
             <p className="text-xs text-neutral-400">Rowing meters (month)</p>
-            <p className="mt-1 text-lg font-semibold">{Math.round(rowingMetersMonth).toLocaleString()}</p>
+            <p className="mt-1 text-lg font-semibold">
+              {Math.round(rowingMetersMonth).toLocaleString()}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              YTD: {Math.round(rowingMetersYtd).toLocaleString()} (All: {Math.round(rowingMetersAll).toLocaleString()})
+            </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs text-neutral-400">Rowing meters (YTD)</p>
-            <p className="mt-1 text-lg font-semibold">{Math.round(rowingMetersYtd).toLocaleString()}</p>
-            <p className="mt-1 text-xs text-neutral-500">All-time: {Math.round(rowingMetersAll).toLocaleString()}</p>
+            <p className="text-xs text-neutral-400">Walking miles (week/month)</p>
+            <p className="mt-1 text-lg font-semibold">
+              {walkingMilesWeek.toFixed(1)} / {walkingMilesMonth.toFixed(1)}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              YTD: {walkingMilesYtd.toFixed(1)} (All: {walkingMilesAll.toFixed(1)})
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Running miles (week/month)</p>
+            <p className="mt-1 text-lg font-semibold">
+              {runningMilesWeek.toFixed(1)} / {runningMilesMonth.toFixed(1)}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              YTD: {runningMilesYtd.toFixed(1)} (All: {runningMilesAll.toFixed(1)})
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Quick log</p>
+            <a
+              className="mt-2 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black"
+              href="/app/cardio"
+            >
+              Log miles
+            </a>
           </div>
         </div>
       </section>
