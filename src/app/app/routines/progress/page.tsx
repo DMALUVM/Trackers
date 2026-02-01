@@ -187,11 +187,7 @@ export default function RoutinesProgressPage() {
           Tap a day to edit it. Green/yellow/red is based on your non-negotiables.
         </p>
         {error ? <p className="text-xs text-rose-300">Error: {error}</p> : null}
-        {!error ? (
-          <p className="text-[11px] text-neutral-500">
-            Debug: week {rowingMetersWeek.toLocaleString()}m, month {rowingMetersMonth.toLocaleString()}m
-          </p>
-        ) : null}
+        {/* debug removed */}
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">

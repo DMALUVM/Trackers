@@ -43,6 +43,17 @@ export default function OnboardingPage() {
         <button
           type="button"
           className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10"
+          onClick={() => router.push("/app/settings/modules")}
+        >
+          <p className="text-base font-semibold">Choose your modules</p>
+          <p className="mt-1 text-sm text-neutral-400">
+            Show/hide tabs like Progress, Rowing, Cardio, Neuro.
+          </p>
+        </button>
+
+        <button
+          type="button"
+          className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10"
           onClick={() => router.replace("/app/settings/routines")}
         >
           <p className="text-base font-semibold">Start blank</p>
