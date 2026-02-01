@@ -73,13 +73,40 @@ export default function RoutinesProgressPage() {
     return m;
   }, [checks]);
 
-  const rowingCountThisWeek = useMemo(() => {
+  const { weekFromKey, weekToKey } = useMemo(() => {
     const { start, end } = weekBounds(now);
-    const fromKey = format(start, "yyyy-MM-dd");
-    const toKey = format(end, "yyyy-MM-dd");
-    return logs.filter((l) => l.date >= fromKey && l.date <= toKey && !!l.did_rowing)
-      .length;
-  }, [logs, now]);
+    return {
+      weekFromKey: format(start, "yyyy-MM-dd"),
+      weekToKey: format(end, "yyyy-MM-dd"),
+    };
+  }, [now]);
+
+  const rowingCountThisWeek = useMemo(() => {
+    return logs.filter(
+      (l) => l.date >= weekFromKey && l.date <= weekToKey && !!l.did_rowing
+    ).length;
+  }, [logs, weekFromKey, weekToKey]);
+
+  const neuroItemId = useMemo(() => {
+    const neuro = routineItems.find((i) => i.label.toLowerCase().includes("neuro"));
+    return neuro?.id ?? null;
+  }, [routineItems]);
+
+  const neuroCountThisWeek = useMemo(() => {
+    if (!neuroItemId) return 0;
+    const dates = new Set<string>();
+    for (const c of checks) {
+      if (
+        c.date >= weekFromKey &&
+        c.date <= weekToKey &&
+        c.routine_item_id === neuroItemId &&
+        c.done
+      ) {
+        dates.add(c.date);
+      }
+    }
+    return dates.size;
+  }, [checks, neuroItemId, weekFromKey, weekToKey]);
 
   return (
     <div className="space-y-5">
@@ -165,9 +192,44 @@ export default function RoutinesProgressPage() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-medium">Weekly goals</h2>
-        <p className="mt-1 text-sm text-neutral-400">
-          Rowing this loaded range: {rowingCountThisWeek} (weekly calc refinement next).
+        <h2 className="text-base font-medium">Weekly goals (Mon–Sun)</h2>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Rowing</p>
+            <p className="mt-1 text-lg font-semibold">
+              {rowingCountThisWeek}/5
+              <span
+                className={
+                  rowingCountThisWeek >= 3
+                    ? "ml-2 rounded-full bg-emerald-500/20 px-2 py-1 text-[11px] font-semibold text-emerald-200"
+                    : "ml-2 rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-neutral-300"
+                }
+              >
+                min 3
+              </span>
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Neurofeedback</p>
+            <p className="mt-1 text-lg font-semibold">
+              {neuroCountThisWeek}/5
+              <span
+                className={
+                  neuroCountThisWeek >= 3
+                    ? "ml-2 rounded-full bg-emerald-500/20 px-2 py-1 text-[11px] font-semibold text-emerald-200"
+                    : "ml-2 rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-neutral-300"
+                }
+              >
+                min 3
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-3 text-sm text-neutral-400">
+          Ideal is 5x/week. Minimum is 3x/week.
         </p>
       </section>
     </div>
