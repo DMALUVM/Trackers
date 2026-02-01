@@ -8,6 +8,7 @@ import { computeDayColor, weekBounds, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
+import { sumActivity } from "@/lib/activity";
 
 function dotClasses(color: DayColor) {
   if (color === "green") return "bg-emerald-500/80";
@@ -28,6 +29,11 @@ export default function RoutinesProgressPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
 
+  const [rowingMetersWeek, setRowingMetersWeek] = useState<number>(0);
+  const [rowingMetersMonth, setRowingMetersMonth] = useState<number>(0);
+  const [rowingMetersYtd, setRowingMetersYtd] = useState<number>(0);
+  const [rowingMetersAll, setRowingMetersAll] = useState<number>(0);
+
   const days = useMemo(() => monthGridDates(month), [month]);
   const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
   const toKey = useMemo(
@@ -40,13 +46,30 @@ export default function RoutinesProgressPage() {
       setLoading(true);
       setError("");
       try {
-        const [items, dataRange] = await Promise.all([
+        const { start, end } = weekBounds(now);
+        const weekFrom = format(start, "yyyy-MM-dd");
+        const weekTo = format(end, "yyyy-MM-dd");
+        const monthFrom = format(monthGridDates(month)[0], "yyyy-MM-dd"); // grid start
+        const monthTo = format(monthGridDates(month).slice(-1)[0], "yyyy-MM-dd"); // grid end
+        const ytdFrom = `${format(now, "yyyy")}-01-01`;
+        const allFrom = "1900-01-01";
+
+        const [items, dataRange, mWeek, mMonth, mYtd, mAll] = await Promise.all([
           listRoutineItems(),
           loadRangeStates({ from: fromKey, to: toKey }),
+          sumActivity({ from: weekFrom, to: weekTo, activityKey: "rowing", unit: "meters" }),
+          sumActivity({ from: monthFrom, to: monthTo, activityKey: "rowing", unit: "meters" }),
+          sumActivity({ from: ytdFrom, to: format(now, "yyyy-MM-dd"), activityKey: "rowing", unit: "meters" }),
+          sumActivity({ from: allFrom, to: format(now, "yyyy-MM-dd"), activityKey: "rowing", unit: "meters" }),
         ]);
+
         setRoutineItems(items);
         setLogs(dataRange.logs);
         setChecks(dataRange.checks);
+        setRowingMetersWeek(mWeek);
+        setRowingMetersMonth(mMonth);
+        setRowingMetersYtd(mYtd);
+        setRowingMetersAll(mAll);
       } catch (e: any) {
         setError(e?.message ?? String(e));
       } finally {
@@ -55,7 +78,7 @@ export default function RoutinesProgressPage() {
     };
 
     void run();
-  }, [fromKey, toKey]);
+  }, [fromKey, toKey, now, month]);
 
   const logMap = useMemo(() => {
     const m = new Map<string, DailyLogRow>();
@@ -191,12 +214,15 @@ export default function RoutinesProgressPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-medium">Weekly goals (Mon–Sun)</h2>
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-4">
+        <div>
+          <h2 className="text-base font-medium">Weekly goals (Mon–Sun)</h2>
+          <p className="mt-1 text-sm text-neutral-400">Ideal is 5x/week. Minimum is 3x/week.</p>
+        </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs text-neutral-400">Rowing</p>
+            <p className="text-xs text-neutral-400">Rowing sessions</p>
             <p className="mt-1 text-lg font-semibold">
               {rowingCountThisWeek}/5
               <span
@@ -209,10 +235,11 @@ export default function RoutinesProgressPage() {
                 min 3
               </span>
             </p>
+            <p className="mt-1 text-xs text-neutral-500">Meters this week: {Math.round(rowingMetersWeek).toLocaleString()}</p>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs text-neutral-400">Neurofeedback</p>
+            <p className="text-xs text-neutral-400">Neurofeedback sessions</p>
             <p className="mt-1 text-lg font-semibold">
               {neuroCountThisWeek}/5
               <span
@@ -228,9 +255,17 @@ export default function RoutinesProgressPage() {
           </div>
         </div>
 
-        <p className="mt-3 text-sm text-neutral-400">
-          Ideal is 5x/week. Minimum is 3x/week.
-        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Rowing meters (month)</p>
+            <p className="mt-1 text-lg font-semibold">{Math.round(rowingMetersMonth).toLocaleString()}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Rowing meters (YTD)</p>
+            <p className="mt-1 text-lg font-semibold">{Math.round(rowingMetersYtd).toLocaleString()}</p>
+            <p className="mt-1 text-xs text-neutral-500">All-time: {Math.round(rowingMetersAll).toLocaleString()}</p>
+          </div>
+        </div>
       </section>
     </div>
   );
