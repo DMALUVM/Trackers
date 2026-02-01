@@ -16,6 +16,39 @@ export async function getUserId() {
   return data.user.id;
 }
 
+export type UserSettingsRow = {
+  user_id: string;
+  enabled_modules: string[];
+};
+
+const DEFAULT_ENABLED_MODULES = ["progress", "rowing", "settings"];
+
+export async function getUserSettings(): Promise<UserSettingsRow> {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("user_id,enabled_modules")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    // Create default settings row
+    const insert = { user_id: userId, enabled_modules: DEFAULT_ENABLED_MODULES };
+    const { error: insErr } = await supabase.from("user_settings").insert(insert);
+    if (insErr) throw insErr;
+    return insert;
+  }
+  return data as UserSettingsRow;
+}
+
+export async function setEnabledModules(enabled: string[]) {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from("user_settings")
+    .upsert({ user_id: userId, enabled_modules: enabled }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   const { data, error } = await supabase
     .from("routine_items")
