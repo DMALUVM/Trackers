@@ -42,8 +42,16 @@ export default function CardioPage() {
         <p className="text-sm text-neutral-400">Log walking or running miles.</p>
       </header>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <label className="text-xs font-medium text-neutral-300">Activity</label>
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-neutral-300">Activity</label>
+          <a
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+            href="/app/cardio/history"
+          >
+            History
+          </a>
+        </div>
         <div className="mt-2 flex gap-2">
           <button
             type="button"

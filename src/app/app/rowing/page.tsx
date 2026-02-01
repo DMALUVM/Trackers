@@ -100,17 +100,25 @@ export default function RowingPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="text-base font-medium">Totals</h2>
-        <p className="mt-1 text-sm text-neutral-400">
-          View totals in Progress.
-        </p>
-        <a
-          className="mt-3 inline-block rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black"
-          href="/app/routines/progress"
-        >
-          Open Progress
-        </a>
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+        <div>
+          <h2 className="text-base font-medium">Totals</h2>
+          <p className="mt-1 text-sm text-neutral-400">View totals in Progress.</p>
+        </div>
+        <div className="flex gap-2">
+          <a
+            className="flex-1 rounded-xl bg-white px-4 py-2 text-center text-sm font-semibold text-black"
+            href="/app/routines/progress"
+          >
+            Open Progress
+          </a>
+          <a
+            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-white/10"
+            href="/app/rowing/history"
+          >
+            History
+          </a>
+        </div>
       </section>
     </div>
   );

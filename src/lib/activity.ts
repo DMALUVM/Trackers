@@ -46,3 +46,35 @@ export async function sumActivity(opts: {
   if (error) throw error;
   return (data ?? []).reduce((sum, row: any) => sum + Number(row.value ?? 0), 0);
 }
+
+export type ActivityLogRow = {
+  id: string;
+  date: string;
+  activity_key: string;
+  value: number;
+  unit: string;
+  notes: string | null;
+};
+
+export async function listActivityLogs(opts: {
+  from: string;
+  to: string;
+  activityKey: ActivityKey;
+}) {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("id,date,activity_key,value,unit,notes")
+    .eq("user_id", userId)
+    .eq("activity_key", opts.activityKey)
+    .gte("date", opts.from)
+    .lte("date", opts.to)
+    .order("date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ActivityLogRow[];
+}
+
+export async function deleteActivityLog(id: string) {
+  const { error } = await supabase.from("activity_logs").delete().eq("id", id);
+  if (error) throw error;
+}
