@@ -49,18 +49,20 @@ export default function RoutinesProgressPage() {
         const { start, end } = weekBounds(now);
         const weekFrom = format(start, "yyyy-MM-dd");
         const weekTo = format(end, "yyyy-MM-dd");
-        const monthFrom = format(monthGridDates(month)[0], "yyyy-MM-dd"); // grid start
-        const monthTo = format(monthGridDates(month).slice(-1)[0], "yyyy-MM-dd"); // grid end
+        // NOTE: Month totals should be based on the calendar month (not the grid spillover).
+        const monthFrom = format(month, "yyyy-MM-01");
+        const monthTo = format(new Date(month.getFullYear(), month.getMonth() + 1, 0), "yyyy-MM-dd");
         const ytdFrom = `${format(now, "yyyy")}-01-01`;
         const allFrom = "1900-01-01";
 
+        const toToday = format(now, "yyyy-MM-dd");
         const [items, dataRange, mWeek, mMonth, mYtd, mAll] = await Promise.all([
           listRoutineItems(),
           loadRangeStates({ from: fromKey, to: toKey }),
           sumActivity({ from: weekFrom, to: weekTo, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: monthFrom, to: monthTo, activityKey: "rowing", unit: "meters" }),
-          sumActivity({ from: ytdFrom, to: format(now, "yyyy-MM-dd"), activityKey: "rowing", unit: "meters" }),
-          sumActivity({ from: allFrom, to: format(now, "yyyy-MM-dd"), activityKey: "rowing", unit: "meters" }),
+          sumActivity({ from: ytdFrom, to: toToday, activityKey: "rowing", unit: "meters" }),
+          sumActivity({ from: allFrom, to: toToday, activityKey: "rowing", unit: "meters" }),
         ]);
 
         setRoutineItems(items);
@@ -139,6 +141,11 @@ export default function RoutinesProgressPage() {
           Tap a day to edit it. Green/yellow/red is based on your non-negotiables.
         </p>
         {error ? <p className="text-xs text-rose-300">Error: {error}</p> : null}
+        {!error ? (
+          <p className="text-[11px] text-neutral-500">
+            Debug: week {rowingMetersWeek.toLocaleString()}m, month {rowingMetersMonth.toLocaleString()}m
+          </p>
+        ) : null}
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
