@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
 import {
-  ensureSeedData,
   listRoutineItems,
   loadDayState,
   toDateKey,
@@ -70,7 +69,6 @@ export default function RoutinesPage() {
     const run = async () => {
       setLoading(true);
       try {
-        await ensureSeedData();
         const routineItems = await listRoutineItems();
 
         // Onboarding gate: new users should not inherit Dave's routines.
