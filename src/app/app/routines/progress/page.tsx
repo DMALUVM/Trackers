@@ -52,23 +52,46 @@ export default function RoutinesProgressPage() {
   );
 
   useEffect(() => {
-    const run = async () => {
+    let cancelled = false;
+
+    const loadCalendarFast = async () => {
       setLoading(true);
       setError("");
+      try {
+        // Fast path: load only what we need to render the calendar + core metrics.
+        const [items, dataRange] = await Promise.all([
+          listRoutineItems(),
+          loadRangeStates({ from: fromKey, to: toKey }),
+        ]);
+        if (cancelled) return;
+        setRoutineItems(items);
+        setLogs(dataRange.logs);
+        setChecks(dataRange.checks);
+      } catch (e: any) {
+        if (cancelled) return;
+        setError(e?.message ?? String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    const loadTotalsLazy = async () => {
       try {
         const { start, end } = weekBounds(now);
         const weekFrom = format(start, "yyyy-MM-dd");
         const weekTo = format(end, "yyyy-MM-dd");
-        // NOTE: Month totals should be based on the calendar month (not the grid spillover).
+        // Month totals should be based on the calendar month (not the grid spillover).
         const monthFrom = format(month, "yyyy-MM-01");
-        const monthTo = format(new Date(month.getFullYear(), month.getMonth() + 1, 0), "yyyy-MM-dd");
+        const monthTo = format(
+          new Date(month.getFullYear(), month.getMonth() + 1, 0),
+          "yyyy-MM-dd"
+        );
         const ytdFrom = `${format(now, "yyyy")}-01-01`;
         const allFrom = "1900-01-01";
-
         const toToday = format(now, "yyyy-MM-dd");
+
+        // Slow path: activity totals. Load after initial paint to reduce perceived lag.
         const [
-          items,
-          dataRange,
           mWeek,
           mMonth,
           mYtd,
@@ -82,8 +105,6 @@ export default function RoutinesProgressPage() {
           rYtd,
           rAll,
         ] = await Promise.all([
-          listRoutineItems(),
-          loadRangeStates({ from: fromKey, to: toKey }),
           sumActivity({ from: weekFrom, to: weekTo, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: monthFrom, to: monthTo, activityKey: "rowing", unit: "meters" }),
           sumActivity({ from: ytdFrom, to: toToday, activityKey: "rowing", unit: "meters" }),
@@ -100,9 +121,7 @@ export default function RoutinesProgressPage() {
           sumActivity({ from: allFrom, to: toToday, activityKey: "running", unit: "miles" }),
         ]);
 
-        setRoutineItems(items);
-        setLogs(dataRange.logs);
-        setChecks(dataRange.checks);
+        if (cancelled) return;
 
         setRowingMetersWeek(mWeek);
         setRowingMetersMonth(mMonth);
@@ -118,14 +137,21 @@ export default function RoutinesProgressPage() {
         setRunningMilesMonth(rMonth);
         setRunningMilesYtd(rYtd);
         setRunningMilesAll(rAll);
-      } catch (e: any) {
-        setError(e?.message ?? String(e));
-      } finally {
-        setLoading(false);
+      } catch {
+        // Non-fatal: keep the calendar usable even if totals fail.
       }
     };
 
-    void run();
+    void loadCalendarFast();
+    // Kick totals load after the UI is up.
+    const t = window.setTimeout(() => {
+      void loadTotalsLazy();
+    }, 50);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
   }, [fromKey, toKey, now, month]);
 
   const logMap = useMemo(() => {
