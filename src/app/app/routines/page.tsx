@@ -22,7 +22,7 @@ import {
   upsertDailyLog,
 } from "@/lib/supabaseData";
 import { tzIsoDow } from "@/lib/time";
-import { computeDayColor, weekBounds, type DayColor } from "@/lib/progress";
+import { computeDayColor, isWorkoutLabel, weekBounds, type DayColor } from "@/lib/progress";
 
 type UiItem = {
   id: string;
@@ -76,6 +76,25 @@ export default function RoutinesPage() {
     () => items.filter((i) => i.done).length,
     [items]
   );
+
+  const nextActions = useMemo(() => {
+    const didRowing = items.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
+    const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+
+    const missing = items.filter((i) => {
+      if (!i.isNonNegotiable) return false;
+      if (isWorkoutLabel(i.label)) {
+        return !(i.done || didRowing || didWeights);
+      }
+      return !i.done;
+    });
+
+    return {
+      missing,
+      didRowing,
+      didWeights,
+    };
+  }, [items]);
 
   useEffect(() => {
     const raw = typeof window !== "undefined" ? localStorage.getItem("routines365:gettingStarted:dismissed") : "1";
@@ -366,7 +385,13 @@ export default function RoutinesPage() {
           <div>
             <h2 className="text-base font-medium">Today’s score</h2>
             <p className="mt-1 text-sm text-neutral-400">
-              {todayColor === "green" ? "Green day." : todayColor === "yellow" ? "Close. One core miss." : todayColor === "red" ? "Red day so far. Fixable." : ""}
+              {todayColor === "green"
+                ? "Green day. Keep the streak alive."
+                : todayColor === "yellow"
+                  ? "Close. One core miss."
+                  : todayColor === "red"
+                    ? "Red day so far. Fixable."
+                    : ""}
             </p>
           </div>
           <div className="text-right">
@@ -388,6 +413,27 @@ export default function RoutinesPage() {
               {completed}/{items.length}
             </p>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+          <p className="text-xs font-semibold text-neutral-200">Next actions</p>
+          {nextActions.missing.length === 0 ? (
+            <p className="mt-1 text-sm text-neutral-300">All Core habits are done. Lock it in.</p>
+          ) : (
+            <div className="mt-2 space-y-1">
+              <p className="text-xs text-neutral-400">
+                {nextActions.missing.length} Core remaining
+              </p>
+              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-neutral-200">
+                {nextActions.missing.slice(0, 3).map((m) => (
+                  <li key={m.id}>{m.label}</li>
+                ))}
+              </ul>
+              {nextActions.missing.length > 3 ? (
+                <p className="mt-2 text-xs text-neutral-500">+{nextActions.missing.length - 3} more</p>
+              ) : null}
+            </div>
+          )}
         </div>
 
         <div className="mt-3 flex gap-2">
