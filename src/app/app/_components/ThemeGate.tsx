@@ -41,11 +41,20 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
         <style jsx global>{`
           /* HOTFIX: Many components still use dark-theme utility classes (text-white/bg-white/5/etc).
              Override the most common ones in light mode so the UI remains readable. */
-          [data-theme='light'] .text-white { color: #0b1220 !important; }
+          /* Text colors */
+          [data-theme='light'] .text-white,
+          [data-theme='light'] .text-neutral-50,
+          [data-theme='light'] .text-neutral-100,
           [data-theme='light'] .text-neutral-200 { color: #0b1220 !important; }
           [data-theme='light'] .text-neutral-300 { color: #1f2937 !important; }
           [data-theme='light'] .text-neutral-400 { color: #374151 !important; }
           [data-theme='light'] .text-neutral-500 { color: #4b5563 !important; }
+          [data-theme='light'] .text-neutral-600 { color: #6b7280 !important; }
+
+          /* SVG icon stroke/fill (lucide) */
+          [data-theme='light'] svg.text-white,
+          [data-theme='light'] svg.text-neutral-400,
+          [data-theme='light'] svg.text-neutral-500 { color: #0b1220 !important; }
 
           [data-theme='light'] .bg-black\/60 { background-color: rgba(255,255,255,0.72) !important; }
           [data-theme='light'] .bg-black\/40 { background-color: rgba(255,255,255,0.72) !important; }
