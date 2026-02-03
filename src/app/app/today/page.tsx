@@ -11,6 +11,7 @@ import {
   loadDayState,
   toDateKey,
   upsertDailyChecks,
+  upsertDailyLog,
 } from "@/lib/supabaseData";
 import { computeDayColor, isWorkoutLabel, type DayColor } from "@/lib/progress";
 import { tzIsoDow } from "@/lib/time";
@@ -105,14 +106,29 @@ export default function TodayPage() {
     };
   }, [items]);
 
-  const persistCore = async () => {
+  const persist = async (opts?: { dayMode?: DayMode }) => {
     setStatus("Saving…");
     try {
       const cur = itemsRef.current;
+      const nextMode = opts?.dayMode ?? dayMode;
+
+      const didRowing = cur.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
+      const didWeights = cur.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+      const sex = cur.some((i) => i.label.toLowerCase() === "sex" && i.done);
+
+      await upsertDailyLog({
+        dateKey,
+        dayMode: nextMode,
+        sex,
+        didRowing,
+        didWeights,
+      });
+
       await upsertDailyChecks({
         dateKey,
         checks: cur.map((i) => ({ routineItemId: i.id, done: i.done })),
       });
+
       setStatus("Saved.");
       setTimeout(() => setStatus(""), 1000);
     } catch (e: any) {
@@ -126,7 +142,7 @@ export default function TodayPage() {
       itemsRef.current = next;
       return next;
     });
-    void persistCore();
+    void persist();
   };
 
   const markAllCoreDone = () => {
@@ -135,7 +151,7 @@ export default function TodayPage() {
       itemsRef.current = next;
       return next;
     });
-    void persistCore();
+    void persist();
   };
 
   if (loading) {
@@ -229,8 +245,41 @@ export default function TodayPage() {
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-xs text-neutral-500">Date</p>
         <p className="mt-1 text-sm text-neutral-200">{format(today, "EEEE, MMM d")}</p>
-        <p className="mt-3 text-xs text-neutral-500">Day mode</p>
-        <p className="mt-1 text-sm text-neutral-200">{dayMode}</p>
+
+        <div className="mt-4">
+          <p className="text-xs text-neutral-500">Day mode</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {([
+              { key: "normal", label: "Normal" },
+              { key: "travel", label: "Travel" },
+              { key: "sick", label: "Sick" },
+            ] as const).map((opt) => {
+              const active = dayMode === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={
+                    "rounded-xl px-3 py-2 text-sm font-semibold " +
+                    (active
+                      ? "bg-white text-black"
+                      : "border border-white/10 bg-white/5 text-white hover:bg-white/10")
+                  }
+                  onClick={() => {
+                    const next = opt.key as DayMode;
+                    setDayMode(next);
+                    void persist({ dayMode: next });
+                  }}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-neutral-500">
+            Defaults to Normal each new day.
+          </p>
+        </div>
       </section>
     </div>
   );
