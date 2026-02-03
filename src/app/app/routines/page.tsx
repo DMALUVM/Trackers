@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { format, subDays } from "date-fns";
 import {
   CheckCircle2,
   Circle,
@@ -11,15 +12,17 @@ import {
   ThermometerSnowflake,
   TrendingUp,
 } from "lucide-react";
-import type { DayMode, RoutineItemRow } from "@/lib/types";
+import type { DayMode, DailyLogRow, RoutineItemRow } from "@/lib/types";
 import {
   listRoutineItems,
   loadDayState,
+  loadRangeStates,
   toDateKey,
   upsertDailyChecks,
   upsertDailyLog,
 } from "@/lib/supabaseData";
 import { tzIsoDow } from "@/lib/time";
+import { computeDayColor, weekBounds, type DayColor } from "@/lib/progress";
 
 type UiItem = {
   id: string;
@@ -64,6 +67,11 @@ export default function RoutinesPage() {
   const autosaveInFlight = useRef(false);
   const autosavePending = useRef(false);
 
+  // "Dopamine" summary on the main screen (more significant than just a checklist)
+  const [coreStreak, setCoreStreak] = useState<number>(0);
+  const [coreHitRateThisWeek, setCoreHitRateThisWeek] = useState<number | null>(null);
+  const [todayColor, setTodayColor] = useState<DayColor>("empty");
+
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
     [items]
@@ -103,6 +111,67 @@ export default function RoutinesPage() {
         const nextMode = ((log?.day_mode as DayMode) ?? "normal");
         setDayMode(nextMode);
         dayModeRef.current = nextMode;
+
+        // Main-screen progress summary
+        const coreItems = routineItems.filter((i) => i.is_non_negotiable);
+        if (coreItems.length > 0) {
+          // Today status color (green/yellow/red)
+          const tColor = computeDayColor({
+            dateKey,
+            routineItems,
+            checks,
+            log: (log as DailyLogRow | null) ?? null,
+          });
+          setTodayColor(tColor);
+
+          // Week hit-rate
+          const { start, end } = weekBounds(today);
+          const weekFrom = format(start, "yyyy-MM-dd");
+          const weekTo = format(end, "yyyy-MM-dd");
+          const week = await loadRangeStates({ from: weekFrom, to: weekTo });
+          let total = 0;
+          let done = 0;
+          const coreIds = new Set(coreItems.map((c) => c.id));
+          for (const c of week.checks) {
+            if (!coreIds.has(c.routine_item_id)) continue;
+            total += 1;
+            if (c.done) done += 1;
+          }
+          setCoreHitRateThisWeek(total === 0 ? 0 : Math.round((done / total) * 100));
+
+          // Core streak: count consecutive green days ending today (look back up to 120 days)
+          const from = format(subDays(today, 120), "yyyy-MM-dd");
+          const hist = await loadRangeStates({ from, to: dateKey });
+          const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
+          for (const c of hist.checks) {
+            const arr = checksByDate.get(c.date) ?? [];
+            arr.push({ routine_item_id: c.routine_item_id, done: c.done });
+            checksByDate.set(c.date, arr);
+          }
+          const logMap = new Map<string, DailyLogRow>();
+          for (const l of hist.logs) logMap.set(l.date, l);
+
+          let streak = 0;
+          // iterate backward from today
+          const cursor = new Date(`${dateKey}T12:00:00`);
+          for (let i = 0; i < 121; i++) {
+            const dk = format(cursor, "yyyy-MM-dd");
+            const color = computeDayColor({
+              dateKey: dk,
+              routineItems,
+              checks: checksByDate.get(dk) ?? [],
+              log: logMap.get(dk) ?? null,
+            });
+            if (color !== "green") break;
+            streak += 1;
+            cursor.setDate(cursor.getDate() - 1);
+          }
+          setCoreStreak(streak);
+        } else {
+          setTodayColor("empty");
+          setCoreHitRateThisWeek(null);
+          setCoreStreak(0);
+        }
       } finally {
         setLoading(false);
       }
@@ -291,6 +360,51 @@ export default function RoutinesPage() {
           Tap to check off. Save syncs to cloud.
         </p>
       </header>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-medium">Today’s score</h2>
+            <p className="mt-1 text-sm text-neutral-400">
+              {todayColor === "green" ? "Green day." : todayColor === "yellow" ? "Close. One core miss." : todayColor === "red" ? "Red day so far. Fixable." : ""}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-neutral-400">Core streak</p>
+            <p className="mt-1 text-lg font-semibold">{coreStreak}d</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Core hit-rate (this week)</p>
+            <p className="mt-1 text-lg font-semibold">
+              {coreHitRateThisWeek === null ? "—" : `${coreHitRateThisWeek}%`}
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-neutral-400">Completion today</p>
+            <p className="mt-1 text-lg font-semibold">
+              {completed}/{items.length}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <a
+            className="flex-1 rounded-xl bg-white px-4 py-2.5 text-center text-sm font-semibold text-black"
+            href="/app/routines/progress"
+          >
+            View Progress
+          </a>
+          <Link
+            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/10"
+            href={`/app/routines/edit/${dateKey}`}
+          >
+            Fix today
+          </Link>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
         <div className="flex items-start justify-between gap-3">
