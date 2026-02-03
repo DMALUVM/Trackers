@@ -31,8 +31,13 @@ export default function Home() {
   useEffect(() => {
     // If we just arrived via magic link and session is now established, push into the app.
     if (signedInEmail) {
+      let target = "/app/routines";
+      if (typeof window !== "undefined") {
+        const next = new URLSearchParams(window.location.search).get("next");
+        if (next && next.startsWith("/")) target = next;
+      }
       const t = setTimeout(() => {
-        router.replace("/app/routines");
+        router.replace(target);
       }, 300);
       return () => clearTimeout(t);
     }
