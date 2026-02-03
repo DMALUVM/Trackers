@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -50,12 +50,19 @@ export default function RoutinesPage() {
 
   const [dayMode, setDayMode] = useState<DayMode>("normal");
   const [items, setItems] = useState<UiItem[]>([]);
+
+  const itemsRef = useRef<UiItem[]>([]);
+  const dayModeRef = useRef<DayMode>("normal");
   const [status, setStatus] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [showGettingStarted, setShowGettingStarted] = useState(false);
 
   const [undoSnapshot, setUndoSnapshot] = useState<UiItem[] | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
+
+  const autosaveTimer = useRef<number | null>(null);
+  const autosaveInFlight = useRef(false);
+  const autosavePending = useRef(false);
 
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
@@ -92,7 +99,10 @@ export default function RoutinesPage() {
           }));
 
         setItems(ui);
-        setDayMode((log?.day_mode as DayMode) ?? "normal");
+        itemsRef.current = ui;
+        const nextMode = ((log?.day_mode as DayMode) ?? "normal");
+        setDayMode(nextMode);
+        dayModeRef.current = nextMode;
       } finally {
         setLoading(false);
       }
@@ -101,46 +111,32 @@ export default function RoutinesPage() {
     void run();
   }, [dateKey, today, router]);
 
-  const toggleItem = (id: string) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i))
-    );
-  };
+  const persist = async () => {
+    // Serialize saves: if another save is running, mark pending.
+    if (autosaveInFlight.current) {
+      autosavePending.current = true;
+      return;
+    }
 
-  const markAllCoreDone = () => {
-    setUndoSnapshot(items);
-    setItems((prev) => prev.map((i) => (i.isNonNegotiable ? { ...i, done: true } : i)));
-    setUndoVisible(true);
-    setTimeout(() => setUndoVisible(false), 8000);
-  };
+    autosaveInFlight.current = true;
+    autosavePending.current = false;
 
-  const undo = () => {
-    if (!undoSnapshot) return;
-    setItems(undoSnapshot);
-    setUndoSnapshot(null);
-    setUndoVisible(false);
-  };
+    const curItems = itemsRef.current;
+    const curMode = dayModeRef.current;
 
-  const cycleDayMode = () => {
-    setDayMode((m) =>
-      m === "normal" ? "travel" : m === "travel" ? "sick" : "normal"
-    );
-  };
-
-  const save = async () => {
-    setStatus("Saving...");
+    setStatus("Saving…");
     try {
-      const didRowing = items.some(
+      const didRowing = curItems.some(
         (i) => i.label.toLowerCase().startsWith("rowing") && i.done
       );
-      const didWeights = items.some(
+      const didWeights = curItems.some(
         (i) => i.label.toLowerCase().includes("workout") && i.done
       );
-      const sex = items.some((i) => i.label.toLowerCase() === "sex" && i.done);
+      const sex = curItems.some((i) => i.label.toLowerCase() === "sex" && i.done);
 
       await upsertDailyLog({
         dateKey,
-        dayMode,
+        dayMode: curMode,
         sex,
         didRowing,
         didWeights,
@@ -148,14 +144,74 @@ export default function RoutinesPage() {
 
       await upsertDailyChecks({
         dateKey,
-        checks: items.map((i) => ({ routineItemId: i.id, done: i.done })),
+        checks: curItems.map((i) => ({ routineItemId: i.id, done: i.done })),
       });
 
       setStatus("Saved.");
-      setTimeout(() => setStatus(""), 1500);
+      setTimeout(() => setStatus(""), 1200);
     } catch (e: any) {
       setStatus(`Save failed: ${e?.message ?? String(e)}`);
+    } finally {
+      autosaveInFlight.current = false;
+      // If changes happened while saving, immediately save again.
+      if (autosavePending.current) {
+        void persist();
+      }
     }
+  };
+
+  const queueAutosave = () => {
+    // Debounce saves while user is rapidly tapping.
+    if (autosaveTimer.current) {
+      window.clearTimeout(autosaveTimer.current);
+    }
+    autosaveTimer.current = window.setTimeout(() => {
+      void persist();
+    }, 800);
+  };
+
+  const toggleItem = (id: string) => {
+    setItems((prev) => {
+      const next = prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
+      itemsRef.current = next;
+      return next;
+    });
+    queueAutosave();
+  };
+
+  const markAllCoreDone = () => {
+    setUndoSnapshot(itemsRef.current);
+    setItems((prev) => {
+      const next = prev.map((i) => (i.isNonNegotiable ? { ...i, done: true } : i));
+      itemsRef.current = next;
+      return next;
+    });
+    setUndoVisible(true);
+    setTimeout(() => setUndoVisible(false), 8000);
+    queueAutosave();
+  };
+
+  const undo = () => {
+    if (!undoSnapshot) return;
+    setItems(undoSnapshot);
+    itemsRef.current = undoSnapshot;
+    setUndoSnapshot(null);
+    setUndoVisible(false);
+    queueAutosave();
+  };
+
+  const cycleDayMode = () => {
+    setDayMode((m) => {
+      const next = m === "normal" ? "travel" : m === "travel" ? "sick" : "normal";
+      dayModeRef.current = next;
+      return next;
+    });
+    queueAutosave();
+  };
+
+  const save = async () => {
+    // Manual save fallback (also useful if autosave ever fails).
+    await persist();
   };
 
   if (loading) {
@@ -317,7 +373,7 @@ export default function RoutinesPage() {
             onClick={save}
             type="button"
           >
-            Save
+            Save now
           </button>
           <button
             className="rounded-xl border border-white/15 bg-transparent px-4 py-2.5 text-sm font-medium text-white"
