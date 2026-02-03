@@ -71,6 +71,7 @@ export default function RoutinesPage() {
   const [coreStreak, setCoreStreak] = useState<number>(0);
   const [coreHitRateThisWeek, setCoreHitRateThisWeek] = useState<number | null>(null);
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
+  const [wrapUpOpen, setWrapUpOpen] = useState(false);
 
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
@@ -78,8 +79,12 @@ export default function RoutinesPage() {
   );
 
   const nextActions = useMemo(() => {
-    const didRowing = items.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
-    const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+    const didRowing = items.some(
+      (i) => i.label.toLowerCase().startsWith("rowing") && i.done
+    );
+    const didWeights = items.some(
+      (i) => i.label.toLowerCase().includes("workout") && i.done
+    );
 
     const missing = items.filter((i) => {
       if (!i.isNonNegotiable) return false;
@@ -89,10 +94,13 @@ export default function RoutinesPage() {
       return !i.done;
     });
 
+    const workoutMissing = missing.some((m) => isWorkoutLabel(m.label));
+
     return {
       missing,
       didRowing,
       didWeights,
+      workoutMissing,
     };
   }, [items]);
 
@@ -416,41 +424,164 @@ export default function RoutinesPage() {
         </div>
 
         <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs font-semibold text-neutral-200">Next actions</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-neutral-200">Next actions</p>
+            {todayColor !== "green" && nextActions.missing.length > 0 ? (
+              <span className="rounded-full bg-white/10 px-2 py-1 text-[11px] font-semibold text-neutral-200">
+                Get to Green: {nextActions.missing.length}
+              </span>
+            ) : null}
+          </div>
+
           {nextActions.missing.length === 0 ? (
             <p className="mt-1 text-sm text-neutral-300">All Core habits are done. Lock it in.</p>
           ) : (
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 space-y-2">
               <p className="text-xs text-neutral-400">
-                {nextActions.missing.length} Core remaining
+                {todayColor === "green"
+                  ? `${nextActions.missing.length} Core remaining (optional)`
+                  : `Do ${nextActions.missing.length} Core habit${nextActions.missing.length === 1 ? "" : "s"} to get back to Green.`}
               </p>
-              <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-neutral-200">
+
+              {nextActions.workoutMissing ? (
+                <p className="text-xs text-neutral-500">
+                  Workout counts if you row or lift (or check Workout).
+                </p>
+              ) : null}
+
+              <ul className="list-disc space-y-1 pl-5 text-sm text-neutral-200">
                 {nextActions.missing.slice(0, 3).map((m) => (
                   <li key={m.id}>{m.label}</li>
                 ))}
               </ul>
               {nextActions.missing.length > 3 ? (
-                <p className="mt-2 text-xs text-neutral-500">+{nextActions.missing.length - 3} more</p>
+                <p className="text-xs text-neutral-500">+{nextActions.missing.length - 3} more</p>
               ) : null}
             </div>
           )}
         </div>
 
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           <a
-            className="flex-1 rounded-xl bg-white px-4 py-2.5 text-center text-sm font-semibold text-black"
+            className="rounded-xl bg-white px-4 py-2.5 text-center text-sm font-semibold text-black"
             href="/app/routines/progress"
           >
-            View Progress
+            Progress
           </a>
           <Link
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/10"
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/10"
             href={`/app/routines/edit/${dateKey}`}
           >
             Fix today
           </Link>
+          <button
+            type="button"
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/10"
+            onClick={() => setWrapUpOpen(true)}
+          >
+            Wrap up
+          </button>
         </div>
       </section>
+
+      {wrapUpOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setWrapUpOpen(false)}
+        >
+          <div
+            className="w-full rounded-2xl border border-white/10 bg-neutral-950 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold">Wrap up</h3>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Quick actions to close out today.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={() => setWrapUpOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <button
+                type="button"
+                className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black"
+                onClick={() => {
+                  markAllCoreDone();
+                  setWrapUpOpen(false);
+                }}
+              >
+                Mark all Core done
+              </button>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    if (dayMode !== "travel") {
+                      setDayMode("travel");
+                      dayModeRef.current = "travel";
+                      queueAutosave();
+                    }
+                    setWrapUpOpen(false);
+                  }}
+                >
+                  Travel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    if (dayMode !== "sick") {
+                      setDayMode("sick");
+                      dayModeRef.current = "sick";
+                      queueAutosave();
+                    }
+                    setWrapUpOpen(false);
+                  }}
+                >
+                  Sick
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    if (dayMode !== "normal") {
+                      setDayMode("normal");
+                      dayModeRef.current = "normal";
+                      queueAutosave();
+                    }
+                    setWrapUpOpen(false);
+                  }}
+                >
+                  Normal
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                onClick={() => {
+                  void persist();
+                  setWrapUpOpen(false);
+                }}
+              >
+                Save now
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
         <div className="flex items-start justify-between gap-3">
