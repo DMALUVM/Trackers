@@ -88,23 +88,52 @@ export default function TodayPage() {
     void run();
   }, [dateKey, router, today]);
 
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(`routines365:snooze:${dateKey}`);
+      setSnoozedUntil(raw ? JSON.parse(raw) : {});
+    } catch {
+      setSnoozedUntil({});
+    }
+  }, [dateKey]);
+
+  const persistSnoozes = (next: Record<string, number>) => {
+    setSnoozedUntil(next);
+    try {
+      localStorage.setItem(`routines365:snooze:${dateKey}`, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  };
+
   const nextActions = useMemo(() => {
+    const now = Date.now();
     const didRowing = items.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
     const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
 
     const missing = items.filter((i) => {
       if (!i.isNonNegotiable) return false;
+      if (snoozedUntil[i.id] && snoozedUntil[i.id] > now) return false;
       if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
       return !i.done;
     });
+
+    const coreTotal = items.filter((i) => i.isNonNegotiable).length;
+    const coreDone = items.filter((i) => i.isNonNegotiable && i.done).length;
+    const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
     return {
       missing,
       didRowing,
       didWeights,
       workoutMissing: missing.some((m) => isWorkoutLabel(m.label)),
+      coreTotal,
+      coreDone,
+      score,
     };
-  }, [items]);
+  }, [items, snoozedUntil]);
 
   const persist = async (opts?: { dayMode?: DayMode }) => {
     setStatus("Saving…");
@@ -188,6 +217,23 @@ export default function TodayPage() {
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <p className="text-xs text-neutral-500">Daily score</p>
+        <div className="mt-2 flex items-end justify-between">
+          <p className="text-4xl font-semibold tracking-tight">{nextActions.score}</p>
+          <p className="text-sm text-neutral-400">
+            Core: {nextActions.coreDone}/{nextActions.coreTotal}
+          </p>
+        </div>
+        {nextActions.missing.length > 0 ? (
+          <p className="mt-2 text-sm text-neutral-300">
+            Do <b>{Math.min(1, nextActions.missing.length)}</b> more Core habit to improve your score.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-neutral-300">All Core habits done. Keep it simple.</p>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold text-neutral-200">Next actions</p>
@@ -213,29 +259,59 @@ export default function TodayPage() {
 
         <div className="mt-4 space-y-2">
           {nextActions.missing.slice(0, 5).map((item) => (
-            <button
+            <div
               key={item.id}
-              onClick={() => toggleItem(item.id)}
-              type="button"
-              className="group w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-neutral-100 transition-colors hover:bg-white/10"
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {item.done ? (
-                    <CheckCircle2 size={18} className="text-emerald-400" />
-                  ) : (
-                    <Circle size={18} className="text-neutral-500" />
-                  )}
-                  <span className="text-base">{item.emoji ?? ""}</span>
-                  <span className={item.done ? "text-neutral-300 line-through" : ""}>
-                    {item.label}
-                  </span>
-                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
-                    CORE
-                  </span>
+              <button
+                onClick={() => toggleItem(item.id)}
+                type="button"
+                className="group w-full text-left"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {item.done ? (
+                      <CheckCircle2 size={18} className="text-emerald-400" />
+                    ) : (
+                      <Circle size={18} className="text-neutral-500" />
+                    )}
+                    <span className="text-base">{item.emoji ?? ""}</span>
+                    <span className={item.done ? "text-neutral-300 line-through" : ""}>
+                      {item.label}
+                    </span>
+                    <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
+                      CORE
+                    </span>
+                  </div>
                 </div>
+              </button>
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    const next = { ...snoozedUntil };
+                    next[item.id] = Date.now() + 2 * 60 * 60 * 1000;
+                    persistSnoozes(next);
+                  }}
+                >
+                  Snooze 2h
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    // "Skip" means: hide this item for today.
+                    const next = { ...snoozedUntil };
+                    next[item.id] = Date.now() + 24 * 60 * 60 * 1000;
+                    persistSnoozes(next);
+                  }}
+                >
+                  Skip today
+                </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
