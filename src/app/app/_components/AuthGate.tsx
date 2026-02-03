@@ -23,7 +23,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     const init = async () => {
       try {
-        const { data } = await supabase.auth.getSession();
+        // First check: do we already have a session in storage?
+        let { data } = await supabase.auth.getSession();
+
+        // iOS Safari/PWA can be flaky about timing; also access tokens can expire.
+        // If we have no session, attempt a refresh once before redirecting.
+        if (!data.session) {
+          try {
+            await supabase.auth.refreshSession();
+          } catch {
+            // ignore; we will fall back to redirect
+          }
+          data = (await supabase.auth.getSession()).data;
+        }
+
         if (cancelled) return;
         setHasSession(!!data.session);
       } finally {
@@ -32,6 +45,14 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
 
     void init();
+
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      // When the app is foregrounded, try to refresh quietly.
+      void supabase.auth.refreshSession().catch(() => {});
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
 
     const {
       data: { subscription },
@@ -43,6 +64,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
       subscription.unsubscribe();
     };
   }, []);
