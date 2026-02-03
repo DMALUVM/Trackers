@@ -75,6 +75,7 @@ export default function RoutinesPage() {
   const [coreHitRateThisWeek, setCoreHitRateThisWeek] = useState<number | null>(null);
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
 
   const completed = useMemo(
     () => items.filter((i) => i.done).length,
@@ -428,14 +429,23 @@ export default function RoutinesPage() {
       ) : null}
 
       <header className="space-y-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
-          <Link
-            href="/app/routines/progress"
-            className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs text-neutral-200 hover:bg-white/15"
-          >
-            <TrendingUp size={14} /> Progress
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-white/90"
+              onClick={() => setQuickLogOpen(true)}
+            >
+              Quick Log
+            </button>
+            <Link
+              href="/app/routines/progress"
+              className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs text-neutral-200 hover:bg-white/15"
+            >
+              <TrendingUp size={14} /> Progress
+            </Link>
+          </div>
         </div>
         <p className="text-sm text-neutral-400">
           Tap to check off. Save syncs to cloud.
@@ -592,6 +602,96 @@ export default function RoutinesPage() {
           </button>
         </div>
       </section>
+
+      {quickLogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setQuickLogOpen(false)}
+        >
+          <div
+            className="w-full rounded-2xl border border-white/10 bg-neutral-950 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold">Quick Log</h3>
+                <p className="mt-1 text-sm text-neutral-400">
+                  Knock out Core habits fast.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={() => setQuickLogOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {items.filter((i) => i.isNonNegotiable).length === 0 ? (
+                <p className="text-sm text-neutral-300">
+                  No Core habits yet. Set them first.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {items
+                    .filter((i) => i.isNonNegotiable)
+                    .map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleItem(item.id)}
+                        type="button"
+                        className="group w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-neutral-100 transition-colors hover:bg-white/10"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            {item.done ? (
+                              <CheckCircle2 size={18} className="text-emerald-400" />
+                            ) : (
+                              <Circle size={18} className="text-neutral-500" />
+                            )}
+                            <span className="text-base">{item.emoji ?? ""}</span>
+                            <span className={item.done ? "text-neutral-300 line-through" : ""}>
+                              {item.label}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                  onClick={() => {
+                    markAllCoreDone();
+                    setQuickLogOpen(false);
+                  }}
+                >
+                  Mark all Core done
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black"
+                  onClick={() => {
+                    void persist();
+                    setQuickLogOpen(false);
+                  }}
+                >
+                  Save + Close
+                </button>
+              </div>
+
+              {status ? <p className="mt-2 text-xs text-neutral-400">{status}</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {wrapUpOpen ? (
         <div
