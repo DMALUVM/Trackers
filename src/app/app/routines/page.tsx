@@ -114,6 +114,9 @@ export default function RoutinesPage() {
     const run = async () => {
       setLoading(true);
       try {
+        // Prefetch Progress route for faster navigation (especially on mobile/PWA)
+        router.prefetch("/app/routines/progress");
+
         const routineItems = await listRoutineItems();
 
         // Onboarding gate: new users should not inherit Dave's routines.
