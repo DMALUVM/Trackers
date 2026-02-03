@@ -14,7 +14,7 @@ export default function TemplatePickerPage() {
     const run = async () => {
       const items = await listRoutineItems();
       if (items.length > 0) {
-        router.replace("/app/routines");
+        router.replace("/app/today");
       }
     };
     void run();
@@ -39,8 +39,8 @@ export default function TemplatePickerPage() {
       });
 
       localStorage.removeItem("routines365:gettingStarted:dismissed");
-      // Send users to mark Core habits right away (reduces guesswork).
-      router.replace("/app/settings/routines");
+      // 30-second start: send users straight into Today.
+      router.replace("/app/today");
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {

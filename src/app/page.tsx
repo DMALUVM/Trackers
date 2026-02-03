@@ -31,7 +31,7 @@ export default function Home() {
   useEffect(() => {
     // If we just arrived via magic link and session is now established, push into the app.
     if (signedInEmail) {
-      let target = "/app/routines";
+      let target = "/app/today";
       if (typeof window !== "undefined") {
         const next = new URLSearchParams(window.location.search).get("next");
         if (next && next.startsWith("/")) target = next;
@@ -126,7 +126,7 @@ export default function Home() {
               <div className="mt-4 flex gap-2">
                 <a
                   className="flex-1 rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-black"
-                  href="/app/routines"
+                  href="/app/today"
                 >
                   Open app
                 </a>
@@ -179,7 +179,7 @@ export default function Home() {
             <div className="mt-3 grid grid-cols-2 gap-2">
               {/* Mock: Routines */}
               <a
-                href="/app/routines"
+                href="/app/today"
                 className="rounded-2xl border border-white/10 bg-black/20 p-2 hover:bg-white/5"
               >
                 <div className="h-64 w-full rounded-xl border border-white/10 bg-black/40 p-3">

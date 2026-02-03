@@ -12,7 +12,7 @@ export default function OnboardingPage() {
     const run = async () => {
       const items = await listRoutineItems();
       if (items.length > 0) {
-        router.replace("/app/routines");
+        router.replace("/app/today");
         return;
       }
       setLoading(false);
