@@ -112,6 +112,14 @@ export default function RoutinesPage() {
     const raw = typeof window !== "undefined" ? localStorage.getItem("routines365:gettingStarted:dismissed") : "1";
     setShowGettingStarted(raw !== "1");
 
+    const onPageHide = () => {
+      // If the user navigates away quickly after tapping, ensure we save.
+      flushAutosave();
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onPageHide);
+
     const run = async () => {
       setLoading(true);
       try {
@@ -260,6 +268,13 @@ export default function RoutinesPage() {
     };
 
     void run();
+
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onPageHide);
+      // Flush any pending save on unmount.
+      flushAutosave();
+    };
   }, [dateKey, today, router]);
 
   const persist = async () => {
@@ -311,14 +326,23 @@ export default function RoutinesPage() {
     }
   };
 
+  const flushAutosave = () => {
+    if (autosaveTimer.current) {
+      window.clearTimeout(autosaveTimer.current);
+      autosaveTimer.current = null;
+    }
+    void persist();
+  };
+
   const queueAutosave = () => {
     // Debounce saves while user is rapidly tapping.
     if (autosaveTimer.current) {
       window.clearTimeout(autosaveTimer.current);
     }
     autosaveTimer.current = window.setTimeout(() => {
+      autosaveTimer.current = null;
       void persist();
-    }, 800);
+    }, 600);
   };
 
   const toggleItem = (id: string) => {
