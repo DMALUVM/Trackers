@@ -51,7 +51,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     if (!hasSession) {
       // Preserve a return path so after login we can come back.
-      const next = pathname ? `/?next=${encodeURIComponent(pathname)}` : "/";
+      // Include query string if present.
+      const fullPath =
+        typeof window !== "undefined"
+          ? window.location.pathname + window.location.search
+          : pathname ?? "/";
+      const next = `/?next=${encodeURIComponent(fullPath)}`;
       router.replace(next);
     }
   }, [ready, hasSession, router, pathname]);
