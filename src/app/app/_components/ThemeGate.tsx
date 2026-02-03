@@ -32,10 +32,37 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("routines365:theme", apply);
   }, []);
 
-  const classes =
-    theme === "light"
-      ? "bg-white text-black"
-      : "bg-neutral-950 text-white";
+  const isLight = theme === "light";
+  const classes = isLight ? "bg-white text-black" : "bg-neutral-950 text-white";
 
-  return <div className={classes}>{children}</div>;
+  return (
+    <div className={classes} data-theme={isLight ? "light" : "dark"}>
+      {isLight ? (
+        <style jsx global>{`
+          /* HOTFIX: Many components still use dark-theme utility classes (text-white/bg-white/5/etc).
+             Override the most common ones in light mode so the UI remains readable. */
+          [data-theme='light'] .text-white { color: #0b1220 !important; }
+          [data-theme='light'] .text-neutral-200 { color: #0b1220 !important; }
+          [data-theme='light'] .text-neutral-300 { color: #1f2937 !important; }
+          [data-theme='light'] .text-neutral-400 { color: #374151 !important; }
+          [data-theme='light'] .text-neutral-500 { color: #4b5563 !important; }
+
+          [data-theme='light'] .bg-black\/60 { background-color: rgba(255,255,255,0.72) !important; }
+          [data-theme='light'] .bg-black\/40 { background-color: rgba(255,255,255,0.72) !important; }
+          [data-theme='light'] .bg-black\/20 { background-color: rgba(255,255,255,0.72) !important; }
+          [data-theme='light'] .bg-neutral-950 { background-color: #ffffff !important; }
+
+          [data-theme='light'] .bg-white\/5 { background-color: rgba(15,23,42,0.04) !important; }
+          [data-theme='light'] .bg-white\/10 { background-color: rgba(15,23,42,0.08) !important; }
+          [data-theme='light'] .bg-white\/15 { background-color: rgba(15,23,42,0.10) !important; }
+
+          [data-theme='light'] .border-white\/10 { border-color: rgba(15,23,42,0.12) !important; }
+          [data-theme='light'] .border-white\/15 { border-color: rgba(15,23,42,0.16) !important; }
+
+          [data-theme='light'] .backdrop-blur { backdrop-filter: blur(10px) !important; }
+        `}</style>
+      ) : null}
+      {children}
+    </div>
+  );
 }
