@@ -260,13 +260,14 @@ export default function TodayPage() {
                   key={opt.key}
                   type="button"
                   className={
-                    "rounded-xl px-3 py-2 text-sm font-semibold " +
+                    "rounded-xl px-3 py-3 text-sm font-semibold " +
                     (active
                       ? "bg-white text-black"
                       : "border border-white/10 bg-white/5 text-white hover:bg-white/10")
                   }
                   onClick={() => {
                     const next = opt.key as DayMode;
+                    if (dayMode === next) return;
                     setDayMode(next);
                     void persist({ dayMode: next });
                   }}
