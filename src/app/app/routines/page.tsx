@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfMonth } from "date-fns";
 import {
   CheckCircle2,
   Circle,
@@ -69,6 +69,9 @@ export default function RoutinesPage() {
 
   // "Dopamine" summary on the main screen (more significant than just a checklist)
   const [coreStreak, setCoreStreak] = useState<number>(0);
+  const [bestCoreStreak, setBestCoreStreak] = useState<number>(0);
+  const [greenDaysThisMonth, setGreenDaysThisMonth] = useState<number>(0);
+  const [last7Days, setLast7Days] = useState<Array<{ dateKey: string; color: DayColor }>>([]);
   const [coreHitRateThisWeek, setCoreHitRateThisWeek] = useState<number | null>(null);
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
   const [wrapUpOpen, setWrapUpOpen] = useState(false);
@@ -194,10 +197,58 @@ export default function RoutinesPage() {
             cursor.setDate(cursor.getDate() - 1);
           }
           setCoreStreak(streak);
+
+          const colorFor = (dk: string) =>
+            computeDayColor({
+              dateKey: dk,
+              routineItems,
+              checks: checksByDate.get(dk) ?? [],
+              log: logMap.get(dk) ?? null,
+            });
+
+          // Best streak (within the last ~120 days window)
+          let best = 0;
+          let cur = 0;
+          const forward = new Date(`${from}T12:00:00`);
+          for (let i = 0; i < 121; i++) {
+            const dk = format(forward, "yyyy-MM-dd");
+            if (colorFor(dk) === "green") {
+              cur += 1;
+              if (cur > best) best = cur;
+            } else {
+              cur = 0;
+            }
+            forward.setDate(forward.getDate() + 1);
+          }
+          setBestCoreStreak(best);
+
+          // Green days this month (up to today)
+          const mStart = startOfMonth(today);
+          const mCursor = new Date(format(mStart, "yyyy-MM-dd") + "T12:00:00");
+          let greenCount = 0;
+          while (format(mCursor, "yyyy-MM-dd") <= dateKey) {
+            if (colorFor(format(mCursor, "yyyy-MM-dd")) === "green") greenCount += 1;
+            mCursor.setDate(mCursor.getDate() + 1);
+          }
+          setGreenDaysThisMonth(greenCount);
+
+          // Last 7 days strip (including today)
+          const last7Start = subDays(today, 6);
+          const s = new Date(format(last7Start, "yyyy-MM-dd") + "T12:00:00");
+          const strip: Array<{ dateKey: string; color: DayColor }> = [];
+          for (let i = 0; i < 7; i++) {
+            const dk = format(s, "yyyy-MM-dd");
+            strip.push({ dateKey: dk, color: colorFor(dk) });
+            s.setDate(s.getDate() + 1);
+          }
+          setLast7Days(strip);
         } else {
           setTodayColor("empty");
           setCoreHitRateThisWeek(null);
           setCoreStreak(0);
+          setBestCoreStreak(0);
+          setGreenDaysThisMonth(0);
+          setLast7Days([]);
         }
       } finally {
         setLoading(false);
@@ -420,6 +471,61 @@ export default function RoutinesPage() {
             <p className="mt-1 text-lg font-semibold">
               {completed}/{items.length}
             </p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-neutral-200">Streaks that matter</p>
+            <p className="text-[11px] text-neutral-500">G / Y / R</p>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+              <p className="text-xs text-neutral-400">Best streak</p>
+              <p className="mt-1 text-lg font-semibold">{bestCoreStreak}d</p>
+            </div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3">
+              <p className="text-xs text-neutral-400">Green days (this month)</p>
+              <p className="mt-1 text-lg font-semibold">{greenDaysThisMonth}</p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-neutral-400">Last 7 days</p>
+            <div className="flex items-center gap-1.5">
+              {last7Days.map((d) => {
+                const bg =
+                  d.color === "green"
+                    ? "bg-emerald-500/70"
+                    : d.color === "yellow"
+                      ? "bg-amber-400/70"
+                      : d.color === "red"
+                        ? "bg-rose-500/60"
+                        : "bg-white/10";
+                const label =
+                  d.color === "green"
+                    ? "G"
+                    : d.color === "yellow"
+                      ? "Y"
+                      : d.color === "red"
+                        ? "R"
+                        : "–";
+                return (
+                  <div
+                    key={d.dateKey}
+                    className={
+                      "flex h-6 w-6 items-center justify-center rounded-md border border-white/10 text-[10px] font-semibold text-white " +
+                      bg
+                    }
+                    title={d.dateKey}
+                    aria-label={`${d.dateKey}: ${label}`}
+                  >
+                    {label}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
