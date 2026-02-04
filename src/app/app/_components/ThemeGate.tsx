@@ -51,6 +51,12 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
           [data-theme='light'] .text-neutral-500 { color: #4b5563 !important; }
           [data-theme='light'] .text-neutral-600 { color: #6b7280 !important; }
 
+          /* Accent text that was designed for dark backgrounds */
+          [data-theme='light'] .text-emerald-200,
+          [data-theme='light'] .text-emerald-300 { color: #065f46 !important; }
+          [data-theme='light'] .text-emerald-400,
+          [data-theme='light'] .text-emerald-500 { color: #047857 !important; }
+
           /* SVG icon stroke/fill (lucide) */
           [data-theme='light'] svg.text-white,
           [data-theme='light'] svg.text-neutral-400,
