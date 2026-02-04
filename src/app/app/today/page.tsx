@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { CheckCircle2, Circle, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
 import {
   listRoutineItems,
@@ -278,6 +278,15 @@ export default function TodayPage() {
     void persist();
   };
 
+  const markDone = (id: string) => {
+    setItems((prev) => {
+      const next = prev.map((i) => (i.id === id ? { ...i, done: true } : i));
+      itemsRef.current = next;
+      return next;
+    });
+    void persist();
+  };
+
   const markAllCoreDone = () => {
     setItems((prev) => {
       const next = prev.map((i) => (i.isNonNegotiable ? { ...i, done: true } : i));
@@ -396,42 +405,29 @@ export default function TodayPage() {
               key={item.id}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
             >
-              <button
-                onClick={() => toggleItem(item.id)}
-                type="button"
-                className="group w-full text-left"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {item.done ? (
-                      <CheckCircle2 size={18} className="text-emerald-400" />
-                    ) : (
-                      <Circle size={18} className="text-neutral-500" />
-                    )}
-                    <span className="text-base">{item.emoji ?? ""}</span>
-                    <span className={item.done ? "text-neutral-300 line-through" : ""}>
-                      {item.label}
-                    </span>
-                    <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
-                      CORE
-                    </span>
-                  </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-base">{item.emoji ?? ""}</span>
+                  <span className={item.done ? "text-neutral-300 line-through" : ""}>
+                    {item.label}
+                  </span>
+                  <span className="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
+                    CORE
+                  </span>
                 </div>
-              </button>
+              </div>
 
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
-                  onClick={() => {
-                    void setSnooze(item.id, Date.now() + 2 * 60 * 60 * 1000);
-                  }}
+                  className="rounded-xl bg-white px-3 py-3 text-sm font-semibold text-black"
+                  onClick={() => markDone(item.id)}
                 >
-                  Snooze 2h
+                  Completed
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
                   onClick={() => {
                     // "Skip" means: hide this item for today.
                     void setSnooze(item.id, Date.now() + 24 * 60 * 60 * 1000);
