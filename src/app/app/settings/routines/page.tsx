@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import Link from "next/link";
 import {
   createRoutineItem,
   listRoutineItems,
@@ -24,24 +25,25 @@ import {
 } from "@/lib/supabaseData";
 import type { RoutineItemRow } from "@/lib/types";
 
+function isIos() {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+}
+
 function SortRow({
   item,
   index,
   total,
   onToggleNon,
-  onUpdate,
   onArchive,
   onMove,
-  onBlurSave,
 }: {
   item: RoutineItemRow;
   index: number;
   total: number;
   onToggleNon: (item: RoutineItemRow) => void;
-  onUpdate: (item: RoutineItemRow, patch: Partial<RoutineItemRow>) => void;
   onArchive: (item: RoutineItemRow) => void;
   onMove: (from: number, to: number) => void;
-  onBlurSave: (id: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -90,20 +92,16 @@ function SortRow({
           </button>
         </div>
 
-        <input
-          className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-neutral-500"
-          value={item.label.toLowerCase() === "sex" ? "❤️" : item.label}
-          onChange={(e) => onUpdate(item, { label: e.target.value })}
-          onBlur={() => onBlurSave(item.id)}
-        />
+        <Link
+          href={`/app/settings/routines/${item.id}`}
+          className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white hover:bg-white/5"
+        >
+          {(item.label.toLowerCase() === "sex" ? "❤️" : item.label) || "(untitled)"}
+        </Link>
 
-        <input
-          className="w-20 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-neutral-500"
-          value={item.emoji ?? ""}
-          onChange={(e) => onUpdate(item, { emoji: e.target.value })}
-          onBlur={() => onBlurSave(item.id)}
-          placeholder="😀"
-        />
+        <div className="w-20 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-center text-sm text-white">
+          {item.emoji ?? ""}
+        </div>
 
         <button
           type="button"
@@ -132,6 +130,7 @@ function SortRow({
 }
 
 export default function RoutinesSettingsPage() {
+  const dragEnabled = !isIos();
   const [items, setItems] = useState<RoutineItemRow[]>([]);
   const [status, setStatus] = useState<string>("");
 
@@ -176,27 +175,6 @@ export default function RoutinesSettingsPage() {
     await updateRoutineItem(id, patch);
   };
 
-  const onUpdate = (item: RoutineItemRow, patch: Partial<RoutineItemRow>) => {
-    // local optimistic
-    setItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, ...patch } : p)));
-  };
-
-  const onFieldBlurSave = async (itemId: string) => {
-    const item = items.find((i) => i.id === itemId);
-    if (!item) return;
-    setStatus("Saving...");
-    try {
-      await persistPatch(item.id, {
-        label: item.label,
-        emoji: item.emoji,
-      });
-      setStatus("Saved.");
-      setTimeout(() => setStatus(""), 800);
-    } catch (e: any) {
-      setStatus(`Save failed: ${e?.message ?? String(e)}`);
-    }
-  };
-
   const onToggleNon = async (item: RoutineItemRow) => {
     setStatus("Saving...");
     const next = !item.is_non_negotiable;
@@ -204,7 +182,10 @@ export default function RoutinesSettingsPage() {
       prev.map((p) => (p.id === item.id ? { ...p, is_non_negotiable: next } : p))
     );
     try {
-      await persistPatch(item.id, { is_non_negotiable: next });
+      // Default: if you mark a habit CORE, it should run every day unless you explicitly set a schedule.
+      // In our app, days_of_week = null means "every day".
+      const daysPatch = next && Array.isArray(item.days_of_week) && item.days_of_week.length === 0 ? null : undefined;
+      await persistPatch(item.id, { is_non_negotiable: next, ...(daysPatch !== undefined ? { days_of_week: daysPatch } : {}) });
       setStatus("Saved.");
       setTimeout(() => setStatus(""), 1000);
     } catch (e: any) {
@@ -315,30 +296,50 @@ export default function RoutinesSettingsPage() {
         <p className="mt-2 text-xs text-neutral-500">Emoji is paste-only for now.</p>
       </section>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2">
-            {filteredItems.length === 0 ? (
-              <p className="text-sm text-neutral-400">No matches.</p>
-            ) : (
-              filteredItems.map((i, idx) => (
-                <div key={i.id}>
-                  <SortRow
-                    item={i}
-                    index={idx}
-                    total={filteredItems.length}
-                    onToggleNon={onToggleNon}
-                    onUpdate={onUpdate}
-                    onArchive={onArchive}
-                    onMove={onMove}
-                    onBlurSave={onFieldBlurSave}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {dragEnabled ? (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2">
+              {filteredItems.length === 0 ? (
+                <p className="text-sm text-neutral-400">No matches.</p>
+              ) : (
+                filteredItems.map((i, idx) => (
+                  <div key={i.id}>
+                    <SortRow
+                      item={i}
+                      index={idx}
+                      total={filteredItems.length}
+                      onToggleNon={onToggleNon}
+                      onArchive={onArchive}
+                      onMove={onMove}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-neutral-500">Reorder: use the up/down arrows (drag is disabled on iPhone for stability).</p>
+          {filteredItems.length === 0 ? (
+            <p className="text-sm text-neutral-400">No matches.</p>
+          ) : (
+            filteredItems.map((i, idx) => (
+              <div key={i.id}>
+                <SortRow
+                  item={i}
+                  index={idx}
+                  total={filteredItems.length}
+                  onToggleNon={onToggleNon}
+                  onArchive={onArchive}
+                  onMove={onMove}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

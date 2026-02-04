@@ -62,6 +62,18 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   return data ?? [];
 }
 
+export async function getRoutineItem(id: string): Promise<RoutineItemRow | null> {
+  const { data, error } = await supabase
+    .from("routine_items")
+    .select(
+      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
+    )
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as RoutineItemRow | null) ?? null;
+}
+
 export async function updateRoutineItem(
   id: string,
   patch: Partial<
