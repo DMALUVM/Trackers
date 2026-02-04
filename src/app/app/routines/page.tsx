@@ -141,16 +141,16 @@ export default function RoutinesPage() {
         const { log, checks } = await loadDayState(dateKey);
         const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
 
-        const ui: UiItem[] = routineItems
-          .filter((ri) => shouldShow(ri, today))
-          .map((ri) => ({
-            id: ri.id,
-            label: ri.label.toLowerCase() === "sex" ? "❤️" : ri.label,
-            emoji: ri.emoji ?? undefined,
-            section: ri.section,
-            isNonNegotiable: ri.is_non_negotiable,
-            done: checkMap.get(ri.id) ?? false,
-          }));
+        // IMPORTANT: On the Home/Routines dashboard, always show Core routines even if
+        // they aren't scheduled for today (days-of-week). Otherwise the screen can look empty/confusing.
+        const ui: UiItem[] = routineItems.map((ri) => ({
+          id: ri.id,
+          label: ri.label.toLowerCase() === "sex" ? "❤️" : ri.label,
+          emoji: ri.emoji ?? undefined,
+          section: ri.section,
+          isNonNegotiable: ri.is_non_negotiable,
+          done: checkMap.get(ri.id) ?? false,
+        }));
 
         setItems(ui);
         itemsRef.current = ui;
