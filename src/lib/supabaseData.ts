@@ -50,11 +50,22 @@ export async function setEnabledModules(enabled: string[]) {
 }
 
 export async function listRoutineItems(): Promise<RoutineItemRow[]> {
+  // IMPORTANT: On iOS PWAs, auth session hydration can lag slightly after app load.
+  // If we query before the session is ready, RLS will return an empty set (no error),
+  // which can incorrectly trigger onboarding redirects.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const userId = session?.user?.id;
+  if (!userId) return [];
+
   const { data, error } = await supabase
     .from("routine_items")
     .select(
       "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
     )
+    .eq("user_id", userId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });

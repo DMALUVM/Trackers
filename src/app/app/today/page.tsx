@@ -14,6 +14,7 @@ import {
   upsertDailyLog,
   upsertDaySnooze,
 } from "@/lib/supabaseData";
+import { supabase } from "@/lib/supabaseClient";
 import { computeDayColor, isWorkoutLabel, type DayColor } from "@/lib/progress";
 import { tzIsoDow } from "@/lib/time";
 
@@ -58,9 +59,22 @@ export default function TodayPage() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const run = async () => {
+      if (cancelled) return;
       setLoading(true);
       try {
+        // If auth session isn't hydrated yet (common on iOS PWA), don't treat RLS empty
+        // results as "no routines".
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          setStatus("Signing in…");
+          return;
+        }
+
         const routineItems = await listRoutineItems();
         if (routineItems.length === 0) {
           router.replace("/app/onboarding");
@@ -113,6 +127,25 @@ export default function TodayPage() {
     };
 
     void run();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      // iOS PWA often hydrates the session slightly after first paint.
+      void run();
+    });
+
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [dateKey, router, today]);
 
   const nextActions = useMemo(() => {
