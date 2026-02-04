@@ -1,34 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  DndContext,
-  PointerSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import Link from "next/link";
-import {
-  createRoutineItem,
-  listRoutineItems,
-  updateRoutineItem,
-} from "@/lib/supabaseData";
+import { supabase } from "@/lib/supabaseClient";
+import { createRoutineItem, listRoutineItems, updateRoutineItem } from "@/lib/supabaseData";
 import type { RoutineItemRow } from "@/lib/types";
 
-function isIos() {
-  if (typeof navigator === "undefined") return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
-}
+// Drag-and-drop has been glitchy on iOS; we intentionally prefer arrow-based reordering.
 
 function SortRow({
   item,
@@ -130,7 +111,7 @@ function SortRow({
 }
 
 export default function RoutinesSettingsPage() {
-  const dragEnabled = !isIos();
+  const dragEnabled = false;
   const [items, setItems] = useState<RoutineItemRow[]>([]);
   const [status, setStatus] = useState<string>("");
 
@@ -139,10 +120,7 @@ export default function RoutinesSettingsPage() {
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
-  );
+  // Drag sensors removed (arrow-based ordering only)
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -168,7 +146,25 @@ export default function RoutinesSettingsPage() {
   };
 
   useEffect(() => {
-    void refresh();
+    let cancelled = false;
+
+    const run = async () => {
+      await refresh();
+    };
+
+    void run();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, _session) => {
+      // iOS PWA can hydrate auth slightly after first paint; refresh when it becomes available.
+      if (!cancelled) void refresh();
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const persistPatch = async (id: string, patch: Partial<RoutineItemRow>) => {
@@ -233,16 +229,7 @@ export default function RoutinesSettingsPage() {
     }
   };
 
-  const onDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = items.findIndex((i) => i.id === active.id);
-    const newIndex = items.findIndex((i) => i.id === over.id);
-    const next = arrayMove(items, oldIndex, newIndex);
-    setItems(next);
-    await persistOrder(next);
-  };
+  // Drag-and-drop disabled (arrow-based ordering only)
 
   const onMove = async (from: number, to: number) => {
     if (to < 0 || to >= items.length) return;
@@ -296,50 +283,27 @@ export default function RoutinesSettingsPage() {
         <p className="mt-2 text-xs text-neutral-500">Emoji is paste-only for now.</p>
       </section>
 
-      {dragEnabled ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
-              {filteredItems.length === 0 ? (
-                <p className="text-sm text-neutral-400">No matches.</p>
-              ) : (
-                filteredItems.map((i, idx) => (
-                  <div key={i.id}>
-                    <SortRow
-                      item={i}
-                      index={idx}
-                      total={filteredItems.length}
-                      onToggleNon={onToggleNon}
-                      onArchive={onArchive}
-                      onMove={onMove}
-                    />
-                  </div>
-                ))
-              )}
+      <div className="space-y-2">
+        <p className="text-xs text-neutral-500">
+          Reorder: use the up/down arrows (drag-and-drop is disabled for stability).
+        </p>
+        {filteredItems.length === 0 ? (
+          <p className="text-sm text-neutral-400">No matches.</p>
+        ) : (
+          filteredItems.map((i, idx) => (
+            <div key={i.id}>
+              <SortRow
+                item={i}
+                index={idx}
+                total={filteredItems.length}
+                onToggleNon={onToggleNon}
+                onArchive={onArchive}
+                onMove={onMove}
+              />
             </div>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-neutral-500">Reorder: use the up/down arrows (drag is disabled on iPhone for stability).</p>
-          {filteredItems.length === 0 ? (
-            <p className="text-sm text-neutral-400">No matches.</p>
-          ) : (
-            filteredItems.map((i, idx) => (
-              <div key={i.id}>
-                <SortRow
-                  item={i}
-                  index={idx}
-                  total={filteredItems.length}
-                  onToggleNon={onToggleNon}
-                  onArchive={onArchive}
-                  onMove={onMove}
-                />
-              </div>
-            ))
-          )}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }
