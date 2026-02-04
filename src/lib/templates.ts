@@ -61,7 +61,7 @@ export const templatePacks: TemplatePack[] = [
       { id: "sleep", label: "Sleep by target time", emoji: "😴", section: "night" },
     ],
     addons: [
-      { id: "supplements", label: "Supplements / protocol", emoji: "💊", section: "anytime" },
+      { id: "protocol", label: "Medication / protocol", emoji: "💊", section: "anytime" },
       { id: "creatine", label: "Creatine", emoji: "🧃", section: "anytime" },
       { id: "collagen", label: "Collagen", emoji: "🦴", section: "anytime" },
       { id: "journal", label: "Journal", emoji: "📓", section: "morning" },
