@@ -21,6 +21,7 @@ import {
   upsertDailyChecks,
   upsertDailyLog,
 } from "@/lib/supabaseData";
+import { supabase } from "@/lib/supabaseClient";
 import { tzIsoDow } from "@/lib/time";
 import { computeDayColor, isWorkoutLabel, weekBounds, type DayColor } from "@/lib/progress";
 
@@ -120,7 +121,10 @@ export default function RoutinesPage() {
     window.addEventListener("pagehide", onPageHide);
     document.addEventListener("visibilitychange", onPageHide);
 
+    let cancelled = false;
+
     const run = async () => {
+      if (cancelled) return;
       setLoading(true);
       try {
         // Prefetch Progress route for faster navigation (especially on mobile/PWA)
@@ -269,9 +273,25 @@ export default function RoutinesPage() {
 
     void run();
 
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void run();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event) => {
+      // If auth state changes (common on iOS PWA), re-pull routines and day state.
+      void run();
+    });
+
     return () => {
+      cancelled = true;
       window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onPageHide);
+      document.removeEventListener("visibilitychange", onVisible);
+      subscription.unsubscribe();
       // Flush any pending save on unmount.
       flushAutosave();
     };
