@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
-import { createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
+import { listRoutineItems } from "@/lib/supabaseData";
 
 export default function TemplatePickerPage() {
   const router = useRouter();
@@ -27,20 +27,12 @@ export default function TemplatePickerPage() {
       const pack = templatePacks.find((p) => p.id === id);
       if (!pack) throw new Error("Template not found");
 
-      await createRoutineItemsBulk({
-        items: pack.routines.map((r, idx) => ({
-          label: r.label,
-          emoji: r.emoji ?? null,
-          section: r.section ?? "anytime",
-          isNonNegotiable: r.isNonNegotiable ?? false,
-          daysOfWeek: r.daysOfWeek ?? null,
-          sortOrder: idx,
-        })),
-      });
+      // store selection, then move into CORE selection
+      localStorage.setItem("routines365:onboarding:templateId", id);
+      const defaultCore = pack.routines.filter((r) => r.defaultCore).map((r) => r.id);
+      localStorage.setItem("routines365:onboarding:coreIds", JSON.stringify(defaultCore));
 
-      localStorage.removeItem("routines365:gettingStarted:dismissed");
-      // 30-second start: send users straight into Today.
-      router.replace("/app/today");
+      router.push("/app/onboarding/core");
     } catch (e: any) {
       setError(e?.message ?? String(e));
     } finally {
