@@ -217,22 +217,26 @@ export default function TodayPage() {
     const didRowing = items.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
     const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
 
-    const missing = items.filter((i) => {
-      if (!i.isNonNegotiable) return false;
+    const core = items.filter((i) => i.isNonNegotiable);
+    const optional = items.filter((i) => !i.isNonNegotiable);
+
+    const missingCore = core.filter((i) => {
       if (snoozedUntil[i.id] && snoozedUntil[i.id] > now) return false;
       if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
       return !i.done;
     });
 
-    const coreTotal = items.filter((i) => i.isNonNegotiable).length;
-    const coreDone = items.filter((i) => i.isNonNegotiable && i.done).length;
+    const coreTotal = core.length;
+    const coreDone = core.filter((i) => i.done).length;
     const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
     return {
-      missing,
+      core,
+      optional,
+      missingCore,
       didRowing,
       didWeights,
-      workoutMissing: missing.some((m) => isWorkoutLabel(m.label)),
+      workoutMissing: missingCore.some((m) => isWorkoutLabel(m.label)),
       coreTotal,
       coreDone,
       score,
@@ -296,6 +300,14 @@ export default function TodayPage() {
     void persist();
   };
 
+  const skipAllOptionalToday = () => {
+    const until = Date.now() + 24 * 60 * 60 * 1000;
+    for (const it of itemsRef.current) {
+      if (it.isNonNegotiable) continue;
+      void setSnooze(it.id, until);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -350,9 +362,9 @@ export default function TodayPage() {
             Core: {nextActions.coreDone}/{nextActions.coreTotal}
           </p>
         </div>
-        {nextActions.missing.length > 0 ? (
+        {nextActions.missingCore.length > 0 ? (
           <p className="mt-2 text-sm text-neutral-300">
-            Do <b>{Math.min(1, nextActions.missing.length)}</b> more Core habit to improve your score.
+            Do <b>{Math.min(1, nextActions.missingCore.length)}</b> more Core habit to improve your score.
           </p>
         ) : (
           <p className="mt-2 text-sm text-neutral-300">All Core habits done. Keep it simple.</p>
@@ -366,9 +378,9 @@ export default function TodayPage() {
             <p className="mt-1 text-sm text-neutral-400">
               {items.length === 0
                 ? "No items scheduled for today."
-                : nextActions.missing.length === 0
+                : nextActions.missingCore.length === 0
                   ? "All Core habits done."
-                  : `Do ${Math.min(3, nextActions.missing.length)} thing${Math.min(3, nextActions.missing.length) === 1 ? "" : "s"} to get back on track.`}
+                  : `Do ${Math.min(3, nextActions.missingCore.length)} thing${Math.min(3, nextActions.missingCore.length) === 1 ? "" : "s"} to get back on track.`}
             </p>
             {items.length === 0 ? (
               <p className="mt-1 text-xs text-neutral-500">
@@ -381,13 +393,24 @@ export default function TodayPage() {
             ) : null}
           </div>
           {items.length > 0 ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
-              onClick={markAllCoreDone}
-            >
-              <Zap size={14} /> Mark Core done
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
+                onClick={markAllCoreDone}
+              >
+                <Zap size={14} /> Complete all CORE
+              </button>
+              {nextActions.optional.length > 0 ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                  onClick={skipAllOptionalToday}
+                >
+                  Skip all optional today
+                </button>
+              ) : null}
+            </div>
           ) : (
             <button
               type="button"
@@ -400,7 +423,7 @@ export default function TodayPage() {
         </div>
 
         <div className="mt-4 space-y-2">
-          {nextActions.missing.slice(0, 5).map((item) => (
+          {nextActions.missingCore.slice(0, 5).map((item) => (
             <div
               key={item.id}
               className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
