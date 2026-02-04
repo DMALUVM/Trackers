@@ -89,8 +89,16 @@ export default function TodayPage() {
             done: checkMap.get(ri.id) ?? false,
           }));
 
-        setItems(ui);
-        itemsRef.current = ui;
+        // If the user has routines but none are scheduled for today, don't show a confusing blank screen.
+        if (ui.length === 0) {
+          setItems([]);
+          itemsRef.current = [];
+          setStatus("No routines scheduled for today. Edit your days-of-week.");
+        } else {
+          setItems(ui);
+          itemsRef.current = ui;
+          setStatus("");
+        }
 
         const tColor = computeDayColor({
           dateKey,
@@ -237,23 +245,38 @@ export default function TodayPage() {
           <div>
             <p className="text-xs font-semibold text-neutral-200">Next actions</p>
             <p className="mt-1 text-sm text-neutral-400">
-              {nextActions.missing.length === 0
-                ? "All Core habits done."
-                : `Do ${Math.min(3, nextActions.missing.length)} thing${Math.min(3, nextActions.missing.length) === 1 ? "" : "s"} to get back on track.`}
+              {items.length === 0
+                ? "No items scheduled for today."
+                : nextActions.missing.length === 0
+                  ? "All Core habits done."
+                  : `Do ${Math.min(3, nextActions.missing.length)} thing${Math.min(3, nextActions.missing.length) === 1 ? "" : "s"} to get back on track.`}
             </p>
-            {nextActions.workoutMissing ? (
+            {items.length === 0 ? (
+              <p className="mt-1 text-xs text-neutral-500">
+                Tip: open the full list and assign days-of-week to at least one item.
+              </p>
+            ) : nextActions.workoutMissing ? (
               <p className="mt-1 text-xs text-neutral-500">
                 Workout counts if you row or lift (or check Workout).
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
-            onClick={markAllCoreDone}
-          >
-            <Zap size={14} /> Mark Core done
-          </button>
+          {items.length > 0 ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
+              onClick={markAllCoreDone}
+            >
+              <Zap size={14} /> Mark Core done
+            </button>
+          ) : (
+            <Link
+              href="/app/routines"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
+            >
+              Edit routines
+            </Link>
+          )}
         </div>
 
         <div className="mt-4 space-y-2">
