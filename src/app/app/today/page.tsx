@@ -215,10 +215,10 @@ export default function TodayPage() {
           <h1 className="text-xl font-semibold tracking-tight">Today</h1>
           <button
             type="button"
-            onClick={() => router.push("/app/routines")}
+            onClick={() => router.push("/app/settings/routines")}
             className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs text-neutral-200 hover:bg-white/15"
           >
-            Full list
+            Edit routines
           </button>
         </div>
         <p className="text-sm text-neutral-400">{headline}</p>
@@ -274,7 +274,7 @@ export default function TodayPage() {
             <button
               type="button"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
-              onClick={() => router.push("/app/routines")}
+              onClick={() => router.push("/app/settings/routines")}
             >
               Edit routines
             </button>
