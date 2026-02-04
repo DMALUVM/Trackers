@@ -130,9 +130,19 @@ export default function RoutinesPage() {
         // Prefetch Progress route for faster navigation (especially on mobile/PWA)
         router.prefetch("/app/routines/progress");
 
+        // If auth session isn't hydrated yet (common on iOS PWA), avoid treating the
+        // temporary empty RLS result as "no routines".
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          setStatus("Signing in…");
+          return;
+        }
+
         const routineItems = await listRoutineItems();
 
-        // Onboarding gate: new users should not inherit Dave's routines.
+        // Onboarding gate: only redirect if the user is actually signed in.
         if (routineItems.length === 0) {
           router.replace("/app/onboarding");
           return;
