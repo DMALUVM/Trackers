@@ -92,7 +92,7 @@ export default function TodayPage() {
         setSnoozedUntil(snoozeMap);
 
         const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
-        const ui: UiItem[] = routineItems
+        const uiScheduled: UiItem[] = routineItems
           .filter((ri) => shouldShow(ri, today))
           .map((ri) => ({
             id: ri.id,
@@ -103,7 +103,20 @@ export default function TodayPage() {
             done: checkMap.get(ri.id) ?? false,
           }));
 
-        // If the user has routines but none are scheduled for today, don't show a confusing blank screen.
+        // If nothing is scheduled for today, fall back to showing CORE routines so the app stays usable.
+        const uiCoreFallback: UiItem[] = routineItems
+          .filter((ri) => ri.is_non_negotiable)
+          .map((ri) => ({
+            id: ri.id,
+            label: ri.label.toLowerCase() === "sex" ? "❤️" : ri.label,
+            emoji: ri.emoji ?? undefined,
+            section: ri.section,
+            isNonNegotiable: ri.is_non_negotiable,
+            done: checkMap.get(ri.id) ?? false,
+          }));
+
+        const ui = uiScheduled.length > 0 ? uiScheduled : uiCoreFallback;
+
         if (ui.length === 0) {
           setItems([]);
           itemsRef.current = [];
@@ -111,7 +124,7 @@ export default function TodayPage() {
         } else {
           setItems(ui);
           itemsRef.current = ui;
-          setStatus("");
+          setStatus(uiScheduled.length > 0 ? "" : "Nothing was scheduled for today. Showing your CORE routines.");
         }
 
         const tColor = computeDayColor({
