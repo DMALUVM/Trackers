@@ -33,7 +33,7 @@ export default function OnboardingPage() {
     <div className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Welcome</h1>
-        <p className="text-sm text-neutral-400">Pick a template and start today.</p>
+        <p className="text-sm text-neutral-400">Get to your first win in under 60 seconds.</p>
       </header>
 
       <section className="space-y-3">
@@ -45,10 +45,8 @@ export default function OnboardingPage() {
             router.push("/app/onboarding/templates");
           }}
         >
-          <p className="text-base font-semibold">Choose a template</p>
-          <p className="mt-1 text-sm text-black/70">
-            Start fast. Customize later.
-          </p>
+          <p className="text-base font-semibold">Start with a template</p>
+          <p className="mt-1 text-sm text-black/70">Quick start or customize. Either way, you land in Today.</p>
         </button>
 
         <button
@@ -60,23 +58,12 @@ export default function OnboardingPage() {
           }}
         >
           <p className="text-base font-semibold">Start blank</p>
-          <p className="mt-1 text-sm text-neutral-400">
-            Build your own routine from scratch.
-          </p>
-        </button>
-
-        <button
-          type="button"
-          className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10"
-          onClick={() => router.push("/app/settings/modules")}
-        >
-          <p className="text-base font-semibold">Choose tabs (optional)</p>
-          <p className="mt-1 text-sm text-neutral-400">Show/hide Progress, Settings, etc.</p>
+          <p className="mt-1 text-sm text-neutral-400">Build your own routine from scratch.</p>
         </button>
       </section>
 
       <p className="text-xs text-neutral-500">
-        Goal: your first “win” in under 60 seconds.
+        Tip: You can change CORE habits and ordering anytime in Routine settings.
       </p>
     </div>
   );
