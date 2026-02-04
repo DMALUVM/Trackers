@@ -75,9 +75,18 @@ export default function TodayPage() {
           return;
         }
 
-        const routineItems = await listRoutineItems();
+        // iOS PWA can intermittently return an empty RLS result set for a moment even after
+        // a session exists. Retry briefly before concluding the user has no routines.
+        let routineItems = await listRoutineItems();
         if (routineItems.length === 0) {
-          router.replace("/app/onboarding");
+          for (const waitMs of [150, 300, 600, 900]) {
+            await new Promise((r) => setTimeout(r, waitMs));
+            routineItems = await listRoutineItems();
+            if (routineItems.length > 0) break;
+          }
+        }
+        if (routineItems.length === 0) {
+          setStatus("Still signing in… If this persists, tap Edit routines, then come back.");
           return;
         }
 
