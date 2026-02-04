@@ -66,6 +66,7 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
           [data-theme='light'] .bg-black\/40 { background-color: rgba(255,255,255,0.72) !important; }
           [data-theme='light'] .bg-black\/20 { background-color: rgba(255,255,255,0.72) !important; }
           [data-theme='light'] .bg-neutral-950 { background-color: #ffffff !important; }
+          [data-theme='light'] .bg-neutral-950\/95 { background-color: rgba(255,255,255,0.96) !important; }
 
           [data-theme='light'] .bg-white\/5 { background-color: rgba(15,23,42,0.04) !important; }
           [data-theme='light'] .bg-white\/10 { background-color: rgba(15,23,42,0.08) !important; }
