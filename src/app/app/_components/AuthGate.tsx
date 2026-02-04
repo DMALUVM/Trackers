@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { persistSessionToCookies, readSessionFromCookies } from "@/lib/sessionCookie";
 
 /**
  * Ensures the /app routes never render in a "half-auth" state.
@@ -43,6 +44,25 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           }
         }
 
+        // Fallback: restore from cookies if local storage was cleared (common on iOS PWA).
+        if (!data.session) {
+          const cookie = readSessionFromCookies();
+          if (cookie) {
+            try {
+              await supabase.auth.setSession({
+                access_token: cookie.access_token,
+                refresh_token: cookie.refresh_token,
+              });
+              data = (await supabase.auth.getSession()).data;
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        // Keep cookies in sync when we do have a session.
+        persistSessionToCookies(data.session);
+
         if (cancelled) return;
         setHasSession(!!data.session);
       } finally {
@@ -69,6 +89,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
+      // Mirror into cookies so iOS PWAs can restore if local storage is wiped.
+      persistSessionToCookies(session);
       setHasSession(!!session);
       setReady(true);
     });
