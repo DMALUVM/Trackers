@@ -7,6 +7,8 @@ import { supabase } from "@/lib/supabaseClient";
 export default function Home() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"password" | "magic">("password");
   const [status, setStatus] = useState<string>("");
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -43,12 +45,14 @@ export default function Home() {
     }
   }, [signedInEmail, router]);
 
-  const signInWithEmail = async () => {
+  const getSiteUrl = () =>
+    (process.env.NEXT_PUBLIC_SITE_URL &&
+      process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")) ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+
+  const signInWithMagicLink = async () => {
     setStatus("Sending magic link...");
-    const siteUrl =
-      (process.env.NEXT_PUBLIC_SITE_URL &&
-        process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")) ||
-      (typeof window !== "undefined" ? window.location.origin : "");
+    const siteUrl = getSiteUrl();
 
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -63,6 +67,51 @@ export default function Home() {
       return;
     }
     setStatus("Check your email for the sign-in link.");
+  };
+
+  const signInWithPassword = async () => {
+    setStatus("Signing in...");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setStatus(`Error: ${error.message}`);
+      return;
+    }
+    setStatus("");
+  };
+
+  const createAccountWithPassword = async () => {
+    setStatus("Creating account...");
+    const siteUrl = getSiteUrl();
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: siteUrl ? `${siteUrl}/` : undefined,
+      },
+    });
+    if (error) {
+      setStatus(`Error: ${error.message}`);
+      return;
+    }
+    setStatus(
+      "Account created. If email confirmation is required, check your inbox. Otherwise you should be signed in."
+    );
+  };
+
+  const resetPassword = async () => {
+    setStatus("Sending password reset email...");
+    const siteUrl = getSiteUrl();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: siteUrl ? `${siteUrl}/reset` : undefined,
+    });
+    if (error) {
+      setStatus(`Error: ${error.message}`);
+      return;
+    }
+    setStatus("Check your email for the password reset link.");
   };
 
   const signOut = async () => {
@@ -142,10 +191,37 @@ export default function Home() {
             </section>
           ) : (
             <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <h2 className="text-base font-semibold">Sign in / Sign up</h2>
+              <h2 className="text-base font-semibold">Sign in</h2>
               <p className="mt-1 text-sm text-neutral-400">
-                Enter your email. We’ll send a magic link. After that, you stay signed in.
+                Password is the default. Magic link is still available.
               </p>
+
+              <div className="mt-4 flex rounded-xl border border-white/10 bg-black/20 p-1">
+                <button
+                  type="button"
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
+                    mode === "password" ? "bg-white text-black" : "text-white/80 hover:bg-white/5"
+                  }`}
+                  onClick={() => {
+                    setMode("password");
+                    setStatus("");
+                  }}
+                >
+                  Password
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
+                    mode === "magic" ? "bg-white text-black" : "text-white/80 hover:bg-white/5"
+                  }`}
+                  onClick={() => {
+                    setMode("magic");
+                    setStatus("");
+                  }}
+                >
+                  Magic link
+                </button>
+              </div>
 
               <label className="mt-4 block text-xs font-medium text-neutral-300">Email</label>
               <input
@@ -158,13 +234,56 @@ export default function Home() {
                 inputMode="email"
               />
 
-              <button
-                className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
-                onClick={signInWithEmail}
-                disabled={!email}
-              >
-                Send magic link
-              </button>
+              {mode === "password" ? (
+                <>
+                  <label className="mt-4 block text-xs font-medium text-neutral-300">Password</label>
+                  <input
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-base text-white placeholder:text-neutral-500"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                  />
+
+                  <button
+                    className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
+                    onClick={signInWithPassword}
+                    disabled={!email || !password}
+                  >
+                    Sign in
+                  </button>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+                      onClick={createAccountWithPassword}
+                      disabled={!email || !password}
+                    >
+                      Create account
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-50"
+                      onClick={resetPassword}
+                      disabled={!email}
+                    >
+                      Reset password
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="mt-4 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
+                    onClick={signInWithMagicLink}
+                    disabled={!email}
+                  >
+                    Send magic link
+                  </button>
+                </>
+              )}
 
               {status ? <p className="mt-3 text-xs text-neutral-400">{status}</p> : null}
             </section>
