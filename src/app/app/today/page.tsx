@@ -49,6 +49,10 @@ export default function TodayPage() {
   const [status, setStatus] = useState<string>("");
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
 
+  // Trust indicators
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+
   // Debug counters for diagnosing iOS/PWA phantom-empty issues.
   const [dbgEmail, setDbgEmail] = useState<string>("");
   const [dbgAttempts, setDbgAttempts] = useState<number>(0);
@@ -245,6 +249,7 @@ export default function TodayPage() {
 
   const persist = async (opts?: { dayMode?: DayMode }) => {
     setStatus("Saving…");
+    setSaveState("saving");
     try {
       const cur = itemsRef.current;
       const nextMode = opts?.dayMode ?? dayMode;
@@ -267,9 +272,15 @@ export default function TodayPage() {
       });
 
       setStatus("Saved.");
-      setTimeout(() => setStatus(""), 1000);
+      setSaveState("saved");
+      setLastSavedAt(Date.now());
+      setTimeout(() => {
+        setStatus("");
+        setSaveState("idle");
+      }, 1200);
     } catch (e: any) {
       setStatus(`Save failed: ${e?.message ?? String(e)}`);
+      setSaveState("error");
     }
   };
 
@@ -339,7 +350,31 @@ export default function TodayPage() {
             Edit routines
           </button>
         </div>
-        <p className="text-sm text-neutral-400">{headline}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-neutral-400">{headline}</p>
+          <p
+            className={
+              "text-xs " +
+              (saveState === "saving"
+                ? "text-neutral-300"
+                : saveState === "saved"
+                  ? "text-emerald-300"
+                  : saveState === "error"
+                    ? "text-rose-300"
+                    : "text-neutral-500")
+            }
+          >
+            {saveState === "saving"
+              ? "Saving…"
+              : saveState === "saved"
+                ? `Saved${lastSavedAt ? ` ${format(new Date(lastSavedAt), "h:mm a")}` : ""}`
+                : saveState === "error"
+                  ? "Save failed"
+                  : lastSavedAt
+                    ? `Last saved ${format(new Date(lastSavedAt), "h:mm a")}`
+                    : ""}
+          </p>
+        </div>
 
         {debug ? (
           <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-[11px] text-neutral-300">
