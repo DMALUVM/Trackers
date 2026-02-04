@@ -4,7 +4,8 @@
 function setCookie(name: string, value: string, maxAgeSec: number) {
   if (typeof document === "undefined") return;
   const safe = encodeURIComponent(value);
-  document.cookie = `${name}=${safe}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax`;
+  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${safe}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax${secure}`;
 }
 
 function getCookie(name: string) {
@@ -18,20 +19,25 @@ function clearCookie(name: string) {
   document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
 }
 
-export function cookieStorage(cookieName: string) {
+export function cookieStorage(prefix: string) {
   const maxAge = 60 * 60 * 24 * 30; // 30 days
+
+  const nameForKey = (key: string) => {
+    // Use a stable prefix so Supabase can store multiple keys.
+    // Keep cookie name reasonably short and safe.
+    const safeKey = key.replace(/[^a-zA-Z0-9_\-:.]/g, "_");
+    return `${prefix}.${safeKey}`;
+  };
+
   return {
     getItem: (key: string) => {
-      void key;
-      return getCookie(cookieName);
+      return getCookie(nameForKey(key));
     },
     setItem: (key: string, value: string) => {
-      void key;
-      setCookie(cookieName, value, maxAge);
+      setCookie(nameForKey(key), value, maxAge);
     },
     removeItem: (key: string) => {
-      void key;
-      clearCookie(cookieName);
+      clearCookie(nameForKey(key));
     },
   };
 }
