@@ -2,7 +2,7 @@
 
 // Link import removed (using router.push for navigation)
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { CheckCircle2, Circle, Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
@@ -36,6 +36,8 @@ function shouldShow(item: RoutineItemRow, today: Date) {
 
 export default function TodayPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const debug = searchParams?.get("debug") === "1";
   const today = useMemo(() => new Date(), []);
   const dateKey = useMemo(() => toDateKey(today), [today]);
 
@@ -46,6 +48,13 @@ export default function TodayPage() {
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("");
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
+
+  // Debug counters for diagnosing iOS/PWA phantom-empty issues.
+  const [dbgEmail, setDbgEmail] = useState<string>("");
+  const [dbgAttempts, setDbgAttempts] = useState<number>(0);
+  const [dbgRoutineCount, setDbgRoutineCount] = useState<number>(-1);
+  const [dbgScheduledCount, setDbgScheduledCount] = useState<number>(-1);
+  const [dbgCoreCount, setDbgCoreCount] = useState<number>(-1);
 
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
 
@@ -70,21 +79,30 @@ export default function TodayPage() {
         const {
           data: { session },
         } = await supabase.auth.getSession();
+        setDbgEmail(session?.user?.email ?? "");
         if (!session) {
           setStatus("Signing in…");
+          setDbgRoutineCount(-1);
           return;
         }
 
         // iOS PWA can intermittently return an empty RLS result set for a moment even after
         // a session exists. Retry briefly before concluding the user has no routines.
+        let attempt = 0;
         let routineItems = await listRoutineItems();
+        attempt += 1;
         if (routineItems.length === 0) {
           for (const waitMs of [150, 300, 600, 900]) {
             await new Promise((r) => setTimeout(r, waitMs));
             routineItems = await listRoutineItems();
+            attempt += 1;
             if (routineItems.length > 0) break;
           }
         }
+        setDbgAttempts(attempt);
+        setDbgRoutineCount(routineItems.length);
+        setDbgCoreCount(routineItems.filter((r) => r.is_non_negotiable).length);
+
         if (routineItems.length === 0) {
           setStatus("Still signing in… If this persists, tap Edit routines, then come back.");
           return;
@@ -123,6 +141,8 @@ export default function TodayPage() {
             isNonNegotiable: ri.is_non_negotiable,
             done: checkMap.get(ri.id) ?? false,
           }));
+
+        setDbgScheduledCount(uiScheduled.length);
 
         const ui = uiScheduled.length > 0 ? uiScheduled : uiCoreFallback;
 
@@ -277,6 +297,18 @@ export default function TodayPage() {
           </button>
         </div>
         <p className="text-sm text-neutral-400">{headline}</p>
+
+        {debug ? (
+          <div className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-[11px] text-neutral-300">
+            <div className="font-semibold text-neutral-200">Debug</div>
+            <div>Email: {dbgEmail || "(none)"}</div>
+            <div>Attempts: {dbgAttempts}</div>
+            <div>Routine count: {dbgRoutineCount}</div>
+            <div>CORE count: {dbgCoreCount}</div>
+            <div>Scheduled today: {dbgScheduledCount}</div>
+            <div>Status: {status || "(none)"}</div>
+          </div>
+        ) : null}
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
