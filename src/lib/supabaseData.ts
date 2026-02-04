@@ -94,6 +94,16 @@ export async function updateRoutineItem(
     .update(patch)
     .eq("id", id);
   if (error) throw error;
+
+  // Notify any screens that cache routine_items (e.g., Home/Routines dashboard)
+  // to refresh after edits.
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export async function createRoutineItem(opts: {
@@ -115,6 +125,14 @@ export async function createRoutineItem(opts: {
     sort_order: opts.sortOrder ?? null,
   });
   if (error) throw error;
+
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export async function createRoutineItemsBulk(opts: {
@@ -140,6 +158,14 @@ export async function createRoutineItemsBulk(opts: {
     }))
   );
   if (error) throw error;
+
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export async function ensureSeedData() {

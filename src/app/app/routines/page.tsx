@@ -279,6 +279,11 @@ export default function RoutinesPage() {
     };
     document.addEventListener("visibilitychange", onVisible);
 
+    const onRoutinesChanged = () => {
+      void run();
+    };
+    window.addEventListener("routines365:routinesChanged", onRoutinesChanged);
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event) => {
@@ -291,6 +296,7 @@ export default function RoutinesPage() {
       window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onPageHide);
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("routines365:routinesChanged", onRoutinesChanged);
       subscription.unsubscribe();
       // Flush any pending save on unmount.
       flushAutosave();
