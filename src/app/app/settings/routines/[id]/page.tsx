@@ -50,6 +50,7 @@ export default function RoutineDetailsPage() {
   const [isCore, setIsCore] = useState(false);
   const [preset, setPreset] = useState<FrequencyPreset>("everyday");
   const [customDays, setCustomDays] = useState<number[]>([]);
+  const [savingQuick, setSavingQuick] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -92,8 +93,55 @@ export default function RoutineDetailsPage() {
     }
   };
 
-  const toggleDay = (d: number) => {
+  const toggleDay = async (d: number) => {
     setCustomDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+    // For custom frequency, require an explicit Save so users can toggle multiple days quickly.
+  };
+
+  const quickSaveCore = async () => {
+    if (!id) return;
+    const next = !isCore;
+    setIsCore(next);
+    setSavingQuick(true);
+    setStatus("Saving…");
+    try {
+      // If user is making something CORE and it was previously set to an empty custom schedule,
+      // default to Every day (days_of_week = null).
+      const daysPatch = next && Array.isArray(item?.days_of_week) && item.days_of_week.length === 0 ? null : undefined;
+      await updateRoutineItem(id, {
+        is_non_negotiable: next,
+        ...(daysPatch !== undefined ? { days_of_week: daysPatch } : {}),
+      });
+      setStatus("Saved.");
+      setTimeout(() => setStatus(""), 800);
+    } catch (e: any) {
+      setStatus(`Save failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setSavingQuick(false);
+    }
+  };
+
+  const quickSavePreset = async (nextPreset: FrequencyPreset) => {
+    if (!id) return;
+    setPreset(nextPreset);
+
+    // For custom, user will select days then press Save.
+    if (nextPreset === "custom") return;
+
+    setSavingQuick(true);
+    setStatus("Saving…");
+    try {
+      const days = presetToDays(nextPreset);
+      await updateRoutineItem(id, {
+        days_of_week: days && Array.isArray(days) && days.length === 0 ? null : days,
+      });
+      setStatus("Saved.");
+      setTimeout(() => setStatus(""), 800);
+    } catch (e: any) {
+      setStatus(`Save failed: ${e?.message ?? String(e)}`);
+    } finally {
+      setSavingQuick(false);
+    }
   };
 
   const onSaveAll = async () => {
@@ -164,11 +212,13 @@ export default function RoutineDetailsPage() {
           </div>
           <button
             type="button"
-            onClick={() => setIsCore((v) => !v)}
+            onClick={() => void quickSaveCore()}
+            disabled={savingQuick}
             className={
-              isCore
+              (isCore
                 ? "rounded-full bg-emerald-500/20 px-3 py-2 text-[12px] font-semibold text-emerald-200"
-                : "rounded-full bg-white/10 px-3 py-2 text-[12px] font-semibold text-neutral-300"
+                : "rounded-full bg-white/10 px-3 py-2 text-[12px] font-semibold text-neutral-300") +
+              (savingQuick ? " opacity-60" : "")
             }
           >
             {isCore ? "CORE" : "Optional"}
@@ -195,7 +245,7 @@ export default function RoutineDetailsPage() {
               <button
                 key={opt.key}
                 type="button"
-                onClick={() => setPreset(opt.key)}
+                onClick={() => void quickSavePreset(opt.key)}
                 className={
                   "rounded-xl px-3 py-3 text-sm font-semibold " +
                   (active
