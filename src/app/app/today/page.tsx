@@ -12,6 +12,7 @@ import {
   toDateKey,
   upsertDailyChecks,
   upsertDailyLog,
+  upsertDaySnooze,
 } from "@/lib/supabaseData";
 import { computeDayColor, isWorkoutLabel, type DayColor } from "@/lib/progress";
 import { tzIsoDow } from "@/lib/time";
@@ -45,6 +46,17 @@ export default function TodayPage() {
   const [status, setStatus] = useState<string>("");
   const [todayColor, setTodayColor] = useState<DayColor>("empty");
 
+  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+
+  const setSnooze = async (routineItemId: string, untilMs: number) => {
+    setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
+    try {
+      await upsertDaySnooze({ dateKey, routineItemId, snoozedUntilMs: untilMs });
+    } catch {
+      // If this fails (offline, auth hiccup), we still keep local UI state.
+    }
+  };
+
   useEffect(() => {
     const run = async () => {
       setLoading(true);
@@ -55,8 +67,15 @@ export default function TodayPage() {
           return;
         }
 
-        const { log, checks } = await loadDayState(dateKey);
+        const { log, checks, snoozes } = await loadDayState(dateKey);
         setDayMode(((log?.day_mode as DayMode) ?? "normal"));
+
+        const snoozeMap: Record<string, number> = {};
+        for (const s of snoozes ?? []) {
+          const ms = Date.parse(s.snoozed_until);
+          if (!Number.isNaN(ms)) snoozeMap[s.routine_item_id] = ms;
+        }
+        setSnoozedUntil(snoozeMap);
 
         const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
         const ui: UiItem[] = routineItems
@@ -87,26 +106,6 @@ export default function TodayPage() {
 
     void run();
   }, [dateKey, router, today]);
-
-  const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(`routines365:snooze:${dateKey}`);
-      setSnoozedUntil(raw ? JSON.parse(raw) : {});
-    } catch {
-      setSnoozedUntil({});
-    }
-  }, [dateKey]);
-
-  const persistSnoozes = (next: Record<string, number>) => {
-    setSnoozedUntil(next);
-    try {
-      localStorage.setItem(`routines365:snooze:${dateKey}`, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
-  };
 
   const nextActions = useMemo(() => {
     const now = Date.now();
@@ -291,9 +290,7 @@ export default function TodayPage() {
                   type="button"
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
                   onClick={() => {
-                    const next = { ...snoozedUntil };
-                    next[item.id] = Date.now() + 2 * 60 * 60 * 1000;
-                    persistSnoozes(next);
+                    void setSnooze(item.id, Date.now() + 2 * 60 * 60 * 1000);
                   }}
                 >
                   Snooze 2h
@@ -303,9 +300,7 @@ export default function TodayPage() {
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
                   onClick={() => {
                     // "Skip" means: hide this item for today.
-                    const next = { ...snoozedUntil };
-                    next[item.id] = Date.now() + 24 * 60 * 60 * 1000;
-                    persistSnoozes(next);
+                    void setSnooze(item.id, Date.now() + 24 * 60 * 60 * 1000);
                   }}
                 >
                   Skip today

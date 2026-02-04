@@ -197,6 +197,31 @@ export async function upsertDailyChecks(opts: {
   if (error) throw error;
 }
 
+export type DaySnoozeRow = {
+  user_id: string;
+  date: string; // yyyy-mm-dd
+  routine_item_id: string;
+  snoozed_until: string; // ISO timestamp
+};
+
+export async function upsertDaySnooze(opts: {
+  dateKey: string;
+  routineItemId: string;
+  snoozedUntilMs: number;
+}) {
+  const userId = await getUserId();
+  const { error } = await supabase.from("day_snoozes").upsert(
+    {
+      user_id: userId,
+      date: opts.dateKey,
+      routine_item_id: opts.routineItemId,
+      snoozed_until: new Date(opts.snoozedUntilMs).toISOString(),
+    },
+    { onConflict: "user_id,date,routine_item_id" }
+  );
+  if (error) throw error;
+}
+
 export async function loadDayState(dateKey: string) {
   const userId = await getUserId();
 
@@ -215,9 +240,17 @@ export async function loadDayState(dateKey: string) {
     .eq("date", dateKey);
   if (checksErr) throw checksErr;
 
+  const { data: snoozes, error: snoozesErr } = await supabase
+    .from("day_snoozes")
+    .select("routine_item_id,snoozed_until")
+    .eq("user_id", userId)
+    .eq("date", dateKey);
+  if (snoozesErr) throw snoozesErr;
+
   return {
     log: (log as DailyLogRow | null) ?? null,
     checks: (checks ?? []) as Array<{ routine_item_id: string; done: boolean }>,
+    snoozes: (snoozes ?? []) as Array<Pick<DaySnoozeRow, "routine_item_id" | "snoozed_until">>,
   };
 }
 
