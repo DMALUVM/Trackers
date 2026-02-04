@@ -108,18 +108,9 @@ export default function TodayPage() {
           return;
         }
 
-        const { log, checks, snoozes } = await loadDayState(dateKey);
-        setDayMode(((log?.day_mode as DayMode) ?? "normal"));
-
-        const snoozeMap: Record<string, number> = {};
-        for (const s of snoozes ?? []) {
-          const ms = Date.parse(s.snoozed_until);
-          if (!Number.isNaN(ms)) snoozeMap[s.routine_item_id] = ms;
-        }
-        setSnoozedUntil(snoozeMap);
-
-        const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
-        const uiScheduled: UiItem[] = routineItems
+        // IMPORTANT: render routines even if day-state fetch fails, otherwise Today can look empty.
+        // Start with a baseline UI (done=false) and then enrich with checks/snoozes if available.
+        const uiBaselineScheduled: UiItem[] = routineItems
           .filter((ri) => shouldShow(ri, today))
           .map((ri) => ({
             id: ri.id,
@@ -127,11 +118,10 @@ export default function TodayPage() {
             emoji: ri.emoji ?? undefined,
             section: ri.section,
             isNonNegotiable: ri.is_non_negotiable,
-            done: checkMap.get(ri.id) ?? false,
+            done: false,
           }));
 
-        // If nothing is scheduled for today, fall back to showing CORE routines so the app stays usable.
-        const uiCoreFallback: UiItem[] = routineItems
+        const uiBaselineCore: UiItem[] = routineItems
           .filter((ri) => ri.is_non_negotiable)
           .map((ri) => ({
             id: ri.id,
@@ -139,30 +129,62 @@ export default function TodayPage() {
             emoji: ri.emoji ?? undefined,
             section: ri.section,
             isNonNegotiable: ri.is_non_negotiable,
+            done: false,
+          }));
+
+        setDbgScheduledCount(uiBaselineScheduled.length);
+
+        const uiBaseline = uiBaselineScheduled.length > 0 ? uiBaselineScheduled : uiBaselineCore;
+        if (uiBaseline.length > 0) {
+          setItems(uiBaseline);
+          itemsRef.current = uiBaseline;
+          setStatus(uiBaselineScheduled.length > 0 ? "" : "Nothing was scheduled for today. Showing your CORE routines.");
+        }
+
+        // Now enrich with day state (checks/snoozes/day mode). If this fails, keep baseline UI.
+        try {
+          const { log, checks, snoozes } = await loadDayState(dateKey);
+          setDayMode(((log?.day_mode as DayMode) ?? "normal"));
+
+          const snoozeMap: Record<string, number> = {};
+          for (const s of snoozes ?? []) {
+            const ms = Date.parse(s.snoozed_until);
+            if (!Number.isNaN(ms)) snoozeMap[s.routine_item_id] = ms;
+          }
+          setSnoozedUntil(snoozeMap);
+
+          const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
+          const uiScheduled: UiItem[] = uiBaselineScheduled.map((ri) => ({
+            ...ri,
+            done: checkMap.get(ri.id) ?? false,
+          }));
+          const uiCoreFallback: UiItem[] = uiBaselineCore.map((ri) => ({
+            ...ri,
             done: checkMap.get(ri.id) ?? false,
           }));
 
-        setDbgScheduledCount(uiScheduled.length);
+          const ui = uiScheduled.length > 0 ? uiScheduled : uiCoreFallback;
+          if (ui.length === 0) {
+            setItems([]);
+            itemsRef.current = [];
+            setStatus("No routines scheduled for today. Edit your days-of-week.");
+          } else {
+            setItems(ui);
+            itemsRef.current = ui;
+            setStatus(uiScheduled.length > 0 ? "" : "Nothing was scheduled for today. Showing your CORE routines.");
+          }
 
-        const ui = uiScheduled.length > 0 ? uiScheduled : uiCoreFallback;
-
-        if (ui.length === 0) {
-          setItems([]);
-          itemsRef.current = [];
-          setStatus("No routines scheduled for today. Edit your days-of-week.");
-        } else {
-          setItems(ui);
-          itemsRef.current = ui;
-          setStatus(uiScheduled.length > 0 ? "" : "Nothing was scheduled for today. Showing your CORE routines.");
+          const tColor = computeDayColor({
+            dateKey,
+            routineItems,
+            checks,
+            log: (log as any) ?? null,
+          });
+          setTodayColor(tColor);
+        } catch (e: any) {
+          // Keep baseline routines visible; just surface a quiet status in debug.
+          if (debug) setStatus(`Day state load failed: ${e?.message ?? String(e)}`);
         }
-
-        const tColor = computeDayColor({
-          dateKey,
-          routineItems,
-          checks,
-          log: (log as any) ?? null,
-        });
-        setTodayColor(tColor);
       } finally {
         setLoading(false);
       }
