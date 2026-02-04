@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
-import { listRoutineItems } from "@/lib/supabaseData";
+import { createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
 
 export default function TemplatePickerPage() {
   const router = useRouter();
@@ -40,6 +40,48 @@ export default function TemplatePickerPage() {
     }
   };
 
+  const quickStart = async (id: string) => {
+    setBusy(id);
+    setError("");
+    try {
+      const pack = templatePacks.find((p) => p.id === id);
+      if (!pack) throw new Error("Template not found");
+
+      const coreIds = pack.routines.filter((r) => r.defaultCore).map((r) => r.id);
+
+      const base = pack.routines.map((r) => ({
+        label: r.label,
+        emoji: r.emoji ?? null,
+        section: r.section ?? "anytime",
+        isNonNegotiable: coreIds.includes(r.id),
+        daysOfWeek: r.daysOfWeek ?? null,
+      }));
+
+      // Keep add-ons minimal by default; user can add more later.
+      const defaultAddons = (pack.addons ?? []).filter((a) => a.defaultOn);
+      const addons = defaultAddons.map((a) => ({
+        label: a.label,
+        emoji: a.emoji ?? null,
+        section: a.section ?? "anytime",
+        isNonNegotiable: false,
+        daysOfWeek: a.daysOfWeek ?? null,
+      }));
+
+      const items = [...base, ...addons];
+      await createRoutineItemsBulk({ items: items.map((it, idx) => ({ ...it, sortOrder: idx })) });
+
+      localStorage.removeItem("routines365:gettingStarted:dismissed");
+      localStorage.removeItem("routines365:onboarding:templateId");
+      localStorage.removeItem("routines365:onboarding:coreIds");
+
+      router.replace("/app/today");
+    } catch (e: any) {
+      setError(e?.message ?? String(e));
+    } finally {
+      setBusy("");
+    }
+  };
+
   return (
     <div className="space-y-5">
       <header className="space-y-1">
@@ -52,21 +94,37 @@ export default function TemplatePickerPage() {
 
       <section className="space-y-3">
         {templatePacks.map((p) => (
-          <button
+          <div
             key={p.id}
-            type="button"
-            disabled={!!busy}
-            onClick={() => applyTemplate(p.id)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left hover:bg-white/10 disabled:opacity-60"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left"
           >
-            <div className="flex items-center justify-between">
-              <p className="text-base font-semibold">{p.title}</p>
-              {busy === p.id ? (
-                <span className="text-xs text-neutral-400">Applying…</span>
-              ) : null}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-base font-semibold">{p.title}</p>
+                <p className="mt-1 text-sm text-neutral-400">{p.desc}</p>
+              </div>
+              {busy === p.id ? <span className="text-xs text-neutral-400">Working…</span> : null}
             </div>
-            <p className="mt-1 text-sm text-neutral-400">{p.desc}</p>
-          </button>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={!!busy}
+                onClick={() => void quickStart(p.id)}
+                className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+              >
+                Quick start
+              </button>
+              <button
+                type="button"
+                disabled={!!busy}
+                onClick={() => void applyTemplate(p.id)}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+              >
+                Customize
+              </button>
+            </div>
+          </div>
         ))}
       </section>
     </div>
