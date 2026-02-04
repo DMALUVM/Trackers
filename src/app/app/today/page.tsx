@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+// Link import removed (using router.push for navigation)
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -213,12 +213,13 @@ export default function TodayPage() {
       <header className="space-y-1">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">Today</h1>
-          <Link
-            href="/app/routines"
+          <button
+            type="button"
+            onClick={() => router.push("/app/routines")}
             className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs text-neutral-200 hover:bg-white/15"
           >
             Full list
-          </Link>
+          </button>
         </div>
         <p className="text-sm text-neutral-400">{headline}</p>
       </header>
@@ -270,12 +271,13 @@ export default function TodayPage() {
               <Zap size={14} /> Mark Core done
             </button>
           ) : (
-            <Link
-              href="/app/routines"
+            <button
+              type="button"
               className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-black"
+              onClick={() => router.push("/app/routines")}
             >
               Edit routines
-            </Link>
+            </button>
           )}
         </div>
 
