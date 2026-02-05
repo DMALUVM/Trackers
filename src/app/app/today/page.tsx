@@ -3,12 +3,13 @@
 // Link import removed (using router.push for navigation)
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
 import {
   listRoutineItems,
   loadDayState,
+  loadRangeStates,
   toDateKey,
   upsertDailyChecks,
   upsertDailyLog,
@@ -61,6 +62,8 @@ export default function TodayPage() {
   const [dbgCoreCount, setDbgCoreCount] = useState<number>(-1);
 
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
+  const [last7Days, setLast7Days] = useState<Array<{ dateKey: string; color: DayColor }>>([]);
+  const [showOptional, setShowOptional] = useState(false);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -185,6 +188,35 @@ export default function TodayPage() {
             log: (log as any) ?? null,
           });
           setTodayColor(tColor);
+
+          // Last 7 days strip (uses the same color logic as Progress)
+          try {
+            const from = format(subDays(today, 6), "yyyy-MM-dd");
+            const hist = await loadRangeStates({ from, to: dateKey });
+            const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
+            for (const c of hist.checks) {
+              const arr = checksByDate.get(c.date) ?? [];
+              arr.push({ routine_item_id: c.routine_item_id, done: c.done });
+              checksByDate.set(c.date, arr);
+            }
+            const logMap = new Map<string, any>();
+            for (const l of hist.logs) logMap.set(l.date, l);
+
+            const days: Array<{ dateKey: string; color: DayColor }> = [];
+            for (let i = 6; i >= 0; i--) {
+              const dk = format(subDays(today, i), "yyyy-MM-dd");
+              const color = computeDayColor({
+                dateKey: dk,
+                routineItems,
+                checks: checksByDate.get(dk) ?? [],
+                log: logMap.get(dk) ?? null,
+              });
+              days.push({ dateKey: dk, color });
+            }
+            setLast7Days(days);
+          } catch {
+            // ignore
+          }
         } catch (e: any) {
           // Keep baseline routines visible; just surface a quiet status in debug.
           if (debug) setStatus(`Day state load failed: ${e?.message ?? String(e)}`);
@@ -407,6 +439,37 @@ export default function TodayPage() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-neutral-200">Last 7 days</p>
+          <a className="text-xs text-neutral-400 underline" href="/app/routines/progress">
+            View progress
+          </a>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          {last7Days.length === 0 ? (
+            <p className="text-xs text-neutral-500">Building your history…</p>
+          ) : (
+            last7Days.map((d) => {
+              const cls =
+                d.color === "green"
+                  ? "bg-emerald-500"
+                  : d.color === "yellow"
+                    ? "bg-yellow-400"
+                    : d.color === "red"
+                      ? "bg-rose-500"
+                      : "bg-white/10";
+              return (
+                <div key={d.dateKey} className="flex flex-col items-center gap-1">
+                  <div className={`h-3 w-7 rounded-full ${cls}`} />
+                  <div className="text-[10px] text-neutral-500">{d.dateKey.slice(8)}</div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold text-neutral-200">Next actions</p>
@@ -499,6 +562,135 @@ export default function TodayPage() {
         </div>
 
         {status ? <p className="mt-3 text-xs text-neutral-400">{status}</p> : null}
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-neutral-200">CORE (full list)</p>
+          <p className="text-xs text-neutral-400">
+            {nextActions.coreDone}/{nextActions.coreTotal} done
+          </p>
+        </div>
+
+        <div className="mt-3 space-y-2">
+          {nextActions.core.length === 0 ? (
+            <p className="text-sm text-neutral-400">No CORE routines yet.</p>
+          ) : (
+            nextActions.core.map((item) => (
+              <div
+                key={item.id}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-base">{item.emoji ?? ""}</span>
+                    <span className={item.done ? "text-neutral-300 line-through" : ""}>
+                      {item.label}
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-neutral-200">
+                    CORE
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {item.done ? (
+                    <button
+                      type="button"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                      onClick={() => toggleItem(item.id)}
+                    >
+                      Undo
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded-xl bg-white px-3 py-3 text-sm font-semibold text-black"
+                      onClick={() => markDone(item.id)}
+                    >
+                      Completed
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                    onClick={() => {
+                      void setSnooze(item.id, Date.now() + 24 * 60 * 60 * 1000);
+                    }}
+                  >
+                    Skip today
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-neutral-200">Optional</p>
+          <button
+            type="button"
+            className="text-xs text-neutral-300 underline"
+            onClick={() => setShowOptional((v) => !v)}
+          >
+            {showOptional ? "Hide" : "Show"}
+          </button>
+        </div>
+
+        {showOptional ? (
+          <div className="mt-3 space-y-2">
+            {nextActions.optional.length === 0 ? (
+              <p className="text-sm text-neutral-400">No optional routines.</p>
+            ) : (
+              nextActions.optional.map((item) => (
+                <div
+                  key={item.id}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-base">{item.emoji ?? ""}</span>
+                    <span className={item.done ? "text-neutral-300 line-through" : ""}>
+                      {item.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {item.done ? (
+                      <button
+                        type="button"
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                        onClick={() => toggleItem(item.id)}
+                      >
+                        Undo
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rounded-xl bg-white px-3 py-3 text-sm font-semibold text-black"
+                        onClick={() => markDone(item.id)}
+                      >
+                        Completed
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                      onClick={() => {
+                        void setSnooze(item.id, Date.now() + 24 * 60 * 60 * 1000);
+                      }}
+                    >
+                      Skip today
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-neutral-500">Hidden. Keep Today focused.</p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
