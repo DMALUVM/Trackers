@@ -6,7 +6,8 @@ import { getUserSettings, setEnabledModules } from "@/lib/supabaseData";
 const ALL_MODULES: Array<{ key: string; label: string; desc: string }> = [
   { key: "progress", label: "Progress", desc: "Calendar, goals, totals." },
   { key: "rowing", label: "Rowing", desc: "Log meters and review totals." },
-  { key: "cardio", label: "Cardio", desc: "Walking/running miles." },
+  { key: "cardio", label: "Cardio", desc: "Walking steps + running miles." },
+  { key: "recovery", label: "Recovery", desc: "Sauna + cold plunge sessions." },
   { key: "neuro", label: "Neuro", desc: "Optional module." },
   { key: "settings", label: "Settings", desc: "Routines, modules, backups." },
 ];

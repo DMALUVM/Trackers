@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Footprints,
   Home,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getUserSettings } from "@/lib/supabaseData";
@@ -21,6 +22,7 @@ const allItems = [
   { key: "progress", href: "/app/routines/progress", label: "Progress", Icon: TrendingUp },
   { key: "rowing", href: "/app/rowing", label: "Rowing", Icon: Dumbbell },
   { key: "cardio", href: "/app/cardio", label: "Cardio", Icon: Footprints },
+  { key: "recovery", href: "/app/recovery", label: "Recovery", Icon: Flame },
   { key: "neuro", href: "/app/neuro", label: "Neuro", Icon: Brain },
   { key: "settings", href: "/app/settings", label: "Settings", Icon: Settings },
 ] as const;

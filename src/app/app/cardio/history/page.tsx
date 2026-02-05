@@ -53,7 +53,7 @@ export default function CardioHistoryPage() {
           >
             <div>
               <p className="text-sm font-semibold text-white">
-                {Number(r.value).toFixed(1)} {r.unit}
+                {r.unit === "steps" ? Number(r.value).toLocaleString() : Number(r.value).toFixed(1)} {r.unit}
               </p>
               <p className="text-xs text-neutral-400">{r.date}</p>
             </div>
