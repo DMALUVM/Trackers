@@ -19,6 +19,7 @@ export async function getUserId() {
 export type UserSettingsRow = {
   user_id: string;
   enabled_modules: string[];
+  theme?: "system" | "dark" | "light";
 };
 
 const DEFAULT_ENABLED_MODULES = ["progress", "rowing", "settings"];
@@ -27,13 +28,13 @@ export async function getUserSettings(): Promise<UserSettingsRow> {
   const userId = await getUserId();
   const { data, error } = await supabase
     .from("user_settings")
-    .select("user_id,enabled_modules")
+    .select("user_id,enabled_modules,theme")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
   if (!data) {
     // Create default settings row
-    const insert = { user_id: userId, enabled_modules: DEFAULT_ENABLED_MODULES };
+    const insert = { user_id: userId, enabled_modules: DEFAULT_ENABLED_MODULES, theme: "system" as const };
     const { error: insErr } = await supabase.from("user_settings").insert(insert);
     if (insErr) throw insErr;
     return insert;
@@ -46,6 +47,14 @@ export async function setEnabledModules(enabled: string[]) {
   const { error } = await supabase
     .from("user_settings")
     .upsert({ user_id: userId, enabled_modules: enabled }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
+export async function setThemePref(theme: "system" | "dark" | "light") {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from("user_settings")
+    .upsert({ user_id: userId, theme }, { onConflict: "user_id" });
   if (error) throw error;
 }
 
