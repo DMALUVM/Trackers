@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
-import { addActivityLog } from "@/lib/activity";
+import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
+import { buildWeeklyQuests, greenDaysWtd, type Quest } from "@/lib/quests";
 import {
   listRoutineItems,
   loadDayState,
@@ -54,6 +55,8 @@ export default function TodayPage() {
   // Trust indicators
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [syncState, setSyncState] = useState<"synced" | "offline" | "syncing">("synced");
+  const [queuedCount, setQueuedCount] = useState<number>(0);
   const persistTimerRef = useRef<any>(null);
   const pendingDayModeRef = useRef<DayMode | null>(null);
 
@@ -75,6 +78,7 @@ export default function TodayPage() {
   const [streakHelp, setStreakHelp] = useState<null | "movement" | "mind" | "sleep">(null);
   const [showOptional, setShowOptional] = useState(false);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -86,6 +90,32 @@ export default function TodayPage() {
   };
 
   useEffect(() => {
+    // Sync indicator + offline queue
+    const updateQueue = () => {
+      setQueuedCount(getActivityQueueSize());
+    };
+    const doFlush = async () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setSyncState("offline");
+        updateQueue();
+        return;
+      }
+      setSyncState("syncing");
+      updateQueue();
+      try {
+        await flushActivityQueue();
+      } finally {
+        updateQueue();
+        setSyncState(getActivityQueueSize() > 0 ? "offline" : "synced");
+      }
+    };
+
+    updateQueue();
+    setSyncState(typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "synced");
+
+    window.addEventListener("online", doFlush);
+    window.addEventListener("routines365:activityQueueChanged", updateQueue);
+
     let cancelled = false;
 
     const run = async () => {
@@ -229,7 +259,17 @@ export default function TodayPage() {
             }
 
             // last 7 for UI strip
-            setLast7Days(histDays.slice(-7));
+            const last7 = histDays.slice(-7);
+            setLast7Days(last7);
+
+            // weekly quests (MVP)
+            try {
+              const g = greenDaysWtd(histDays);
+              const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g });
+              setQuests(qs);
+            } catch {
+              // ignore
+            }
 
             // streaks based on green days
             const colors = histDays.map((d) => d.color);
@@ -318,6 +358,8 @@ export default function TodayPage() {
       cancelled = true;
       subscription.unsubscribe();
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", doFlush);
+      window.removeEventListener("routines365:activityQueueChanged", updateQueue);
     };
   }, [dateKey, router, today]);
 
@@ -601,28 +643,39 @@ export default function TodayPage() {
         </div>
         <div className="flex items-center justify-between">
           <p className="text-sm text-neutral-400">{headline}</p>
-          <p
-            className={
-              "text-xs " +
-              (saveState === "saving"
-                ? "text-neutral-300"
+          <div className="text-right">
+            <p
+              className={
+                "text-xs " +
+                (saveState === "saving"
+                  ? "text-neutral-300"
+                  : saveState === "saved"
+                    ? "text-emerald-300"
+                    : saveState === "error"
+                      ? "text-rose-300"
+                      : "text-neutral-500")
+              }
+            >
+              {saveState === "saving"
+                ? "Saving…"
                 : saveState === "saved"
-                  ? "text-emerald-300"
+                  ? `Saved${lastSavedAt ? ` ${format(new Date(lastSavedAt), "h:mm a")}` : ""}`
                   : saveState === "error"
-                    ? "text-rose-300"
-                    : "text-neutral-500")
-            }
-          >
-            {saveState === "saving"
-              ? "Saving…"
-              : saveState === "saved"
-                ? `Saved${lastSavedAt ? ` ${format(new Date(lastSavedAt), "h:mm a")}` : ""}`
-                : saveState === "error"
-                  ? "Save failed"
-                  : lastSavedAt
-                    ? `Last saved ${format(new Date(lastSavedAt), "h:mm a")}`
-                    : ""}
-          </p>
+                    ? "Save failed"
+                    : lastSavedAt
+                      ? `Last saved ${format(new Date(lastSavedAt), "h:mm a")}`
+                      : ""}
+            </p>
+            <p className="text-[10px] text-neutral-500">
+              {syncState === "syncing"
+                ? `Syncing${queuedCount ? ` (${queuedCount})` : ""}…`
+                : syncState === "offline"
+                  ? `Offline${queuedCount ? ` (${queuedCount} queued)` : ""}`
+                  : queuedCount
+                    ? `${queuedCount} queued`
+                    : "Synced"}
+            </p>
+          </div>
         </div>
 
         {debug ? (
@@ -719,6 +772,41 @@ export default function TodayPage() {
                 : "😴 Sleep streak: Counts if you complete a routine with sleep in the label (e.g. Sleep by target time)."}
           </div>
         ) : null}
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-neutral-200">This week</p>
+          <p className="text-xs text-neutral-500">Quests</p>
+        </div>
+
+        {quests.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-400">Loading quests…</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {quests.map((q) => (
+              <div key={q.id} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      <span className="mr-2">{q.emoji}</span>
+                      {q.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-neutral-400">{q.desc}</p>
+                  </div>
+                  <p className="text-xs font-semibold text-neutral-200">{q.pct}%</p>
+                </div>
+                <div className="mt-2 h-2 w-full rounded-full bg-white/10">
+                  <div
+                    className="h-2 rounded-full bg-emerald-500"
+                    style={{ width: `${Math.min(100, Math.max(0, q.pct))}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-neutral-300">{q.progressText}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
