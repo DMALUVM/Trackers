@@ -65,7 +65,9 @@ export default function TodayPage() {
 
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
   const [last7Days, setLast7Days] = useState<Array<{ dateKey: string; color: DayColor }>>([]);
+  const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
   const [showOptional, setShowOptional] = useState(false);
+  const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -192,9 +194,9 @@ export default function TodayPage() {
           });
           setTodayColor(tColor);
 
-          // Last 7 days strip (uses the same color logic as Progress)
+          // Last 7 days strip + streaks (uses the same color logic as Progress)
           try {
-            const from = format(subDays(today, 6), "yyyy-MM-dd");
+            const from = format(subDays(today, 60), "yyyy-MM-dd");
             const hist = await loadRangeStates({ from, to: dateKey });
             const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
             for (const c of hist.checks) {
@@ -205,8 +207,9 @@ export default function TodayPage() {
             const logMap = new Map<string, any>();
             for (const l of hist.logs) logMap.set(l.date, l);
 
-            const days: Array<{ dateKey: string; color: DayColor }> = [];
-            for (let i = 6; i >= 0; i--) {
+            const histDays: Array<{ dateKey: string; color: DayColor }> = [];
+            // Build up to 61 days (today back 60)
+            for (let i = 60; i >= 0; i--) {
               const dk = format(subDays(today, i), "yyyy-MM-dd");
               const active = routineItems.filter((ri) => shouldShow(ri, parseISO(dk)));
               const color = computeDayColor({
@@ -215,9 +218,30 @@ export default function TodayPage() {
                 checks: checksByDate.get(dk) ?? [],
                 log: logMap.get(dk) ?? null,
               });
-              days.push({ dateKey: dk, color });
+              histDays.push({ dateKey: dk, color });
             }
-            setLast7Days(days);
+
+            // last 7 for UI strip
+            setLast7Days(histDays.slice(-7));
+
+            // streaks based on green days
+            const colors = histDays.map((d) => d.color);
+            let current = 0;
+            for (let i = colors.length - 1; i >= 0; i--) {
+              if (colors[i] !== "green") break;
+              current += 1;
+            }
+            let best = 0;
+            let run = 0;
+            for (const c of colors) {
+              if (c === "green") {
+                run += 1;
+                best = Math.max(best, run);
+              } else {
+                run = 0;
+              }
+            }
+            setStreak({ current, best });
           } catch {
             // ignore
           }
@@ -346,21 +370,67 @@ export default function TodayPage() {
   };
 
   const markDone = (id: string) => {
+    setRecentlyDoneId(id);
+    try {
+      // Haptics (best-effort)
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        // @ts-ignore
+        navigator.vibrate(12);
+      }
+    } catch {
+      // ignore
+    }
+
     setItems((prev) => {
       const next = prev.map((i) => (i.id === id ? { ...i, done: true } : i));
       itemsRef.current = next;
       return next;
     });
+
+    // Autopilot: move the next missing CORE into view
+    setTimeout(() => {
+      try {
+        const now = Date.now();
+        const cur = itemsRef.current;
+        const didRowing = cur.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
+        const didWeights = cur.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+        const missing = cur.filter((i) => i.isNonNegotiable).filter((i) => {
+          if (snoozedUntil[i.id] && snoozedUntil[i.id] > now) return false;
+          if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
+          return !i.done;
+        });
+        const nextId = missing[0]?.id;
+        if (nextId) {
+          const el = document.getElementById(`ri-${nextId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      } catch {
+        // ignore
+      }
+    }, 60);
+
     persist();
+    setTimeout(() => setRecentlyDoneId(null), 500);
   };
 
   const markAllCoreDone = () => {
+    setRecentlyDoneId("__all_core__");
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        // @ts-ignore
+        navigator.vibrate([10, 20, 10]);
+      }
+    } catch {
+      // ignore
+    }
+
     setItems((prev) => {
       const next = prev.map((i) => (i.isNonNegotiable ? { ...i, done: true } : i));
       itemsRef.current = next;
       return next;
     });
     persist();
+    setTimeout(() => setRecentlyDoneId(null), 600);
   };
 
   const skipAllOptionalToday = () => {
@@ -455,7 +525,12 @@ export default function TodayPage() {
       </header>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-xs text-neutral-500">Daily score</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-neutral-500">Daily score</p>
+          <div className="text-xs text-neutral-400">
+            <span className="font-semibold text-neutral-200">Streak:</span> {streak.current} &nbsp;|&nbsp; Best: {streak.best}
+          </div>
+        </div>
         <div className="mt-2 flex items-end justify-between">
           <p className="text-4xl font-semibold tracking-tight">{nextActions.score}</p>
           <p className="text-sm text-neutral-400">
@@ -612,7 +687,11 @@ export default function TodayPage() {
             nextActions.core.map((item) => (
               <div
                 key={item.id}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
+                id={`ri-${item.id}`}
+                className={
+                  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100 transition " +
+                  (recentlyDoneId === item.id ? "ring-2 ring-emerald-400/60" : "")
+                }
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
