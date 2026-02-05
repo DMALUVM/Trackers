@@ -270,6 +270,10 @@ export default function TodayPage() {
     const coreDone = core.filter((i) => i.done).length;
     const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
+    // Immediate color: based on today's scheduled CORE only (what's on-screen).
+    const immediateColor: DayColor =
+      coreTotal === 0 ? "empty" : missingCore.length === 0 ? "green" : missingCore.length === 1 ? "yellow" : "red";
+
     return {
       core,
       optional,
@@ -280,6 +284,7 @@ export default function TodayPage() {
       coreTotal,
       coreDone,
       score,
+      immediateColor,
     };
   }, [items, snoozedUntil]);
 
@@ -365,6 +370,19 @@ export default function TodayPage() {
       void setSnooze(it.id, until);
     }
   };
+
+  // Make the color/label feel instant: update local day color from the current on-screen CORE state.
+  useEffect(() => {
+    setTodayColor(nextActions.immediateColor);
+    setLast7Days((prev) => {
+      if (!prev || prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      if (last.dateKey !== dateKey) return prev;
+      const next = [...prev];
+      next[next.length - 1] = { ...last, color: nextActions.immediateColor };
+      return next;
+    });
+  }, [dateKey, nextActions.immediateColor]);
 
   if (loading) {
     return (
