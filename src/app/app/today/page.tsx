@@ -79,6 +79,7 @@ export default function TodayPage() {
   const [showOptional, setShowOptional] = useState(false);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
+  const [questsLoading, setQuestsLoading] = useState(true);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -262,7 +263,13 @@ export default function TodayPage() {
             const last7 = histDays.slice(-7);
             setLast7Days(last7);
 
-            // weekly quests (MVP)
+            // label index (used for quests + category streaks)
+            const labelById = new Map(
+              routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()])
+            );
+
+            // weekly quests (user-customizable)
+            setQuestsLoading(true);
             try {
               const g = greenDaysWtd(histDays);
               const didKeyword = (dk: string, keywords: string[]) => {
@@ -277,7 +284,9 @@ export default function TodayPage() {
               const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g, didKeyword });
               setQuests(qs);
             } catch {
-              // ignore
+              setQuests([]);
+            } finally {
+              setQuestsLoading(false);
             }
 
             // streaks based on green days
@@ -303,7 +312,6 @@ export default function TodayPage() {
             // Movement: walk/workout/exercise/rowing/stretch/mobility
             // Mind: breathwork/meditation/journal/neuro
             // Sleep: sleep
-            const labelById = new Map(routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()]));
             const movementKeys = ["walk", "workout", "exercise", "rowing", "stretch", "mobility", "move"];
             const mindKeys = ["breath", "meditat", "journal", "neuro", "mind"];
             const sleepKeys = ["sleep"];
@@ -789,8 +797,10 @@ export default function TodayPage() {
           <p className="text-xs text-neutral-500">Quests</p>
         </div>
 
-        {quests.length === 0 ? (
+        {questsLoading ? (
           <p className="mt-2 text-sm text-neutral-400">Loading quests…</p>
+        ) : quests.length === 0 ? (
+          <p className="mt-2 text-sm text-neutral-500">No quests selected.</p>
         ) : (
           <div className="mt-3 space-y-2">
             {quests.map((q) => (
