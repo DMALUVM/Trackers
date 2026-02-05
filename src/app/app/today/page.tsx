@@ -3,7 +3,7 @@
 // Link import removed (using router.push for navigation)
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { format, subDays } from "date-fns";
+import { format, parseISO, subDays } from "date-fns";
 import { Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
 import {
@@ -53,6 +53,8 @@ export default function TodayPage() {
   // Trust indicators
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const persistTimerRef = useRef<any>(null);
+  const pendingDayModeRef = useRef<DayMode | null>(null);
 
   // Debug counters for diagnosing iOS/PWA phantom-empty issues.
   const [dbgEmail, setDbgEmail] = useState<string>("");
@@ -181,9 +183,10 @@ export default function TodayPage() {
             setStatus(uiScheduled.length > 0 ? "" : "Nothing was scheduled for today. Showing your CORE routines.");
           }
 
+          const activeRoutineItems = routineItems.filter((ri) => shouldShow(ri, today));
           const tColor = computeDayColor({
             dateKey,
-            routineItems,
+            routineItems: activeRoutineItems,
             checks,
             log: (log as any) ?? null,
           });
@@ -205,9 +208,10 @@ export default function TodayPage() {
             const days: Array<{ dateKey: string; color: DayColor }> = [];
             for (let i = 6; i >= 0; i--) {
               const dk = format(subDays(today, i), "yyyy-MM-dd");
+              const active = routineItems.filter((ri) => shouldShow(ri, parseISO(dk)));
               const color = computeDayColor({
                 dateKey: dk,
-                routineItems,
+                routineItems: active,
                 checks: checksByDate.get(dk) ?? [],
                 log: logMap.get(dk) ?? null,
               });
@@ -279,29 +283,29 @@ export default function TodayPage() {
     };
   }, [items, snoozedUntil]);
 
-  const persist = async (opts?: { dayMode?: DayMode }) => {
-    setStatus("Saving…");
-    setSaveState("saving");
+  const persistNow = async (opts?: { dayMode?: DayMode }) => {
     try {
       const cur = itemsRef.current;
-      const nextMode = opts?.dayMode ?? dayMode;
+      const nextMode = opts?.dayMode ?? pendingDayModeRef.current ?? dayMode;
+      pendingDayModeRef.current = null;
 
       const didRowing = cur.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
       const didWeights = cur.some((i) => i.label.toLowerCase().includes("workout") && i.done);
       const sex = cur.some((i) => i.label.toLowerCase() === "sex" && i.done);
 
-      await upsertDailyLog({
-        dateKey,
-        dayMode: nextMode,
-        sex,
-        didRowing,
-        didWeights,
-      });
-
-      await upsertDailyChecks({
-        dateKey,
-        checks: cur.map((i) => ({ routineItemId: i.id, done: i.done })),
-      });
+      await Promise.all([
+        upsertDailyLog({
+          dateKey,
+          dayMode: nextMode,
+          sex,
+          didRowing,
+          didWeights,
+        }),
+        upsertDailyChecks({
+          dateKey,
+          checks: cur.map((i) => ({ routineItemId: i.id, done: i.done })),
+        }),
+      ]);
 
       setStatus("Saved.");
       setSaveState("saved");
@@ -316,13 +320,24 @@ export default function TodayPage() {
     }
   };
 
+  const persist = (opts?: { dayMode?: DayMode }) => {
+    setStatus("Saving…");
+    setSaveState("saving");
+    if (opts?.dayMode) pendingDayModeRef.current = opts.dayMode;
+
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(() => {
+      void persistNow();
+    }, 250);
+  };
+
   const toggleItem = (id: string) => {
     setItems((prev) => {
       const next = prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
       itemsRef.current = next;
       return next;
     });
-    void persist();
+    persist();
   };
 
   const markDone = (id: string) => {
@@ -331,7 +346,7 @@ export default function TodayPage() {
       itemsRef.current = next;
       return next;
     });
-    void persist();
+    persist();
   };
 
   const markAllCoreDone = () => {
@@ -340,7 +355,7 @@ export default function TodayPage() {
       itemsRef.current = next;
       return next;
     });
-    void persist();
+    persist();
   };
 
   const skipAllOptionalToday = () => {
