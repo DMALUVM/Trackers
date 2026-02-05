@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { setThemePref } from "@/lib/supabaseData";
 
 type Theme = "system" | "dark" | "light";
 
@@ -23,6 +24,8 @@ export default function AppearanceSettingsPage() {
     } catch {
       // ignore
     }
+    // Persist to DB so it survives logins/devices.
+    void setThemePref(t);
     // Trigger immediate re-render styling.
     window.dispatchEvent(new Event("routines365:theme"));
   };

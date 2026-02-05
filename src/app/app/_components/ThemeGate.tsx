@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getUserSettings } from "@/lib/supabaseData";
 
 type Theme = "system" | "dark" | "light";
 
@@ -13,23 +14,51 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const read = () => {
+    let cancelled = false;
+
+    const readLocal = () => {
       try {
-        return (localStorage.getItem("routines365:theme") as Theme | null) ?? "system";
+        return (localStorage.getItem("routines365:theme") as Theme | null) ?? null;
       } catch {
-        return "system";
+        return null;
       }
     };
 
-    const apply = () => {
-      const t = read();
+    const applyResolved = (t: Theme) => {
       const resolved = t === "system" ? (prefersDark() ? "dark" : "light") : t;
       setTheme(resolved);
     };
 
-    apply();
-    window.addEventListener("routines365:theme", apply);
-    return () => window.removeEventListener("routines365:theme", apply);
+    const apply = async () => {
+      const local = readLocal();
+      if (local) {
+        applyResolved(local);
+        return;
+      }
+
+      // Fallback: fetch from user_settings so preference persists across logins/devices.
+      try {
+        const s = await getUserSettings();
+        if (cancelled) return;
+        const t = (s.theme as Theme | undefined) ?? "system";
+        try {
+          localStorage.setItem("routines365:theme", t);
+        } catch {
+          // ignore
+        }
+        applyResolved(t);
+      } catch {
+        applyResolved("system");
+      }
+    };
+
+    void apply();
+    const onTheme = () => void apply();
+    window.addEventListener("routines365:theme", onTheme);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("routines365:theme", onTheme);
+    };
   }, []);
 
   const isLight = theme === "light";
