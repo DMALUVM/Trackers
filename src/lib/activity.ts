@@ -2,8 +2,8 @@ import { format } from "date-fns";
 import { supabase } from "@/lib/supabaseClient";
 import { getUserId } from "@/lib/supabaseData";
 
-export type ActivityKey = "rowing" | "walking" | "running" | "neuro";
-export type ActivityUnit = "meters" | "miles" | "sessions";
+export type ActivityKey = "rowing" | "walking" | "running" | "sauna" | "cold" | "neuro";
+export type ActivityUnit = "meters" | "minutes" | "miles" | "steps" | "sessions";
 
 export function dateKey(d: Date) {
   return format(d, "yyyy-MM-dd");
