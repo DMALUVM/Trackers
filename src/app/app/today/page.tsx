@@ -265,7 +265,16 @@ export default function TodayPage() {
             // weekly quests (MVP)
             try {
               const g = greenDaysWtd(histDays);
-              const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g });
+              const didKeyword = (dk: string, keywords: string[]) => {
+                const cs = checksByDate.get(dk) ?? [];
+                for (const c of cs) {
+                  if (!c.done) continue;
+                  const lbl = (labelById.get(c.routine_item_id) ?? "").toLowerCase();
+                  if (keywords.some((k) => lbl.includes(k.toLowerCase()))) return true;
+                }
+                return false;
+              };
+              const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g, didKeyword });
               setQuests(qs);
             } catch {
               // ignore

@@ -37,6 +37,12 @@ export default function SettingsPage() {
         </a>
         <a
           className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
+          href="/app/settings/quests"
+        >
+          Quests (choose + custom)
+        </a>
+        <a
+          className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white hover:bg-white/10"
           href="/app/settings/backup"
         >
           Export / backup data
