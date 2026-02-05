@@ -245,6 +245,14 @@ export default function RoutinesSettingsPage() {
         <p className="text-sm text-neutral-400">
           Edit labels/emojis, mark Core habits, and drag to reorder.
         </p>
+        <div className="pt-2">
+          <Link
+            href="/app/settings/routines/library"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+          >
+            <Plus size={14} /> Routine library
+          </Link>
+        </div>
         {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
       </header>
 
