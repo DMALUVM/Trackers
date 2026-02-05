@@ -117,14 +117,16 @@ export async function sumActivity(opts: {
   const userId = await getUserId();
   const { data, error } = await supabase
     .from("activity_logs")
-    .select("value")
+    // PostgREST aggregate; returns [{ sum: <number|null> }]
+    .select("sum:value.sum()")
     .eq("user_id", userId)
     .eq("activity_key", opts.activityKey)
     .eq("unit", opts.unit)
     .gte("date", opts.from)
     .lte("date", opts.to);
   if (error) throw error;
-  return (data ?? []).reduce((sum, row: any) => sum + Number(row.value ?? 0), 0);
+  const sum = (data as any)?.[0]?.sum;
+  return Number(sum ?? 0);
 }
 
 export type ActivityLogRow = {

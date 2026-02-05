@@ -83,6 +83,7 @@ export function AppNav() {
             <Link
               key={href}
               href={href}
+              prefetch
               className={cn(
                 "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] text-neutral-400",
                 "transition-colors",
