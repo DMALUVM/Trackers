@@ -235,121 +235,115 @@ export default function TodayPage() {
           });
           setTodayColor(tColor);
 
-          // Last 7 days strip + streaks (uses the same color logic as Progress)
-          try {
-            const from = format(subDays(today, 60), "yyyy-MM-dd");
-            const hist = await loadRangeStates({ from, to: dateKey });
-            const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
-            for (const c of hist.checks) {
-              const arr = checksByDate.get(c.date) ?? [];
-              arr.push({ routine_item_id: c.routine_item_id, done: c.done });
-              checksByDate.set(c.date, arr);
-            }
-            const logMap = new Map<string, any>();
-            for (const l of hist.logs) logMap.set(l.date, l);
-
-            const histDays: Array<{ dateKey: string; color: DayColor }> = [];
-            // Build up to 61 days (today back 60)
-            for (let i = 60; i >= 0; i--) {
-              const dk = format(subDays(today, i), "yyyy-MM-dd");
-              const active = routineItems.filter((ri) => shouldShow(ri, parseISO(dk)));
-              const color = computeDayColor({
-                dateKey: dk,
-                routineItems: active,
-                checks: checksByDate.get(dk) ?? [],
-                log: logMap.get(dk) ?? null,
-              });
-              histDays.push({ dateKey: dk, color });
-            }
-
-            // last 7 for UI strip
-            const last7 = histDays.slice(-7);
-            setLast7Days(last7);
-
-            // label index (used for quests + category streaks)
-            const labelById = new Map(
-              routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()])
-            );
-
-            // weekly quests (user-customizable)
-            setQuestsLoading(true);
-            try {
-              const g = greenDaysWtd(histDays);
-              const didKeyword = (dk: string, keywords: string[]) => {
-                const cs = checksByDate.get(dk) ?? [];
-                for (const c of cs) {
-                  if (!c.done) continue;
-                  const lbl = (labelById.get(c.routine_item_id) ?? "").toLowerCase();
-                  if (keywords.some((k) => lbl.includes(k.toLowerCase()))) return true;
+          // Defer heavy history/quest computations until after first paint.
+          setTimeout(() => {
+            void (async () => {
+              try {
+                const from = format(subDays(today, 60), "yyyy-MM-dd");
+                const hist = await loadRangeStates({ from, to: dateKey });
+                const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
+                for (const c of hist.checks) {
+                  const arr = checksByDate.get(c.date) ?? [];
+                  arr.push({ routine_item_id: c.routine_item_id, done: c.done });
+                  checksByDate.set(c.date, arr);
                 }
-                return false;
-              };
-              const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g, didKeyword });
-              setQuests(qs);
-            } catch {
-              setQuests([]);
-            } finally {
-              setQuestsLoading(false);
-            }
+                const logMap = new Map<string, any>();
+                for (const l of hist.logs) logMap.set(l.date, l);
 
-            // streaks based on green days
-            const colors = histDays.map((d) => d.color);
-            let current = 0;
-            for (let i = colors.length - 1; i >= 0; i--) {
-              if (colors[i] !== "green") break;
-              current += 1;
-            }
-            let best = 0;
-            let run = 0;
-            for (const c of colors) {
-              if (c === "green") {
-                run += 1;
-                best = Math.max(best, run);
-              } else {
-                run = 0;
+                const histDays: Array<{ dateKey: string; color: DayColor }> = [];
+                for (let i = 60; i >= 0; i--) {
+                  const dk = format(subDays(today, i), "yyyy-MM-dd");
+                  const active = routineItems.filter((ri) => shouldShow(ri, parseISO(dk)));
+                  const color = computeDayColor({
+                    dateKey: dk,
+                    routineItems: active,
+                    checks: checksByDate.get(dk) ?? [],
+                    log: logMap.get(dk) ?? null,
+                  });
+                  histDays.push({ dateKey: dk, color });
+                }
+
+                setLast7Days(histDays.slice(-7));
+
+                const labelById = new Map(
+                  routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()])
+                );
+
+                setQuestsLoading(true);
+                try {
+                  const g = greenDaysWtd(histDays);
+                  const didKeyword = (dk: string, keywords: string[]) => {
+                    const cs = checksByDate.get(dk) ?? [];
+                    for (const c of cs) {
+                      if (!c.done) continue;
+                      const lbl = (labelById.get(c.routine_item_id) ?? "").toLowerCase();
+                      if (keywords.some((k) => lbl.includes(k.toLowerCase()))) return true;
+                    }
+                    return false;
+                  };
+                  const qs = await buildWeeklyQuests({ dateKey, greenDaysWtd: g, didKeyword });
+                  setQuests(qs);
+                } catch {
+                  setQuests([]);
+                } finally {
+                  setQuestsLoading(false);
+                }
+
+                const colors = histDays.map((d) => d.color);
+                let current = 0;
+                for (let i = colors.length - 1; i >= 0; i--) {
+                  if (colors[i] !== "green") break;
+                  current += 1;
+                }
+                let best = 0;
+                let run = 0;
+                for (const c of colors) {
+                  if (c === "green") {
+                    run += 1;
+                    best = Math.max(best, run);
+                  } else {
+                    run = 0;
+                  }
+                }
+                setStreak({ current, best });
+
+                const movementKeys = ["walk", "workout", "exercise", "rowing", "stretch", "mobility", "move"];
+                const mindKeys = ["breath", "meditat", "journal", "neuro", "mind"];
+                const sleepKeys = ["sleep"];
+
+                const didCategory = (dk: string, keys: string[]) => {
+                  const cs = checksByDate.get(dk) ?? [];
+                  for (const c of cs) {
+                    if (!c.done) continue;
+                    const lbl = labelById.get(c.routine_item_id) ?? "";
+                    if (keys.some((k) => lbl.includes(k))) return true;
+                  }
+                  const l = logMap.get(dk);
+                  if (keys.includes("rowing") && l?.did_rowing) return true;
+                  if ((keys.includes("workout") || keys.includes("exercise")) && l?.did_weights) return true;
+                  return false;
+                };
+
+                const streakFor = (keys: string[]) => {
+                  let s = 0;
+                  for (let i = histDays.length - 1; i >= 0; i--) {
+                    const dk = histDays[i].dateKey;
+                    if (!didCategory(dk, keys)) break;
+                    s += 1;
+                  }
+                  return s;
+                };
+
+                setCategoryStreaks({
+                  movement: streakFor(movementKeys),
+                  mind: streakFor(mindKeys),
+                  sleep: streakFor(sleepKeys),
+                });
+              } catch {
+                // ignore
               }
-            }
-            setStreak({ current, best });
-
-            // Category streaks (simple MVP): inferred from checks + a few label keywords.
-            // Movement: walk/workout/exercise/rowing/stretch/mobility
-            // Mind: breathwork/meditation/journal/neuro
-            // Sleep: sleep
-            const movementKeys = ["walk", "workout", "exercise", "rowing", "stretch", "mobility", "move"];
-            const mindKeys = ["breath", "meditat", "journal", "neuro", "mind"];
-            const sleepKeys = ["sleep"];
-
-            const didCategory = (dk: string, keys: string[]) => {
-              const cs = checksByDate.get(dk) ?? [];
-              for (const c of cs) {
-                if (!c.done) continue;
-                const lbl = labelById.get(c.routine_item_id) ?? "";
-                if (keys.some((k) => lbl.includes(k))) return true;
-              }
-              const l = logMap.get(dk);
-              if (keys.includes("rowing") && l?.did_rowing) return true;
-              if ((keys.includes("workout") || keys.includes("exercise")) && l?.did_weights) return true;
-              return false;
-            };
-
-            const streakFor = (keys: string[]) => {
-              let s = 0;
-              for (let i = histDays.length - 1; i >= 0; i--) {
-                const dk = histDays[i].dateKey;
-                if (!didCategory(dk, keys)) break;
-                s += 1;
-              }
-              return s;
-            };
-
-            setCategoryStreaks({
-              movement: streakFor(movementKeys),
-              mind: streakFor(mindKeys),
-              sleep: streakFor(sleepKeys),
-            });
-          } catch {
-            // ignore
-          }
+            })();
+          }, 0);
         } catch (e: any) {
           // Keep baseline routines visible; just surface a quiet status in debug.
           if (debug) setStatus(`Day state load failed: ${e?.message ?? String(e)}`);
