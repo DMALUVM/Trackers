@@ -1,6 +1,7 @@
-import { format, startOfWeek, startOfMonth, startOfYear } from "date-fns";
+import { format, startOfWeek } from "date-fns";
 import { sumActivity } from "@/lib/activity";
 import type { DayColor } from "@/lib/progress";
+import { loadQuestConfig, type BuiltinQuestId, type CustomQuest } from "@/lib/questsConfig";
 
 export type Quest = {
   id: string;
@@ -19,6 +20,8 @@ function clampPct(x: number) {
 export async function buildWeeklyQuests(opts: {
   dateKey: string;
   greenDaysWtd: number;
+  // custom streak quests need access to daily routine label checks
+  didKeyword?: (dateKey: string, keywords: string[]) => boolean;
 }) {
   const now = new Date(opts.dateKey + "T12:00:00");
   const fromW = format(startOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -43,8 +46,8 @@ export async function buildWeeklyQuests(opts: {
 
   const recovery = Number(sauna) + Number(cold);
 
-  const quests: Quest[] = [
-    {
+  const builtins: Record<BuiltinQuestId, Quest> = {
+    "q-rowing": {
       id: "q-rowing",
       emoji: "🚣",
       title: "Rowing meters",
@@ -52,7 +55,7 @@ export async function buildWeeklyQuests(opts: {
       progressText: `${Math.round(row).toLocaleString()} / ${targets.rowingMeters.toLocaleString()} m`,
       pct: clampPct((Number(row) / targets.rowingMeters) * 100),
     },
-    {
+    "q-walk": {
       id: "q-walk",
       emoji: "🚶",
       title: "Walking steps",
@@ -60,7 +63,15 @@ export async function buildWeeklyQuests(opts: {
       progressText: `${Math.round(steps).toLocaleString()} / ${targets.walkingSteps.toLocaleString()}`,
       pct: clampPct((Number(steps) / targets.walkingSteps) * 100),
     },
-    {
+    "q-run": {
+      id: "q-run",
+      emoji: "🏃",
+      title: "Running miles",
+      desc: `Hit ${targets.runningMiles} mi this week`,
+      progressText: `${Number(run).toFixed(1)} / ${targets.runningMiles.toFixed(1)} mi`,
+      pct: clampPct((Number(run) / targets.runningMiles) * 100),
+    },
+    "q-recovery": {
       id: "q-recovery",
       emoji: "🔥",
       title: "Recovery",
@@ -68,7 +79,7 @@ export async function buildWeeklyQuests(opts: {
       progressText: `${Math.round(recovery)} / ${targets.recoverySessions} sessions`,
       pct: clampPct((Number(recovery) / targets.recoverySessions) * 100),
     },
-    {
+    "q-green": {
       id: "q-green",
       emoji: "✅",
       title: "Green days",
@@ -76,17 +87,57 @@ export async function buildWeeklyQuests(opts: {
       progressText: `${opts.greenDaysWtd} / ${targets.greenDays} days`,
       pct: clampPct((opts.greenDaysWtd / targets.greenDays) * 100),
     },
-  ];
+  };
 
-  // Return the top 3 most relevant (highest progress but not complete, then highest)
+  const cfg = loadQuestConfig();
+  if (!cfg.enabled || cfg.maxShown === 0) return [];
+
+  const selectedBuiltins = (cfg.selected ?? []).map((id) => builtins[id]).filter(Boolean);
+
+  const customToQuests = (custom: CustomQuest[]): Quest[] => {
+    const didKeyword = opts.didKeyword;
+    if (!didKeyword) return [];
+
+    const streakFor = (keywords: string[]) => {
+      let s = 0;
+      // walk backward from today
+      const daysBack = 60;
+      for (let i = 0; i <= daysBack; i++) {
+        const dk = format(new Date(opts.dateKey + "T12:00:00"), "yyyy-MM-dd");
+        // compute dateKey i days back
+        const d = new Date(dk + "T12:00:00");
+        d.setDate(d.getDate() - i);
+        const key = format(d, "yyyy-MM-dd");
+        if (!didKeyword(key, keywords)) break;
+        s += 1;
+      }
+      return s;
+    };
+
+    return custom.map((c) => {
+      const s = streakFor(c.keywords);
+      return {
+        id: c.id,
+        emoji: c.emoji || "⭐",
+        title: c.title,
+        desc: "Consecutive days",
+        progressText: `${s} day streak`,
+        pct: clampPct(Math.min(100, s * 20)),
+      };
+    });
+  };
+
+  const quests: Quest[] = [...selectedBuiltins, ...customToQuests(cfg.custom ?? [])];
+
+  // Order: incomplete first, then highest pct
   const ordered = [...quests].sort((a, b) => {
     const ac = a.pct >= 100 ? 1 : 0;
     const bc = b.pct >= 100 ? 1 : 0;
-    if (ac !== bc) return ac - bc; // incomplete first
+    if (ac !== bc) return ac - bc;
     return b.pct - a.pct;
   });
 
-  return ordered.slice(0, 3);
+  return ordered.slice(0, cfg.maxShown);
 }
 
 export function greenDaysWtd(colors: Array<{ dateKey: string; color: DayColor }>) {
