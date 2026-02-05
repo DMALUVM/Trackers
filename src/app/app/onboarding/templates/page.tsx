@@ -9,6 +9,7 @@ export default function TemplatePickerPage() {
   const router = useRouter();
   const [busy, setBusy] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -93,39 +94,101 @@ export default function TemplatePickerPage() {
       </header>
 
       <section className="space-y-3">
-        {templatePacks.map((p) => (
-          <div
-            key={p.id}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-base font-semibold">{p.title}</p>
-                <p className="mt-1 text-sm text-neutral-400">{p.desc}</p>
+        {templatePacks
+          .filter((p) => (p.tier ?? "general") === "general")
+          .map((p) => (
+            <div
+              key={p.id}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 p-4 text-left"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-base font-semibold">{p.title}</p>
+                  <p className="mt-1 text-sm text-neutral-400">{p.desc}</p>
+                </div>
+                {busy === p.id ? <span className="text-xs text-neutral-400">Working…</span> : null}
               </div>
-              {busy === p.id ? <span className="text-xs text-neutral-400">Working…</span> : null}
-            </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                disabled={!!busy}
-                onClick={() => void quickStart(p.id)}
-                className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
-              >
-                Quick start
-              </button>
-              <button
-                type="button"
-                disabled={!!busy}
-                onClick={() => void applyTemplate(p.id)}
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
-              >
-                Customize
-              </button>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={!!busy}
+                  onClick={() => void quickStart(p.id)}
+                  className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                >
+                  Quick start
+                </button>
+                <button
+                  type="button"
+                  disabled={!!busy}
+                  onClick={() => void applyTemplate(p.id)}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+                >
+                  Customize
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <button
+            type="button"
+            className="w-full text-left"
+            onClick={() => setShowAdvanced((v) => !v)}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-neutral-200">Advanced templates</p>
+              <span className="text-xs text-neutral-400">{showAdvanced ? "Hide" : "Show"}</span>
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">More specific presets. Most people don’t need these.</p>
+          </button>
+
+          {showAdvanced ? (
+            <div className="mt-4 space-y-3">
+              {templatePacks
+                .filter((p) => (p.tier ?? "general") === "advanced")
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="w-full rounded-2xl border border-white/10 bg-black/20 p-4 text-left"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold">{p.title}</p>
+                        <p className="mt-1 text-sm text-neutral-400">{p.desc}</p>
+                      </div>
+                      {busy === p.id ? (
+                        <span className="text-xs text-neutral-400">Working…</span>
+                      ) : (
+                        <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold text-neutral-200">
+                          ADV
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={!!busy}
+                        onClick={() => void quickStart(p.id)}
+                        className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-60"
+                      >
+                        Quick start
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!!busy}
+                        onClick={() => void applyTemplate(p.id)}
+                        className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+                      >
+                        Customize
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : null}
+        </div>
       </section>
     </div>
   );
