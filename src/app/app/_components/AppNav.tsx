@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck2,
@@ -29,6 +29,7 @@ const allItems = [
 
 export function AppNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [enabled, setEnabled] = useState<string[] | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,10 @@ export function AppNav() {
       }
     };
     void run();
+
+    const onSettings = () => void run();
+    window.addEventListener("routines365:userSettingsChanged", onSettings);
+    return () => window.removeEventListener("routines365:userSettingsChanged", onSettings);
   }, []);
 
   const items = useMemo(() => {
@@ -61,6 +66,17 @@ export function AppNav() {
     // If the user enables more than 4 modules, show 5 tabs and drop labels (icons only).
     return ordered.slice(0, 5);
   }, [enabled]);
+
+  useEffect(() => {
+    // Aggressively prefetch nav routes for near-instant tab switches.
+    for (const it of items) {
+      try {
+        router.prefetch(it.href);
+      } catch {
+        // ignore
+      }
+    }
+  }, [items, router]);
 
   return (
     <nav className="sticky bottom-0 border-t border-white/10 bg-black/60 backdrop-blur">
