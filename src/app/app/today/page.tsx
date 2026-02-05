@@ -71,6 +71,7 @@ export default function TodayPage() {
     mind: 0,
     sleep: 0,
   });
+  const [streakHelp, setStreakHelp] = useState<null | "movement" | "mind" | "sleep">(null);
   const [showOptional, setShowOptional] = useState(false);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
 
@@ -598,16 +599,60 @@ export default function TodayPage() {
         )}
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
-            Movement streak: {categoryStreaks.movement}
-          </span>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
-            Mind streak: {categoryStreaks.mind}
-          </span>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
-            Sleep streak: {categoryStreaks.sleep}
-          </span>
+          {([
+            {
+              key: "movement",
+              emoji: "🚶",
+              label: "Movement",
+              val: categoryStreaks.movement,
+              help: "Counts: walk, workout, exercise, rowing, stretch, mobility, move",
+            },
+            {
+              key: "mind",
+              emoji: "🧠",
+              label: "Mind",
+              val: categoryStreaks.mind,
+              help: "Counts: breathwork, meditation, journal, neuro",
+            },
+            {
+              key: "sleep",
+              emoji: "😴",
+              label: "Sleep",
+              val: categoryStreaks.sleep,
+              help: "Counts: sleep",
+            },
+          ] as const).map((x) => {
+            const tone = x.val === 0 ? "bg-white/10 text-neutral-300" : x.val < 3 ? "bg-yellow-400/15 text-yellow-200" : "bg-emerald-500/15 text-emerald-200";
+            const active = streakHelp === x.key;
+            return (
+              <button
+                key={x.key}
+                type="button"
+                onClick={() => setStreakHelp((cur) => (cur === x.key ? null : x.key))}
+                className={
+                  "rounded-full px-3 py-2 text-[12px] font-semibold transition " +
+                  tone +
+                  (active ? " ring-2 ring-white/15" : "")
+                }
+                title="Tap to see what counts"
+              >
+                <span className="mr-2">{x.emoji}</span>
+                <span className="mr-2">{x.val}</span>
+                <span className="text-[10px] opacity-70">{x.label}</span>
+              </button>
+            );
+          })}
         </div>
+
+        {streakHelp ? (
+          <div className="mt-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs text-neutral-300">
+            {streakHelp === "movement"
+              ? "🚶 Movement streak: Counts if you complete any movement habit that day (walk, workout, exercise, rowing, stretch, mobility, move)."
+              : streakHelp === "mind"
+                ? "🧠 Mind streak: Counts if you complete breathwork/meditation, journaling, or anything with neuro in the label."
+                : "😴 Sleep streak: Counts if you complete a routine with sleep in the label (e.g. Sleep by target time)."}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
