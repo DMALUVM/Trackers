@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import type { DayMode, DailyLogRow, RoutineItemRow } from "@/lib/types";
 import { daveSeedRoutineItems, daveSeedWeeklyGoals } from "@/lib/seeds";
 import { tzDateKey } from "@/lib/time";
+import { cacheClear, cacheGet, cacheSet } from "@/lib/clientCache";
 
 export function toDateKey(d: Date) {
   // Normalize to app timezone (America/New_York) so "days" don't drift while traveling.
@@ -26,19 +27,27 @@ const DEFAULT_ENABLED_MODULES = ["progress", "rowing", "settings"];
 
 export async function getUserSettings(): Promise<UserSettingsRow> {
   const userId = await getUserId();
+  const cacheKey = `user_settings:${userId}`;
+  const cached = cacheGet<UserSettingsRow>(cacheKey);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from("user_settings")
     .select("user_id,enabled_modules,theme")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
+
   if (!data) {
     // Create default settings row
     const insert = { user_id: userId, enabled_modules: DEFAULT_ENABLED_MODULES, theme: "system" as const };
     const { error: insErr } = await supabase.from("user_settings").insert(insert);
     if (insErr) throw insErr;
+    cacheSet(cacheKey, insert, 5 * 60 * 1000);
     return insert;
   }
+
+  cacheSet(cacheKey, data as UserSettingsRow, 5 * 60 * 1000);
   return data as UserSettingsRow;
 }
 
@@ -48,6 +57,13 @@ export async function setEnabledModules(enabled: string[]) {
     .from("user_settings")
     .upsert({ user_id: userId, enabled_modules: enabled }, { onConflict: "user_id" });
   if (error) throw error;
+
+  cacheClear(`user_settings:${userId}`);
+  try {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("routines365:userSettingsChanged"));
+  } catch {
+    // ignore
+  }
 }
 
 export async function setThemePref(theme: "system" | "dark" | "light") {
@@ -56,6 +72,13 @@ export async function setThemePref(theme: "system" | "dark" | "light") {
     .from("user_settings")
     .upsert({ user_id: userId, theme }, { onConflict: "user_id" });
   if (error) throw error;
+
+  cacheClear(`user_settings:${userId}`);
+  try {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("routines365:userSettingsChanged"));
+  } catch {
+    // ignore
+  }
 }
 
 export async function listRoutineItems(): Promise<RoutineItemRow[]> {
@@ -69,6 +92,10 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   const userId = session?.user?.id;
   if (!userId) return [];
 
+  const cacheKey = `routine_items:${userId}`;
+  const cached = cacheGet<RoutineItemRow[]>(cacheKey);
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from("routine_items")
     .select(
@@ -79,7 +106,10 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
     .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+
+  const res = data ?? [];
+  cacheSet(cacheKey, res, 60 * 1000);
+  return res;
 }
 
 export async function getRoutineItem(id: string): Promise<RoutineItemRow | null> {
@@ -119,6 +149,8 @@ export async function updateRoutineItem(
   // to refresh after edits.
   try {
     if (typeof window !== "undefined") {
+      const userId = await getUserId();
+      cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
   } catch {
@@ -148,6 +180,7 @@ export async function createRoutineItem(opts: {
 
   try {
     if (typeof window !== "undefined") {
+      cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
   } catch {
@@ -181,6 +214,7 @@ export async function createRoutineItemsBulk(opts: {
 
   try {
     if (typeof window !== "undefined") {
+      cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
   } catch {
