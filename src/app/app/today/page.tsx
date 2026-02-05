@@ -66,6 +66,11 @@ export default function TodayPage() {
   const [snoozedUntil, setSnoozedUntil] = useState<Record<string, number>>({});
   const [last7Days, setLast7Days] = useState<Array<{ dateKey: string; color: DayColor }>>([]);
   const [streak, setStreak] = useState<{ current: number; best: number }>({ current: 0, best: 0 });
+  const [categoryStreaks, setCategoryStreaks] = useState<{ movement: number; mind: number; sleep: number }>({
+    movement: 0,
+    mind: 0,
+    sleep: 0,
+  });
   const [showOptional, setShowOptional] = useState(false);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
 
@@ -242,6 +247,44 @@ export default function TodayPage() {
               }
             }
             setStreak({ current, best });
+
+            // Category streaks (simple MVP): inferred from checks + a few label keywords.
+            // Movement: walk/workout/exercise/rowing/stretch/mobility
+            // Mind: breathwork/meditation/journal/neuro
+            // Sleep: sleep
+            const labelById = new Map(routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()]));
+            const movementKeys = ["walk", "workout", "exercise", "rowing", "stretch", "mobility", "move"];
+            const mindKeys = ["breath", "meditat", "journal", "neuro", "mind"];
+            const sleepKeys = ["sleep"];
+
+            const didCategory = (dk: string, keys: string[]) => {
+              const cs = checksByDate.get(dk) ?? [];
+              for (const c of cs) {
+                if (!c.done) continue;
+                const lbl = labelById.get(c.routine_item_id) ?? "";
+                if (keys.some((k) => lbl.includes(k))) return true;
+              }
+              const l = logMap.get(dk);
+              if (keys.includes("rowing") && l?.did_rowing) return true;
+              if ((keys.includes("workout") || keys.includes("exercise")) && l?.did_weights) return true;
+              return false;
+            };
+
+            const streakFor = (keys: string[]) => {
+              let s = 0;
+              for (let i = histDays.length - 1; i >= 0; i--) {
+                const dk = histDays[i].dateKey;
+                if (!didCategory(dk, keys)) break;
+                s += 1;
+              }
+              return s;
+            };
+
+            setCategoryStreaks({
+              movement: streakFor(movementKeys),
+              mind: streakFor(mindKeys),
+              sleep: streakFor(sleepKeys),
+            });
           } catch {
             // ignore
           }
@@ -294,6 +337,9 @@ export default function TodayPage() {
     const coreDone = core.filter((i) => i.done).length;
     const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
+    // Bonus: reward optional completion without diluting CORE
+    const bonusDone = optional.filter((i) => i.done).length;
+
     // Immediate color: based on today's scheduled CORE only (what's on-screen).
     const immediateColor: DayColor =
       coreTotal === 0 ? "empty" : missingCore.length === 0 ? "green" : missingCore.length === 1 ? "yellow" : "red";
@@ -308,6 +354,7 @@ export default function TodayPage() {
       coreTotal,
       coreDone,
       score,
+      bonusDone,
       immediateColor,
     };
   }, [items, snoozedUntil]);
@@ -533,17 +580,34 @@ export default function TodayPage() {
         </div>
         <div className="mt-2 flex items-end justify-between">
           <p className="text-4xl font-semibold tracking-tight">{nextActions.score}</p>
-          <p className="text-sm text-neutral-400">
-            Core: {nextActions.coreDone}/{nextActions.coreTotal}
-          </p>
+          <div className="text-right">
+            <p className="text-sm text-neutral-400">
+              Core: {nextActions.coreDone}/{nextActions.coreTotal}
+            </p>
+            <p className="text-xs text-neutral-500">Bonus: +{nextActions.bonusDone}</p>
+          </div>
         </div>
         {nextActions.missingCore.length > 0 ? (
           <p className="mt-2 text-sm text-neutral-300">
             Do <b>{Math.min(1, nextActions.missingCore.length)}</b> more Core habit to improve your score.
           </p>
         ) : (
-          <p className="mt-2 text-sm text-neutral-300">All Core habits done. Keep it simple.</p>
+          <p className="mt-2 text-sm text-neutral-300">
+            All Core habits done. {nextActions.bonusDone > 0 ? `Bonus done: +${nextActions.bonusDone}.` : "Keep it simple."}
+          </p>
         )}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
+            Movement streak: {categoryStreaks.movement}
+          </span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
+            Mind streak: {categoryStreaks.mind}
+          </span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold text-neutral-200">
+            Sleep streak: {categoryStreaks.sleep}
+          </span>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
