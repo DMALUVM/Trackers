@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { Zap } from "lucide-react";
 import type { DayMode, RoutineItemRow } from "@/lib/types";
+import { addActivityLog } from "@/lib/activity";
 import {
   listRoutineItems,
   loadDayState,
@@ -481,6 +482,71 @@ export default function TodayPage() {
     setTimeout(() => setRecentlyDoneId(null), 600);
   };
 
+  const logMetric = async (item: UiItem) => {
+    const label = (item.label ?? "").toLowerCase();
+    try {
+      if (label.includes("rowing")) {
+        const metersRaw = prompt("Rowing meters (e.g., 5000)");
+        if (!metersRaw) return;
+        const meters = Number(metersRaw);
+        if (!Number.isFinite(meters) || meters <= 0) return;
+
+        const minutesRaw = prompt("Time (minutes, optional)");
+        const minutes = minutesRaw ? Number(minutesRaw) : NaN;
+
+        await addActivityLog({ dateKey, activityKey: "rowing", value: meters, unit: "meters" });
+        if (Number.isFinite(minutes) && minutes > 0) {
+          await addActivityLog({ dateKey, activityKey: "rowing", value: minutes, unit: "minutes" });
+        }
+
+        setStatus("Rowing logged.");
+        setTimeout(() => setStatus(""), 1000);
+        return;
+      }
+
+      if (label.includes("run")) {
+        const milesRaw = prompt("Running miles (e.g., 2.5)");
+        if (!milesRaw) return;
+        const miles = Number(milesRaw);
+        if (!Number.isFinite(miles) || miles <= 0) return;
+        await addActivityLog({ dateKey, activityKey: "running", value: miles, unit: "miles" });
+        setStatus("Run logged.");
+        setTimeout(() => setStatus(""), 1000);
+        return;
+      }
+
+      if (label.includes("walk")) {
+        const stepsRaw = prompt("Walking steps (e.g., 8500)");
+        if (!stepsRaw) return;
+        const steps = Number(stepsRaw);
+        if (!Number.isFinite(steps) || steps <= 0) return;
+        await addActivityLog({ dateKey, activityKey: "walking", value: Math.round(steps), unit: "steps" });
+        setStatus("Walk logged.");
+        setTimeout(() => setStatus(""), 1000);
+        return;
+      }
+
+      if (label.includes("sauna")) {
+        await addActivityLog({ dateKey, activityKey: "sauna", value: 1, unit: "sessions" });
+        setStatus("Sauna session logged.");
+        setTimeout(() => setStatus(""), 1000);
+        return;
+      }
+
+      if (label.includes("cold")) {
+        await addActivityLog({ dateKey, activityKey: "cold", value: 1, unit: "sessions" });
+        setStatus("Cold plunge logged.");
+        setTimeout(() => setStatus(""), 1000);
+        return;
+      }
+
+      setStatus("No metric attached to this routine yet.");
+      setTimeout(() => setStatus(""), 1200);
+    } catch (e: any) {
+      setStatus(`Metric log failed: ${e?.message ?? String(e)}`);
+    }
+  };
+
   const skipAllOptionalToday = () => {
     const until = Date.now() + 24 * 60 * 60 * 1000;
     for (const it of itemsRef.current) {
@@ -790,18 +856,20 @@ export default function TodayPage() {
         </div>
 
         <div className="mt-3 space-y-2">
-          {nextActions.core.length === 0 ? (
-            <p className="text-sm text-neutral-400">No CORE routines yet.</p>
+          {nextActions.core.filter((x) => !(snoozedUntil[x.id] && snoozedUntil[x.id] > Date.now())).length === 0 ? (
+            <p className="text-sm text-neutral-400">No CORE items for today.</p>
           ) : (
-            nextActions.core.map((item) => (
-              <div
-                key={item.id}
-                id={`ri-${item.id}`}
-                className={
-                  "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100 transition " +
-                  (recentlyDoneId === item.id ? "ring-2 ring-emerald-400/60" : "")
-                }
-              >
+            nextActions.core
+              .filter((x) => !(snoozedUntil[x.id] && snoozedUntil[x.id] > Date.now()))
+              .map((item) => (
+                <div
+                  key={item.id}
+                  id={`ri-${item.id}`}
+                  className={
+                    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100 transition " +
+                    (recentlyDoneId === item.id ? "ring-2 ring-emerald-400/60" : "")
+                  }
+                >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="text-base">{item.emoji ?? ""}</span>
@@ -842,6 +910,16 @@ export default function TodayPage() {
                     Skip today
                   </button>
                 </div>
+
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+                    onClick={() => void logMetric(item)}
+                  >
+                    + Log metric
+                  </button>
+                </div>
               </div>
             ))
           )}
@@ -862,14 +940,16 @@ export default function TodayPage() {
 
         {showOptional ? (
           <div className="mt-3 space-y-2">
-            {nextActions.optional.length === 0 ? (
+            {nextActions.optional.filter((x) => !(snoozedUntil[x.id] && snoozedUntil[x.id] > Date.now())).length === 0 ? (
               <p className="text-sm text-neutral-400">No optional routines.</p>
             ) : (
-              nextActions.optional.map((item) => (
-                <div
-                  key={item.id}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
-                >
+              nextActions.optional
+                .filter((x) => !(snoozedUntil[x.id] && snoozedUntil[x.id] > Date.now()))
+                .map((item) => (
+                  <div
+                    key={item.id}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-neutral-100"
+                  >
                   <div className="flex items-center gap-3">
                     <span className="text-base">{item.emoji ?? ""}</span>
                     <span className={item.done ? "text-neutral-300 line-through" : ""}>
@@ -903,6 +983,16 @@ export default function TodayPage() {
                       }}
                     >
                       Skip today
+                    </button>
+                  </div>
+
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+                      onClick={() => void logMetric(item)}
+                    >
+                      + Log metric
                     </button>
                   </div>
                 </div>
