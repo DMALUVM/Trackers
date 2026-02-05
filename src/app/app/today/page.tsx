@@ -2,6 +2,7 @@
 
 // Link import removed (using router.push for navigation)
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format, parseISO, subDays } from "date-fns";
 import { Zap } from "lucide-react";
@@ -80,6 +81,8 @@ export default function TodayPage() {
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [questsLoading, setQuestsLoading] = useState(true);
+  const [metricOpen, setMetricOpen] = useState(false);
+  const [metricKind, setMetricKind] = useState<MetricKind | null>(null);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -541,69 +544,29 @@ export default function TodayPage() {
     setTimeout(() => setRecentlyDoneId(null), 600);
   };
 
-  const logMetric = async (item: UiItem) => {
+  const logMetric = (item: UiItem) => {
     const label = (item.label ?? "").toLowerCase();
-    try {
-      if (label.includes("rowing")) {
-        const metersRaw = prompt("Rowing meters (e.g., 5000)");
-        if (!metersRaw) return;
-        const meters = Number(metersRaw);
-        if (!Number.isFinite(meters) || meters <= 0) return;
 
-        const minutesRaw = prompt("Time (minutes, optional)");
-        const minutes = minutesRaw ? Number(minutesRaw) : NaN;
+    const kind: MetricKind | null = label.includes("rowing")
+      ? { key: "rowing", title: "Rowing", emoji: "🚣" }
+      : label.includes("sauna")
+        ? { key: "sauna", title: "Sauna", emoji: "🔥" }
+        : label.includes("cold")
+          ? { key: "cold", title: "Cold plunge", emoji: "❄️" }
+          : label.includes("walk")
+            ? { key: "walking", title: "Walking", emoji: "🚶" }
+            : label.includes("run")
+              ? { key: "running", title: "Running", emoji: "🏃" }
+              : null;
 
-        await addActivityLog({ dateKey, activityKey: "rowing", value: meters, unit: "meters" });
-        if (Number.isFinite(minutes) && minutes > 0) {
-          await addActivityLog({ dateKey, activityKey: "rowing", value: minutes, unit: "minutes" });
-        }
-
-        setStatus("Rowing logged.");
-        setTimeout(() => setStatus(""), 1000);
-        return;
-      }
-
-      if (label.includes("run")) {
-        const milesRaw = prompt("Running miles (e.g., 2.5)");
-        if (!milesRaw) return;
-        const miles = Number(milesRaw);
-        if (!Number.isFinite(miles) || miles <= 0) return;
-        await addActivityLog({ dateKey, activityKey: "running", value: miles, unit: "miles" });
-        setStatus("Run logged.");
-        setTimeout(() => setStatus(""), 1000);
-        return;
-      }
-
-      if (label.includes("walk")) {
-        const stepsRaw = prompt("Walking steps (e.g., 8500)");
-        if (!stepsRaw) return;
-        const steps = Number(stepsRaw);
-        if (!Number.isFinite(steps) || steps <= 0) return;
-        await addActivityLog({ dateKey, activityKey: "walking", value: Math.round(steps), unit: "steps" });
-        setStatus("Walk logged.");
-        setTimeout(() => setStatus(""), 1000);
-        return;
-      }
-
-      if (label.includes("sauna")) {
-        await addActivityLog({ dateKey, activityKey: "sauna", value: 1, unit: "sessions" });
-        setStatus("Sauna session logged.");
-        setTimeout(() => setStatus(""), 1000);
-        return;
-      }
-
-      if (label.includes("cold")) {
-        await addActivityLog({ dateKey, activityKey: "cold", value: 1, unit: "sessions" });
-        setStatus("Cold plunge logged.");
-        setTimeout(() => setStatus(""), 1000);
-        return;
-      }
-
+    if (!kind) {
       setStatus("No metric attached to this routine yet.");
       setTimeout(() => setStatus(""), 1200);
-    } catch (e: any) {
-      setStatus(`Metric log failed: ${e?.message ?? String(e)}`);
+      return;
     }
+
+    setMetricKind(kind);
+    setMetricOpen(true);
   };
 
   const skipAllOptionalToday = () => {
@@ -1022,7 +985,7 @@ export default function TodayPage() {
                   <button
                     type="button"
                     className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
-                    onClick={() => void logMetric(item)}
+                    onClick={() => logMetric(item)}
                   >
                     + Log metric
                   </button>
@@ -1097,7 +1060,7 @@ export default function TodayPage() {
                     <button
                       type="button"
                       className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
-                      onClick={() => void logMetric(item)}
+                      onClick={() => logMetric(item)}
                     >
                       + Log metric
                     </button>
@@ -1110,6 +1073,35 @@ export default function TodayPage() {
           <p className="mt-2 text-xs text-neutral-500">Hidden. Keep Today focused.</p>
         )}
       </section>
+
+      <MetricSheet
+        open={metricOpen}
+        kind={metricKind}
+        onClose={() => {
+          setMetricOpen(false);
+          setMetricKind(null);
+        }}
+        onSave={async (p) => {
+          if (!metricKind) return;
+          if (metricKind.key === "rowing" && p.meters) {
+            await addActivityLog({ dateKey, activityKey: "rowing", value: p.meters, unit: "meters" });
+            if (p.minutes) await addActivityLog({ dateKey, activityKey: "rowing", value: p.minutes, unit: "minutes" });
+            return;
+          }
+          if (metricKind.key === "running" && p.miles) {
+            await addActivityLog({ dateKey, activityKey: "running", value: p.miles, unit: "miles" });
+            return;
+          }
+          if (metricKind.key === "walking" && p.steps) {
+            await addActivityLog({ dateKey, activityKey: "walking", value: p.steps, unit: "steps" });
+            return;
+          }
+          if ((metricKind.key === "sauna" || metricKind.key === "cold") && p.sessions) {
+            await addActivityLog({ dateKey, activityKey: metricKind.key, value: p.sessions, unit: "sessions" });
+            return;
+          }
+        }}
+      />
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-xs text-neutral-500">Date</p>
