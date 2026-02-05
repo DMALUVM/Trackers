@@ -42,11 +42,11 @@ export default function OnboardingPage() {
           className="w-full rounded-2xl bg-white p-4 text-left text-black"
           onClick={() => {
             localStorage.removeItem("routines365:gettingStarted:dismissed");
-            router.push("/app/onboarding/templates");
+            router.push("/app/onboarding/goal");
           }}
         >
           <p className="text-base font-semibold">Start with a template</p>
-          <p className="mt-1 text-sm text-black/70">Quick start or customize. Either way, you land in Today.</p>
+          <p className="mt-1 text-sm text-black/70">Pick a goal, then quick start or customize. You land in Today.</p>
         </button>
 
         <button

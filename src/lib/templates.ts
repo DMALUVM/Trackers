@@ -12,6 +12,8 @@ export type TemplateAddon = TemplateRoutine & {
   defaultOn?: boolean;
 };
 
+export type OnboardingGoal = "energy" | "fitness" | "focus" | "sleep";
+
 export type TemplatePack = {
   id: string;
   title: string;
@@ -19,8 +21,9 @@ export type TemplatePack = {
   routines: TemplateRoutine[];
   addons?: TemplateAddon[];
   weeklyGoals?: Array<{ key: string; targetPerWeek: number; minPerWeek?: number }>;
-  modules?: Array<"progress" | "rowing" | "settings" | "neuro">;
+  modules?: Array<"progress" | "rowing" | "settings" | "neuro" | "cardio" | "recovery">;
   tier?: "general" | "advanced";
+  goals?: OnboardingGoal[];
 };
 
 export const templatePacks: TemplatePack[] = [
@@ -29,6 +32,7 @@ export const templatePacks: TemplatePack[] = [
     title: "Movement-first",
     desc: "Movement + breathwork + exercise + nourishment. Minimal fluff.",
     tier: "advanced",
+    goals: ["energy", "fitness"],
     routines: [
       {
         id: "morning-movement",
@@ -76,6 +80,7 @@ export const templatePacks: TemplatePack[] = [
     id: "morning-reset-10",
     title: "Morning Reset (10 min)",
     tier: "general",
+    goals: ["energy"],
     desc: "A simple morning routine you can actually stick with.",
     routines: [
       { id: "water", label: "Drink water", emoji: "💧", section: "morning", defaultCore: true },
@@ -107,6 +112,7 @@ export const templatePacks: TemplatePack[] = [
     id: "fitness-consistency",
     title: "Fitness Consistency",
     tier: "general",
+    goals: ["fitness", "energy"],
     desc: "Daily movement + a few basics to keep you on track.",
     routines: [
       { id: "water", label: "Drink water", emoji: "💧", section: "morning", defaultCore: true },
@@ -133,6 +139,7 @@ export const templatePacks: TemplatePack[] = [
     id: "productivity-focus",
     title: "Productivity Focus",
     tier: "general",
+    goals: ["focus"],
     desc: "Less busywork, more focus. Simple daily structure.",
     routines: [
       {
