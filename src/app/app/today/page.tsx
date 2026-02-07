@@ -723,6 +723,28 @@ export default function TodayPage() {
         ) : null}
       </header>
 
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-neutral-200">Sleep</p>
+            <p className="mt-1 text-sm text-neutral-400">
+              {sleepScoreToday == null ? "Log last night’s sleep score." : `Last night: ${sleepScoreToday}/100`}
+            </p>
+            <p className="mt-1 text-[11px] text-neutral-500">Good = 80+</p>
+          </div>
+          <button
+            type="button"
+            className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-white/90"
+            onClick={() => {
+              setMetricKind({ key: "sleep", title: "Sleep score", emoji: "😴" });
+              setMetricOpen(true);
+            }}
+          >
+            {sleepScoreToday == null ? "Log sleep" : "Edit"}
+          </button>
+        </div>
+      </section>
+
       {quickLogOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-end bg-black/60 p-4"
