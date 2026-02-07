@@ -6,11 +6,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { persistSessionToCookies, readSessionFromCookies } from "@/lib/sessionCookie";
 
 /**
- * Ensures the /app routes never render in a "half-auth" state.
+ * Ensures /app routes never render in a "half-auth" state.
  *
- * On some devices (notably iOS PWAs), session restoration can be slightly async.
- * If pages call Supabase immediately, they can briefly see "no user" and force
- * re-auth, which feels like the user is being logged out.
+ * On iOS PWAs, session restoration can be async. Without this gate,
+ * pages could briefly see "no user" and force re-auth.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -21,30 +20,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
     const init = async () => {
       try {
-        // First check: do we already have a session in storage?
         let { data } = await supabase.auth.getSession();
 
-        // iOS Safari/PWA can be flaky about timing; also access tokens can expire.
-        // If we have no session, attempt a few quiet refreshes before redirecting.
+        // iOS Safari/PWA timing: retry with increasing delays
         if (!data.session) {
           for (const delay of [0, 250, 800]) {
             if (delay) await sleep(delay);
-            try {
-              await supabase.auth.refreshSession();
-            } catch {
-              // ignore
-            }
+            try { await supabase.auth.refreshSession(); } catch { /* ignore */ }
             data = (await supabase.auth.getSession()).data;
             if (data.session) break;
           }
         }
 
-        // Fallback: restore from cookies if local storage was cleared (common on iOS PWA).
+        // Fallback: restore from cookies if localStorage was cleared
         if (!data.session) {
           const cookie = readSessionFromCookies();
           if (cookie) {
@@ -54,15 +46,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 refresh_token: cookie.refresh_token,
               });
               data = (await supabase.auth.getSession()).data;
-            } catch {
-              // ignore
-            }
+            } catch { /* ignore */ }
           }
         }
 
-        // Keep cookies in sync when we do have a session.
         persistSessionToCookies(data.session);
-
         if (cancelled) return;
         setHasSession(!!data.session);
       } finally {
@@ -72,24 +60,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     void init();
 
+    // Refresh on foreground
     const onVisible = () => {
       if (document.visibilityState !== "visible") return;
-      // When the app is foregrounded, try to refresh quietly.
       void supabase.auth.refreshSession().catch(() => {});
     };
-
     document.addEventListener("visibilitychange", onVisible);
 
-    // Extra safety for iOS PWAs: periodically refresh so users don't get "surprise" logouts.
+    // Periodic refresh for long sessions
     const interval = window.setInterval(() => {
       void supabase.auth.refreshSession().catch(() => {});
     }, 5 * 60 * 1000);
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
-      // Mirror into cookies so iOS PWAs can restore if local storage is wiped.
       persistSessionToCookies(session);
       setHasSession(!!session);
       setReady(true);
@@ -103,32 +87,43 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Redirect to login if no session
   useEffect(() => {
     if (!ready) return;
     if (!hasSession) {
-      // Preserve a return path so after login we can come back.
-      // Include query string if present.
-      const fullPath =
-        typeof window !== "undefined"
-          ? window.location.pathname + window.location.search
-          : pathname ?? "/";
-      const next = `/?next=${encodeURIComponent(fullPath)}`;
-      router.replace(next);
+      const fullPath = typeof window !== "undefined"
+        ? window.location.pathname + window.location.search
+        : pathname ?? "/";
+      router.replace(`/?next=${encodeURIComponent(fullPath)}`);
     }
   }, [ready, hasSession, router, pathname]);
 
+  // ── Branded splash while loading ──
   if (!ready) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading…</p>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+        <div className="relative">
+          {/* Subtle glow */}
+          <div className="absolute inset-0 rounded-2xl animate-pulse"
+            style={{ background: "var(--accent-green-soft)", filter: "blur(20px)", transform: "scale(1.5)" }} />
+          <img src="/brand/routines365-logo.jpg" alt="" className="relative h-16 w-16 rounded-2xl"
+            style={{ border: "1px solid var(--border-primary)" }} />
+        </div>
+        <div className="flex items-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="rounded-full animate-pulse"
+              style={{
+                width: 6, height: 6,
+                background: "var(--text-faint)",
+                animationDelay: `${i * 0.15}s`,
+              }} />
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (!hasSession) {
-    // We are redirecting.
-    return null;
-  }
+  if (!hasSession) return null; // Redirecting
 
   return <>{children}</>;
 }

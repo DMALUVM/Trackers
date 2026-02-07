@@ -10,107 +10,88 @@ export default function ResetPasswordPage() {
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [status, setStatus] = useState<string>("");
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const run = async () => {
-      // With detectSessionInUrl enabled, Supabase should turn the recovery link into a session.
       const { data } = await supabase.auth.getSession();
       setSignedInEmail(data.session?.user.email ?? null);
       setReady(true);
     };
     void run();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSignedInEmail(session?.user.email ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  const setNewPassword = async () => {
-    if (saving) return;
-    if (!password || password.length < 8) {
-      setStatus("Password must be at least 8 characters.");
-      return;
-    }
-    if (password !== confirm) {
-      setStatus("Passwords do not match.");
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (busy) return;
+    if (!password || password.length < 8) { setStatus("Password must be at least 8 characters."); return; }
+    if (password !== confirm) { setStatus("Passwords don't match."); return; }
 
-    setSaving(true);
-    setStatus("Saving new password...");
+    setBusy(true);
+    setStatus("");
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setStatus("Password updated. Taking you to the app...");
-      setTimeout(() => router.replace("/app/today"), 500);
+      setStatus("Password updated! Redirecting…");
+      setTimeout(() => router.replace("/app/today"), 600);
     } catch (e: unknown) {
       setStatus(e instanceof Error ? e.message : String(e));
-      setSaving(false);
+      setBusy(false);
     }
   };
 
   return (
     <main className="min-h-dvh bg-black text-white">
       <div className="mx-auto w-full max-w-md px-6 py-10 space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Reset password</h1>
-          <p className="text-sm text-neutral-300">
-            {ready
-              ? signedInEmail
-                ? `Signed in as ${signedInEmail}`
-                : "Open the reset link from your email to continue."
-              : "Loading..."}
+        <header className="text-center space-y-3">
+          <img src="/brand/routines365-logo.jpg" alt="" className="h-16 w-16 mx-auto rounded-2xl border border-white/10" />
+          <h1 className="text-2xl font-bold tracking-tight">Reset password</h1>
+          <p className="text-sm text-neutral-400">
+            {!ready ? "Loading…" : signedInEmail ? `Signed in as ${signedInEmail}` : "Open the reset link from your email."}
           </p>
         </header>
 
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-neutral-300">New password</label>
-            <input
-              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-base text-white placeholder:text-neutral-500"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              disabled={!signedInEmail}
-            />
+            <label className="block text-xs font-medium text-neutral-400">New password</label>
+            <input className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder:text-neutral-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition"
+              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••" autoComplete="new-password" disabled={!signedInEmail}
+              required minLength={8} />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-300">Confirm password</label>
-            <input
-              className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-base text-white placeholder:text-neutral-500"
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="new-password"
-              disabled={!signedInEmail}
-            />
+            <label className="block text-xs font-medium text-neutral-400">Confirm password</label>
+            <input className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder:text-neutral-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition"
+              type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
+              placeholder="••••••••" autoComplete="new-password" disabled={!signedInEmail}
+              required />
           </div>
 
-          <button
-            type="button"
-            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
-            onClick={setNewPassword}
-            disabled={!signedInEmail || saving}
-          >
-            {saving ? "Saving..." : "Set new password"}
+          <button type="submit" disabled={!signedInEmail || busy}
+            className="w-full rounded-xl bg-white px-4 py-3.5 text-sm font-bold text-black disabled:opacity-50 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            {busy ? (
+              <><span className="h-4 w-4 rounded-full border-2 border-black/20 border-t-black animate-spin" /> Saving…</>
+            ) : "Set new password"}
           </button>
 
-          {status ? <p className="text-xs text-neutral-400">{status}</p> : null}
-        </section>
+          {status && (
+            <p className={`text-xs ${status.includes("updated") ? "text-emerald-400" : "text-red-400"}`}>
+              {status}
+            </p>
+          )}
+        </form>
 
-        <a className="text-sm text-neutral-300 underline" href="/">
-          Back to sign in
-        </a>
+        <div className="text-center">
+          <a className="text-sm text-neutral-500 hover:text-neutral-300 transition-colors" href="/">
+            ← Back to sign in
+          </a>
+        </div>
       </div>
     </main>
   );
