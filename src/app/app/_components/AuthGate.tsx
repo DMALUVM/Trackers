@@ -100,13 +100,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [ready, hasSession, router, pathname]);
 
   // ── Branded splash while loading ──
+  // NOTE: Renders outside ThemeGate — use hardcoded colors, not CSS variables.
   if (!ready) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <div className="relative">
-          {/* Subtle glow */}
           <div className="absolute inset-0 rounded-2xl animate-pulse"
-            style={{ background: "var(--accent-green-soft)", filter: "blur(20px)", transform: "scale(1.5)" }} />
+            style={{ background: "rgba(16,185,129,0.15)", filter: "blur(20px)", transform: "scale(1.5)" }} />
           <div className="relative">
             <BrandIcon size={64} />
           </div>
@@ -116,7 +116,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <div key={i} className="rounded-full animate-pulse"
               style={{
                 width: 6, height: 6,
-                background: "var(--text-faint)",
+                background: "rgba(255,255,255,0.25)",
                 animationDelay: `${i * 0.15}s`,
               }} />
           ))}
