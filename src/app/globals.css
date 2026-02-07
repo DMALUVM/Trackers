@@ -202,6 +202,41 @@ html, body { overscroll-behavior-y: none; }
 }
 .animate-streak-glow { animation: streak-glow 2s ease-in-out infinite; }
 
+@keyframes milestone-bounce {
+  0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.15) rotate(3deg); }
+  70% { transform: scale(0.95) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes trophy-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.animate-trophy-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  background-size: 200% 100%;
+  animation: trophy-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes progress-fill {
+  from { width: 0%; }
+}
+.animate-progress-fill { animation: progress-fill 0.8s ease-out both; }
+
+@keyframes gentle-glow {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 16px var(--accent-green); }
+}
+.animate-gentle-glow { animation: gentle-glow 3s ease-in-out infinite; }
+
+@keyframes nudge-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+.animate-nudge { animation: nudge-shake 0.4s ease-in-out; }
+
 /* Stagger children entrance */
 .stagger-children > * { animation: fade-in-up 0.3s ease-out both; }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }

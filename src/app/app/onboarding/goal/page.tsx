@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { listRoutineItems } from "@/lib/supabaseData";
+import { hapticMedium } from "@/lib/haptics";
 
 type Goal = "energy" | "fitness" | "focus" | "sleep";
 
-const GOALS: Array<{ key: Goal; title: string; desc: string; emoji: string }> = [
-  { key: "energy", title: "Energy", desc: "Feel good daily with a simple baseline.", emoji: "⚡" },
-  { key: "fitness", title: "Fitness", desc: "Movement + workouts, tracked with metrics.", emoji: "🏋️" },
-  { key: "focus", title: "Focus", desc: "Less chaos, more deep work and shutdown.", emoji: "🎯" },
-  { key: "sleep", title: "Sleep", desc: "Build consistency and recovery.", emoji: "😴" },
+const GOALS: Array<{ key: Goal; title: string; desc: string; emoji: string; identity: string }> = [
+  { key: "energy",  title: "Energy",  desc: "A simple baseline that makes every day better.",     emoji: "⚡", identity: "Someone who takes care of themselves" },
+  { key: "fitness", title: "Fitness", desc: "Movement, workouts, and metrics you can watch grow.", emoji: "🏋️", identity: "An athlete in training" },
+  { key: "focus",   title: "Focus",   desc: "Less noise, more deep work, clean shutdowns.",       emoji: "🎯", identity: "Someone who protects their attention" },
+  { key: "sleep",   title: "Sleep",   desc: "Wind-down routines and recovery tracking.",           emoji: "😴", identity: "Someone who prioritizes rest" },
 ];
 
 export default function OnboardingGoalPage() {
@@ -26,37 +27,53 @@ export default function OnboardingGoalPage() {
 
   const choose = (g: Goal) => {
     setBusy(g);
+    hapticMedium();
     try { localStorage.setItem("routines365:onboarding:goal", g); router.push("/app/onboarding/templates"); }
     finally { setBusy(""); }
   };
 
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Your goal</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Pick one. You can change anything later.</p>
+    <div className="space-y-6 animate-fade-in">
+      {/* Step indicator */}
+      <div className="flex items-center gap-2">
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
+      </div>
+
+      <header className="text-center space-y-2">
+        <h1 className="text-2xl font-black tracking-tight" style={{ color: "var(--text-primary)" }}>
+          What are you building toward?
+        </h1>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Pick one. We'll suggest habits that match.
+        </p>
       </header>
 
       <section className="space-y-3">
         {GOALS.map((g) => (
           <button key={g.key} type="button" disabled={!!busy} onClick={() => choose(g.key)}
-            className="card-interactive w-full p-4 text-left disabled:opacity-60">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
-                  <span className="mr-2">{g.emoji}</span>{g.title}
-                </p>
-                <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{g.desc}</p>
+            className="w-full rounded-2xl p-4 text-left transition-all active:scale-[0.98] disabled:opacity-60"
+            style={{
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-primary)",
+            }}>
+            <div className="flex items-center gap-4">
+              <div className="shrink-0 flex items-center justify-center rounded-xl"
+                style={{ width: 48, height: 48, background: "var(--bg-card-hover)", fontSize: 24 }}>
+                {g.emoji}
               </div>
-              {busy === g.key && <span className="text-xs" style={{ color: "var(--text-muted)" }}>Choosing…</span>}
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{g.title}</p>
+                <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{g.desc}</p>
+                <p className="text-xs mt-1 italic" style={{ color: "var(--text-faint)" }}>
+                  "{g.identity}"
+                </p>
+              </div>
             </div>
           </button>
         ))}
       </section>
-
-      <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-        We'll recommend a template and enable the right tabs. You can edit your routines anytime.
-      </p>
     </div>
   );
 }

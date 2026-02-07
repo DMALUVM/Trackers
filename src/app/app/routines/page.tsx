@@ -159,18 +159,21 @@ export default function RoutinesPage() {
       </section>
 
       {/* ── QUICK LINKS ── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <Link href="/app/routines/progress" className="card-interactive flex flex-col items-center gap-2 p-4 text-center"
           onClick={() => hapticLight()}>
           <span className="text-xl">📊</span>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Progress</span>
-          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Calendar + stats</span>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Progress</span>
+        </Link>
+        <Link href="/app/trophies" className="card-interactive flex flex-col items-center gap-2 p-4 text-center"
+          onClick={() => hapticLight()}>
+          <span className="text-xl">🏆</span>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Trophies</span>
         </Link>
         <Link href={`/app/routines/edit/${dateKey}`} className="card-interactive flex flex-col items-center gap-2 p-4 text-center"
           onClick={() => hapticLight()}>
           <span className="text-xl">✏️</span>
-          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Edit today</span>
-          <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>Fix past entries</span>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>Edit today</span>
         </Link>
       </div>
 

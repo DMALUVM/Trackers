@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, MoreHorizontal, Zap } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
 import {
@@ -15,11 +15,18 @@ import {
   BottomSheet,
   ConfettiBurst,
   EmptyState,
+  MilestoneModal,
+  MotivationBanner,
+  NextMilestoneTeaser,
+  ComebackBanner,
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
-import { hapticHeavy, hapticLight } from "@/lib/haptics";
+import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
+import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
+import type { Milestone } from "@/lib/milestones";
+import type { MotivationContext } from "@/lib/motivation";
 
 // ---------------------------------------------------------------------------
 // Greeting helper
@@ -34,7 +41,18 @@ function greeting(): string {
 }
 
 // ===========================================================================
-// TODAY PAGE
+// TODAY PAGE — THE DAILY RITUAL
+// ===========================================================================
+// Psychology notes woven into the code:
+// 
+// 1. VARIABLE REWARD: Motivation message changes daily (not stale)
+// 2. LOSS AVERSION: Streak-at-risk warning in evening
+// 3. ENDOWED PROGRESS: "4/6 core" not "2 left" (until close to done)
+// 4. GOAL GRADIENT: Progress bar toward next milestone accelerates near end
+// 5. PEAK-END RULE: Green day celebration + milestone modal = peak moments
+// 6. COMEBACK WARMTH: No shame after missed days
+// 7. IDENTITY: "14-day streak" reinforces "I am consistent"
+// 8. COLLECTION: Trophies link creates aspiration
 // ===========================================================================
 export default function TodayPage() {
   const router = useRouter();
@@ -61,6 +79,11 @@ export default function TodayPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [justCompletedAll, setJustCompletedAll] = useState(false);
 
+  // Psychology state
+  const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
+  const [comebackDismissed, setComebackDismissed] = useState(false);
+  const [halfwayShown, setHalfwayShown] = useState(false);
+
   // Sync hook state → local
   useEffect(() => {
     setItems(routine.items);
@@ -70,6 +93,15 @@ export default function TodayPage() {
   }, [routine.loading]);
 
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
+
+  // Check for pending milestone on mount (from previous session)
+  useEffect(() => {
+    const pending = popPendingMilestone();
+    if (pending) {
+      // Show after a beat so the page renders first
+      setTimeout(() => setMilestoneToShow(pending), 800);
+    }
+  }, []);
 
   // Sync queue
   useEffect(() => {
@@ -83,8 +115,8 @@ export default function TodayPage() {
   // Derived
   const now = Date.now();
   const activeSnoozed = (id: string) => snoozedUntil[id] != null && snoozedUntil[id] > now;
-  const coreItems = useMemo(() => items.filter((i) => i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]);
-  const optionalItems = useMemo(() => items.filter((i) => !i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]);
+  const coreItems = useMemo(() => items.filter((i) => i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]); // eslint-disable-line
+  const optionalItems = useMemo(() => items.filter((i) => !i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]); // eslint-disable-line
   const coreDone = coreItems.filter((i) => i.done).length;
   const coreTotal = coreItems.length;
   const optionalDone = optionalItems.filter((i) => i.done).length;
@@ -100,6 +132,42 @@ export default function TodayPage() {
     if (last?.dateKey === dateKey) copy[copy.length - 1] = { ...last, color };
     return copy;
   }, [streaks.last7Days, dateKey, coreDone, coreTotal, allCoreDone]);
+
+  // ── Motivation context ──
+  const motivationCtx: MotivationContext = useMemo(() => ({
+    currentStreak: streaks.currentStreak,
+    bestStreak: streaks.bestStreak,
+    coreDone,
+    coreTotal,
+    allCoreDone,
+    daysSinceLastGreen: streaks.daysSinceLastGreen,
+    greenThisWeek: streaks.greenDaysThisWeek,
+    greenLastWeek: streaks.greenDaysLastWeek,
+  }), [streaks, coreDone, coreTotal, allCoreDone]);
+
+  // ── Milestone check on green day completion ──
+  useEffect(() => {
+    if (!allCoreDone || streaks.loading) return;
+    const result = checkMilestones({
+      currentStreak: streaks.currentStreak,
+      bestStreak: streaks.bestStreak,
+      totalGreenDays: streaks.totalGreenDays,
+      previousBestStreak: streaks.previousBestStreak,
+    });
+    if (result) {
+      // Delay so confetti plays first, then milestone modal
+      setTimeout(() => setMilestoneToShow(result), 1200);
+    }
+  }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
+
+  // ── Halfway micro-feedback ──
+  useEffect(() => {
+    if (halfwayShown || coreTotal < 4) return;
+    if (coreDone === Math.ceil(coreTotal / 2) && !allCoreDone) {
+      setHalfwayShown(true);
+      hapticMedium();
+    }
+  }, [coreDone, coreTotal, allCoreDone, halfwayShown]);
 
   // Actions
   const toggleItem = useCallback((id: string) => {
@@ -142,7 +210,6 @@ export default function TodayPage() {
       setConfettiTrigger(true);
       setTimeout(() => setConfettiTrigger(false), 100);
     }
-    // Reset the flag when items change
     if (!allCoreDone) setJustCompletedAll(false);
   }, [allCoreDone, coreDone, justCompletedAll]);
 
@@ -168,16 +235,18 @@ export default function TodayPage() {
     setMetricOpen(true);
   }, [items]);
 
-  // Headline
+  // ── Dynamic headline ──
   const headline = allCoreDone
     ? "Green day ✓"
     : coreTotal - coreDone === 1
-      ? "One more to go"
-      : coreDone === 0 && coreTotal > 0
-        ? "Let's build momentum"
-        : coreTotal > 0
-          ? `${coreTotal - coreDone} to go`
-          : "";
+      ? "One more to go!"
+      : halfwayShown && coreDone >= Math.ceil(coreTotal / 2) && !allCoreDone
+        ? "Halfway there 💪"
+        : coreDone === 0 && coreTotal > 0
+          ? "Let's build momentum"
+          : coreTotal > 0
+            ? `${coreTotal - coreDone} to go`
+            : "";
 
   // Loading
   if (routine.loading) return <TodayPageSkeleton />;
@@ -197,9 +266,10 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="space-y-6 pb-2">
+    <div className="space-y-5 pb-2">
       <ConfettiBurst trigger={confettiTrigger} />
       <Toast state={saveState} queuedCount={syncQueueCount} />
+      <MilestoneModal milestone={milestoneToShow} onDismiss={() => setMilestoneToShow(null)} />
 
       {/* ─── HEADER ─── */}
       <header className="flex items-center justify-between pt-1">
@@ -214,13 +284,38 @@ export default function TodayPage() {
             </span>
           </h1>
         </div>
-        <button type="button" onClick={() => setMenuOpen(true)}
-          className="flex items-center justify-center rounded-full transition-colors"
-          style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
-          aria-label="More options">
-          <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Trophies shortcut (appears after first milestone earned) */}
+          {!streaks.loading && (streaks.currentStreak >= 3 || streaks.totalGreenDays >= 1) && (
+            <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
+              className="flex items-center justify-center rounded-full transition-colors"
+              style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
+              aria-label="Trophies">
+              <Trophy size={17} style={{ color: "var(--accent-green-text)" }} />
+            </button>
+          )}
+          <button type="button" onClick={() => setMenuOpen(true)}
+            className="flex items-center justify-center rounded-full transition-colors"
+            style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
+            aria-label="More options">
+            <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
+          </button>
+        </div>
       </header>
+
+      {/* ─── COMEBACK BANNER (after 2+ missed days) ─── */}
+      {!streaks.loading && !comebackDismissed && streaks.daysSinceLastGreen >= 2 && streaks.currentStreak === 0 && (
+        <ComebackBanner
+          daysSinceLastGreen={streaks.daysSinceLastGreen}
+          previousStreak={streaks.previousBestStreak || streaks.bestStreak}
+          onDismiss={() => setComebackDismissed(true)}
+        />
+      )}
+
+      {/* ─── MOTIVATION BANNER ─── */}
+      {!streaks.loading && (comebackDismissed || streaks.daysSinceLastGreen < 2 || streaks.currentStreak > 0) && (
+        <MotivationBanner ctx={motivationCtx} />
+      )}
 
       {/* ─── SCORE CARD ─── */}
       <section className="card p-5">
@@ -243,9 +338,11 @@ export default function TodayPage() {
               )}
             </div>
 
-            {/* Streak */}
+            {/* Streak display with identity reinforcement */}
             {!streaks.loading && streaks.currentStreak > 0 && (
-              <div className="flex items-center gap-1.5">
+              <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
+                className="flex items-center gap-1.5 -ml-0.5"
+                aria-label={`${streaks.currentStreak} day streak - view trophies`}>
                 <span className={streaks.currentStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "14px" }}>🔥</span>
                 <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
                   {streaks.currentStreak}
@@ -254,7 +351,7 @@ export default function TodayPage() {
                   day streak
                   {streaks.bestStreak > streaks.currentStreak ? ` · best ${streaks.bestStreak}` : ""}
                 </span>
-              </div>
+              </button>
             )}
           </div>
         </div>
@@ -263,6 +360,14 @@ export default function TodayPage() {
         <div className="mt-4 flex justify-center">
           <WeekStrip days={last7WithToday} />
         </div>
+
+        {/* Next milestone progress bar */}
+        {!streaks.loading && streaks.currentStreak >= 1 && (
+          <NextMilestoneTeaser
+            currentStreak={streaks.currentStreak}
+            totalGreenDays={streaks.totalGreenDays}
+          />
+        )}
       </section>
 
       {/* ─── GREEN DAY CELEBRATION ─── */}
@@ -272,7 +377,14 @@ export default function TodayPage() {
           <div className="text-3xl mb-2">🎉</div>
           <p className="text-base font-bold" style={{ color: "var(--accent-green-text)" }}>Green Day!</p>
           <p className="text-sm mt-1" style={{ color: "var(--accent-green-text)", opacity: 0.8 }}>
-            All core habits done. {optionalItems.length > 0 && !showOptional ? "Check off some bonus habits?" : "You earned this."}
+            {streaks.currentStreak >= 7
+              ? `${streaks.currentStreak} days and counting. You're built different.`
+              : streaks.currentStreak >= 3
+                ? `${streaks.currentStreak}-day streak! The momentum is real.`
+                : optionalItems.length > 0 && !showOptional
+                  ? "All core done. Check off some bonus habits?"
+                  : "All core habits done. You earned this."
+            }
           </p>
         </section>
       )}
@@ -349,10 +461,9 @@ export default function TodayPage() {
         </section>
       )}
 
-      {/* ─── OVERFLOW MENU (Day Mode + Quick Actions) ─── */}
+      {/* ─── OVERFLOW MENU ─── */}
       <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="Options">
         <div className="space-y-4">
-          {/* Day mode */}
           <div>
             <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Day mode</p>
             <div className="grid grid-cols-3 gap-2">
@@ -366,7 +477,6 @@ export default function TodayPage() {
             </div>
           </div>
 
-          {/* Quick actions */}
           {!allCoreDone && coreTotal > 0 && (
             <div>
               <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Quick actions</p>
@@ -377,13 +487,18 @@ export default function TodayPage() {
             </div>
           )}
 
-          {/* Nav shortcuts */}
           <div>
-            <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Settings</p>
-            <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/settings/routines"); }}
-              className="btn-secondary w-full text-sm">
-              Edit routines
-            </button>
+            <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Navigate</p>
+            <div className="space-y-2">
+              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/trophies"); }}
+                className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
+                <Trophy size={14} /> Trophies & milestones
+              </button>
+              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/settings/routines"); }}
+                className="btn-secondary w-full text-sm">
+                Edit routines
+              </button>
+            </div>
           </div>
         </div>
       </BottomSheet>
@@ -414,7 +529,6 @@ export default function TodayPage() {
         }}
       />
 
-      {/* Fallback notice */}
       {routine.isFallback && (
         <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
           Nothing scheduled — showing core habits.

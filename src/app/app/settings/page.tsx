@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, LayoutGrid, ChevronRight } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 
 const sections = [
@@ -10,6 +10,7 @@ const sections = [
     items: [
       { href: "/app/settings/routines", label: "Routines", desc: "Edit habits, set Core priorities", icon: Settings },
       { href: "/app/settings/modules", label: "Modules", desc: "Choose which tabs to show", icon: LayoutGrid },
+      { href: "/app/trophies", label: "Trophies", desc: "Milestones and achievements", icon: Award },
       { href: "/app/settings/quests", label: "Quests", desc: "Weekly goals and streaks", icon: Trophy },
     ],
   },

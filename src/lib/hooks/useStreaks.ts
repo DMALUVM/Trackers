@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { format, subDays, startOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import { format, subDays, startOfMonth, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import type { DayColor } from "@/lib/progress";
 import { computeDayColor } from "@/lib/progress";
 import { loadRangeStates, listRoutineItems } from "@/lib/supabaseData";
@@ -23,6 +23,16 @@ export interface StreakData {
   greenDaysThisMonth: number;
   /** Core habit hit-rate for the current ISO week (0–100). */
   coreHitRateThisWeek: number | null;
+  /** Total green days across all history. */
+  totalGreenDays: number;
+  /** Number of days since the last green day (0 = today or yesterday was green). */
+  daysSinceLastGreen: number;
+  /** Green days in the current week (Mon–Sun). */
+  greenDaysThisWeek: number;
+  /** Green days in last week (for trend comparison). */
+  greenDaysLastWeek: number;
+  /** Previous best streak before current one (for personal best detection). */
+  previousBestStreak: number;
   loading: boolean;
 }
 
@@ -38,6 +48,11 @@ export function useStreaks(dateKey: string) {
     categoryStreaks: { movement: 0, mind: 0, sleep: 0 },
     greenDaysThisMonth: 0,
     coreHitRateThisWeek: null,
+    totalGreenDays: 0,
+    daysSinceLastGreen: 999,
+    greenDaysThisWeek: 0,
+    greenDaysLastWeek: 0,
+    previousBestStreak: 0,
     loading: true,
   });
 
@@ -94,15 +109,41 @@ export function useStreaks(dateKey: string) {
             currentStreak++;
           }
 
-          // Best streak
+          // Best streak and previous-best tracking
           let bestStreak = 0;
           let run = 0;
+          const completedStreaks: number[] = [];
           for (const d of histDays) {
             if (d.color === "green") {
               run++;
               if (run > bestStreak) bestStreak = run;
             } else {
+              if (run > 0) completedStreaks.push(run);
               run = 0;
+            }
+          }
+          // If current streak is the best, previous best is the second-best
+          const previousBestStreak = (() => {
+            const allStreaks = [...completedStreaks].sort((a, b) => b - a);
+            if (currentStreak >= bestStreak) {
+              // The best IS the current; find the next best from completed
+              return allStreaks.length > 0 ? allStreaks[0] : 0;
+            }
+            return bestStreak;
+          })();
+
+          // Total green days
+          let totalGreenDays = 0;
+          for (const d of histDays) {
+            if (d.color === "green") totalGreenDays++;
+          }
+
+          // Days since last green (before today)
+          let daysSinceLastGreen = 999;
+          for (let i = histDays.length - 1; i >= 0; i--) {
+            if (histDays[i].color === "green") {
+              daysSinceLastGreen = histDays.length - 1 - i;
+              break;
             }
           }
 
@@ -135,9 +176,20 @@ export function useStreaks(dateKey: string) {
             if (d.dateKey >= monthStart && d.color === "green") greenDaysThisMonth++;
           }
 
-          // Core hit-rate this week
+          // Green days this week vs last week
           const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
           const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+          const lastWeekStart = format(startOfWeek(subWeeks(today, 1), { weekStartsOn: 1 }), "yyyy-MM-dd");
+          const lastWeekEnd = format(endOfWeek(subWeeks(today, 1), { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+          let greenDaysThisWeek = 0;
+          let greenDaysLastWeek = 0;
+          for (const d of histDays) {
+            if (d.dateKey >= weekStart && d.dateKey <= weekEnd && d.color === "green") greenDaysThisWeek++;
+            if (d.dateKey >= lastWeekStart && d.dateKey <= lastWeekEnd && d.color === "green") greenDaysLastWeek++;
+          }
+
+          // Core hit-rate this week
           const coreIds = new Set(
             routineItems.filter((ri) => ri.is_non_negotiable).map((ri) => ri.id)
           );
@@ -164,6 +216,11 @@ export function useStreaks(dateKey: string) {
             },
             greenDaysThisMonth,
             coreHitRateThisWeek,
+            totalGreenDays,
+            daysSinceLastGreen,
+            greenDaysThisWeek,
+            greenDaysLastWeek,
+            previousBestStreak,
             loading: false,
           });
         } catch {

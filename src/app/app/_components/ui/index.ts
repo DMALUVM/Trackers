@@ -6,3 +6,7 @@ export { Toast, type ToastState } from "./Toast";
 export { BottomSheet } from "./BottomSheet";
 export { ConfettiBurst } from "./Confetti";
 export { EmptyState } from "./EmptyState";
+export { MilestoneModal } from "./MilestoneModal";
+export { MotivationBanner } from "./MotivationBanner";
+export { NextMilestoneTeaser } from "./NextMilestoneTeaser";
+export { ComebackBanner } from "./ComebackBanner";
