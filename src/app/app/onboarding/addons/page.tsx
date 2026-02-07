@@ -73,6 +73,14 @@ export default function OnboardingAddonsPage() {
 
   return (
     <div className="space-y-5">
+      {/* Step indicator */}
+      <div className="flex items-center gap-2">
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
+      </div>
+
       <header>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Add-ons</h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Optional extras. Rename anything later.</p>

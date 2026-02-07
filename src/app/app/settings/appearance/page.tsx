@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, Moon, Sun, Smartphone } from "lucide-react";
 import { setThemePref } from "@/lib/supabaseData";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 import { hapticLight } from "@/lib/haptics";
 
 type Theme = "system" | "dark" | "light";
@@ -41,10 +41,7 @@ export default function AppearancePage() {
   return (
     <div className="space-y-6">
       <Toast state={toast} />
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Appearance</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Choose how Routines365 looks.</p>
-      </header>
+      <SubPageHeader title="Appearance" subtitle="Choose how routines365 looks" backHref="/app/settings" />
 
       <section className="space-y-2">
         {themes.map(({ key, label, Icon, desc }) => {

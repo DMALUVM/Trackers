@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Plus } from "lucide-react";
 import { createRoutineItem, createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 
 type LibraryItem = { label: string; emoji?: string; section?: "morning" | "anytime" | "night"; suggestedCore?: boolean };
 
@@ -99,16 +98,14 @@ export default function RoutineLibraryPage() {
     <div className="space-y-5">
       <Toast state={toast} message={toastMsg || undefined} />
 
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Routine library</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Add common habits fast. Customize later.</p>
-        <div className="mt-3 flex items-center justify-between">
-          <Link className="btn-secondary text-xs py-2 px-3" href="/app/settings/routines">Back</Link>
+      <SubPageHeader title="Routine library" subtitle="Add common habits fast"
+        backHref="/app/settings/routines"
+        rightAction={
           <button type="button" onClick={() => void addStarterSet()} className="btn-primary text-xs py-2 px-3">
-            Add starter set
+            Starter set
           </button>
-        </div>
-      </header>
+        }
+      />
 
       <section className="card p-4">
         <label className="text-xs font-medium" style={{ color: "var(--text-faint)" }}>Search</label>

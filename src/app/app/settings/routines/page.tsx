@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { createRoutineItem, listRoutineItems, updateRoutineItem } from "@/lib/supabaseData";
 import type { RoutineItemRow } from "@/lib/types";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 
 /** Simple array reorder — replaces @dnd-kit/sortable dependency */
 function arrayMove<T>(arr: T[], from: number, to: number): T[] {
@@ -159,18 +159,15 @@ export default function RoutinesSettingsPage() {
     <div className="space-y-5">
       <Toast state={toast} message={toastMsg || undefined} />
 
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Routine settings</h1>
-        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Edit labels/emojis, mark Core habits, and reorder.
-        </p>
-        <div className="pt-2">
+      <SubPageHeader title="Routine settings" subtitle="Edit labels, mark core habits, and reorder"
+        backHref="/app/settings"
+        rightAction={
           <Link href="/app/settings/routines/library"
-            className="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-2">
-            <Plus size={14} /> Routine library
+            className="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-1.5">
+            <Plus size={14} /> Library
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       <section className="card p-4 space-y-3">
         <div>

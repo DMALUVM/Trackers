@@ -40,6 +40,13 @@ export function persistSessionToCookies(session: Session | null) {
   setCookie(CK_EXP, String(session.expires_at ?? 0), maxAge);
 }
 
+/** Clear all session cookies — used during sign-out */
+export function clearSessionCookies() {
+  clearCookie(CK_AT);
+  clearCookie(CK_RT);
+  clearCookie(CK_EXP);
+}
+
 export function readSessionFromCookies(): {
   access_token: string;
   refresh_token: string;

@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { RoutineItemRow } from "@/lib/types";
 import { getRoutineItem, updateRoutineItem } from "@/lib/supabaseData";
-import { Toast, SkeletonCard, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SkeletonCard, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 
 type FrequencyPreset = "everyday" | "mon-fri" | "mwf" | "tth" | "custom";
 
@@ -115,13 +114,7 @@ export default function RoutineDetailsPage() {
     <div className="space-y-5">
       <Toast state={toast} />
 
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Routine details</h1>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Rename, set CORE, and set frequency.</p>
-        </div>
-        <Link href="/app/settings/routines" className="btn-secondary text-xs py-2 px-3">Back</Link>
-      </header>
+      <SubPageHeader title="Routine details" subtitle="Rename, set CORE, and set frequency" backHref="/app/settings/routines" />
 
       {/* Name + Emoji + Core */}
       <section className="card p-4 space-y-3">

@@ -45,6 +45,7 @@ export default function OnboardingPage() {
         <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
         <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
         <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
       </div>
 
       {/* Hero */}

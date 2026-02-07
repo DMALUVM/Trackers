@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
 
-import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
+import { useToday, useRoutineDay, usePersist, useStreaks, usePullToRefresh } from "@/lib/hooks";
 import {
   ProgressRing,
   WeekStrip,
@@ -19,6 +19,8 @@ import {
   MotivationBanner,
   NextMilestoneTeaser,
   ComebackBanner,
+  PullToRefreshIndicator,
+  GettingStartedTips,
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
@@ -64,6 +66,12 @@ export default function TodayPage() {
   const { saveState, debouncedPersist, flushNow, persistSnooze } = usePersist({
     dateKey,
     itemsRef: routine.itemsRef,
+  });
+
+  // Pull-to-refresh — the #1 PWA gesture
+  const pullToRefresh = usePullToRefresh(async () => {
+    // Force reload routine data by navigating to self
+    window.location.reload();
   });
 
   // Local UI state
@@ -267,6 +275,7 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-5 pb-2">
+      <PullToRefreshIndicator {...pullToRefresh} />
       <ConfettiBurst trigger={confettiTrigger} />
       <Toast state={saveState} queuedCount={syncQueueCount} />
       <MilestoneModal milestone={milestoneToShow} onDismiss={() => setMilestoneToShow(null)} />
@@ -534,6 +543,8 @@ export default function TodayPage() {
           Nothing scheduled — showing core habits.
         </p>
       )}
+
+      <GettingStartedTips />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 import {
   getAllEarnedMilestones,
   STREAK_MILESTONES,
@@ -13,6 +12,7 @@ import type { Milestone } from "@/lib/milestones";
 import { useStreaks } from "@/lib/hooks";
 import { useToday } from "@/lib/hooks";
 import { hapticLight } from "@/lib/haptics";
+import { SubPageHeader } from "@/app/app/_components/ui";
 
 /**
  * Trophy case — see all milestones earned and upcoming.
@@ -25,7 +25,6 @@ import { hapticLight } from "@/lib/haptics";
  * Seeing 8/11 streak milestones earned creates a need to collect them all.
  */
 export default function TrophiesPage() {
-  const router = useRouter();
   const { dateKey } = useToday();
   const streaks = useStreaks(dateKey);
   const [achieved, setAchieved] = useState<Set<string>>(new Set());
@@ -72,19 +71,21 @@ export default function TrophiesPage() {
   return (
     <div className="space-y-6 pb-6">
       {/* Header */}
-      <header className="flex items-center gap-3 pt-1">
-        <button type="button" onClick={() => { hapticLight(); router.back(); }}
-          className="flex items-center justify-center rounded-full"
-          style={{ width: 36, height: 36, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-          <ChevronLeft size={18} style={{ color: "var(--text-muted)" }} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Trophies</h1>
-          <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-            {earned.length} earned
+      <SubPageHeader title="Trophies" subtitle={`${earned.length} earned`} />
+
+      {/* Empty state encouragement for new users */}
+      {earned.length === 0 && !streaks.loading && (
+        <div className="card p-6 text-center space-y-3">
+          <div className="text-4xl">🏆</div>
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+            Your trophy case is empty — for now
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            Complete 3 consecutive green days to earn your first milestone.
+            Every streak you build gets you closer to the next trophy.
           </p>
         </div>
-      </header>
+      )}
 
       {/* Summary stats */}
       <section className="grid grid-cols-2 gap-3">

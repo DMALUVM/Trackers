@@ -1,0 +1,17 @@
+{
+  "name": "routines365",
+  "short_name": "routines365",
+  "description": "Daily habit tracker with streaks, milestones, and beautiful progress.",
+  "start_url": "/app/today",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "/brand/pwa/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/pwa/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/pwa/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ],
+  "categories": ["health", "lifestyle", "productivity"]
+}

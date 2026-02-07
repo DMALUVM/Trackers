@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
-import { BottomSheet, Toast, type ToastState } from "@/app/app/_components/ui";
+import { BottomSheet, Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 
 type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green";
 
@@ -98,12 +97,7 @@ export default function QuestSettingsPage() {
     <div className="space-y-5">
       <Toast state={toast} />
 
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Quests</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-          Choose what shows on Today. Keep it motivating, not noisy.
-        </p>
-      </header>
+      <SubPageHeader title="Quests" subtitle="Choose what shows on Today" backHref="/app/settings" />
 
       {/* Master toggle + max shown */}
       <section className="card p-4 space-y-3">

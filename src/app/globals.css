@@ -237,6 +237,12 @@ html, body { overscroll-behavior-y: none; }
 }
 .animate-nudge { animation: nudge-shake 0.4s ease-in-out; }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin { animation: spin 0.8s linear infinite; }
+
 /* Stagger children entrance */
 .stagger-children > * { animation: fade-in-up 0.3s ease-out both; }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }

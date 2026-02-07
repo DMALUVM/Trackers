@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getUserId } from "@/lib/supabaseData";
 import { toCsv } from "@/lib/csv";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, Spinner, type ToastState } from "@/app/app/_components/ui";
 
 function download(filename: string, text: string, mimeType: string) {
   const blob = new Blob([text], { type: mimeType });
@@ -16,6 +16,7 @@ function download(filename: string, text: string, mimeType: string) {
 
 export default function BackupPage() {
   const [toast, setToast] = useState<ToastState>("idle");
+  const [busy, setBusy] = useState<string | null>(null);
 
   const fetchAll = async () => {
     const userId = await getUserId();
@@ -36,53 +37,42 @@ export default function BackupPage() {
   };
 
   const exportJson = async () => {
-    setToast("saving");
+    setBusy("json"); setToast("saving");
     try {
       const data = await fetchAll();
       download("routines365-backup.json", JSON.stringify(data, null, 2), "application/json");
-      setToast("saved");
-      setTimeout(() => setToast("idle"), 1500);
-    } catch {
-      setToast("error");
-      setTimeout(() => setToast("idle"), 3000);
-    }
+      setToast("saved"); setTimeout(() => setToast("idle"), 1500);
+    } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
+    finally { setBusy(null); }
   };
 
   const exportCsv = async () => {
-    setToast("saving");
+    setBusy("csv"); setToast("saving");
     try {
       const data = await fetchAll();
       download("routine_items.csv", toCsv(data.routine_items), "text/csv");
       download("routine_checks.csv", toCsv(data.routine_checks), "text/csv");
       download("daily_logs.csv", toCsv(data.daily_logs), "text/csv");
       download("activity_logs.csv", toCsv(data.activity_logs), "text/csv");
-      setToast("saved");
-      setTimeout(() => setToast("idle"), 1500);
-    } catch {
-      setToast("error");
-      setTimeout(() => setToast("idle"), 3000);
-    }
+      setToast("saved"); setTimeout(() => setToast("idle"), 1500);
+    } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
+    finally { setBusy(null); }
   };
 
   return (
     <div className="space-y-5">
       <Toast state={toast} />
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Backup</h1>
-        <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
-          Export your data. Restore/import is coming next.
-        </p>
-      </header>
+      <SubPageHeader title="Backup" subtitle="Export your data" backHref="/app/settings" />
 
       <section className="card p-4 space-y-3">
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Full backup (JSON)</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Downloads everything — routines, checks, logs, settings — as one JSON file.
+            Everything — routines, checks, logs, settings — as one JSON file.
           </p>
         </div>
-        <button type="button" className="btn-primary w-full text-sm" onClick={exportJson}>
-          Export JSON
+        <button type="button" className="btn-primary w-full text-sm flex items-center justify-center gap-2" onClick={exportJson} disabled={!!busy}>
+          {busy === "json" ? <><Spinner size={14} /> Exporting…</> : "Export JSON"}
         </button>
       </section>
 
@@ -90,11 +80,11 @@ export default function BackupPage() {
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Spreadsheet export (CSV)</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Downloads 4 separate CSV files you can open in Excel or Google Sheets.
+            4 separate CSV files for Excel or Google Sheets.
           </p>
         </div>
-        <button type="button" className="btn-secondary w-full text-sm" onClick={exportCsv}>
-          Export CSVs
+        <button type="button" className="btn-secondary w-full text-sm flex items-center justify-center gap-2" onClick={exportCsv} disabled={!!busy}>
+          {busy === "csv" ? <><Spinner size={14} /> Exporting…</> : "Export CSVs"}
         </button>
       </section>
     </div>

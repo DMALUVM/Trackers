@@ -3,7 +3,7 @@
 import { format, isSameMonth, isToday as isTodayFn } from "date-fns";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Award } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
@@ -157,12 +157,19 @@ export default function RoutinesProgressPage() {
       {/* ── STREAKS ── */}
       {!streaks.loading && (
         <section>
-          <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-muted)" }}>Streaks</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-muted)" }}>Streaks</p>
+            <Link href="/app/trophies" className="flex items-center gap-1.5 text-xs font-semibold"
+              style={{ color: "var(--accent-green)" }} onClick={() => hapticLight()}>
+              <Award size={14} /> Trophies
+            </Link>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Stat label="Current" value={`${streaks.currentStreak}`} sub="consecutive green days" />
             <Stat label="Best" value={`${streaks.bestStreak}`} sub="all-time record" />
             <Stat label="Core hit-rate" value={streaks.coreHitRateThisWeek === null ? "—" : `${streaks.coreHitRateThisWeek}%`} sub="this week" />
             <Stat label="Green days" value={String(streaks.greenDaysThisMonth)} sub="this month" />
+            <Stat label="Total green" value={String(streaks.totalGreenDays)} sub="all-time" />
           </div>
         </section>
       )}

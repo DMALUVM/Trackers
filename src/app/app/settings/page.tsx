@@ -18,7 +18,7 @@ const sections = [
     title: "Preferences",
     items: [
       { href: "/app/settings/appearance", label: "Appearance", desc: "Theme and display", icon: Palette },
-      { href: "/app/settings/security", label: "Security", desc: "Face ID / Touch ID", icon: Lock },
+      { href: "/app/settings/security", label: "Security", desc: "Sign out, Face ID / Touch ID", icon: Lock },
     ],
   },
   {
@@ -65,9 +65,14 @@ export default function SettingsPage() {
         </section>
       ))}
 
-      <p className="text-center text-[10px] pt-2 pb-4" style={{ color: "var(--text-faint)" }}>
-        Routines365 · Made with ❤️
-      </p>
+      <footer className="text-center pt-4 pb-6 space-y-1">
+        <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
+          routines365 · v1.0.0
+        </p>
+        <p className="text-[10px]" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
+          Made with ❤️ · Build better habits, one day at a time
+        </p>
+      </footer>
     </div>
   );
 }

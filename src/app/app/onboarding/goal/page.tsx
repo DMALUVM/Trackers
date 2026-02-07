@@ -36,8 +36,9 @@ export default function OnboardingGoalPage() {
     <div className="space-y-6 animate-fade-in">
       {/* Step indicator */}
       <div className="flex items-center gap-2">
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
         <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
+        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
         <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
       </div>
 
