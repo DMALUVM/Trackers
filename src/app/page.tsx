@@ -15,11 +15,9 @@ function hasSessionCookie(): boolean {
 
 export default function Home() {
   const router = useRouter();
-  // New visitors → show landing immediately (no splash wait).
-  // Returning users (cookie exists) → show splash while we verify session.
-  const [authState, setAuthState] = useState<AuthState>(() =>
-    hasSessionCookie() ? "checking" : "signed-out"
-  );
+  // Always start "checking" to match server render (avoids hydration mismatch).
+  // On mount, immediately flip to "signed-out" if no cookie — no visible delay.
+  const [authState, setAuthState] = useState<AuthState>("checking");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "create" | "magic" | "forgot">("signin");
@@ -29,6 +27,11 @@ export default function Home() {
 
   // ── Session check: fast path for returning users ──
   useEffect(() => {
+    // Instant check: no cookie → show landing immediately (no async wait)
+    if (!hasSessionCookie()) {
+      setAuthState("signed-out");
+    }
+
     let cancelled = false;
     const check = async () => {
       const { data } = await supabase.auth.getSession();
