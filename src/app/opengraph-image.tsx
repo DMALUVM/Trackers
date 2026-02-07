@@ -1,103 +1,118 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const alt = "routines365 — Stack your days. Change your life.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OgImage() {
+export default async function OgImage() {
+  // Load actual logo from public/brand
+  const logoData = await readFile(join(process.cwd(), "public/brand/routines365-logo.png"));
+  const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #000000 0%, #0a0a0a 50%, #111111 100%)",
+          background: "#000000",
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "system-ui, sans-serif",
-          position: "relative",
+          gap: 60,
+          padding: "0 80px",
         }}
       >
-        {/* Subtle green glow behind logo */}
-        <div
+        {/* Logo — large and prominent */}
+        <img
+          src={logoBase64}
+          width={280}
+          height={280}
           style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -60%)",
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%)",
+            borderRadius: 48,
+            boxShadow: "0 0 80px rgba(16,185,129,0.15)",
           }}
         />
 
-        {/* Logo placeholder circle */}
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: 28,
-            background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 56,
-            marginBottom: 32,
-            boxShadow: "0 0 60px rgba(16,185,129,0.2)",
-          }}
-        >
-          ✓
-        </div>
-
-        {/* App name */}
-        <div
-          style={{
-            fontSize: 56,
-            fontWeight: 800,
-            color: "#ffffff",
-            letterSpacing: "-0.02em",
-            marginBottom: 12,
-          }}
-        >
-          routines365
-        </div>
-
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: 26,
-            fontWeight: 500,
-            color: "#10b981",
-            marginBottom: 24,
-          }}
-        >
-          Stack your days. Change your life.
-        </div>
-
-        {/* Value props */}
+        {/* Text side */}
         <div
           style={{
             display: "flex",
-            gap: 32,
-            fontSize: 18,
-            color: "#a3a3a3",
+            flexDirection: "column",
+            gap: 8,
+            maxWidth: 600,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span>⚡</span>
-            <span>One-tap tracking</span>
+          <div
+            style={{
+              fontSize: 52,
+              fontWeight: 800,
+              color: "#ffffff",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.1,
+            }}
+          >
+            routines365
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span>🟢</span>
-            <span>Green days</span>
+
+          <div
+            style={{
+              fontSize: 28,
+              fontWeight: 600,
+              color: "#10b981",
+              marginTop: 4,
+              lineHeight: 1.3,
+            }}
+          >
+            Stack your days. Change your life.
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span>🔥</span>
-            <span>Streaks</span>
+
+          <div
+            style={{
+              fontSize: 18,
+              color: "#a3a3a3",
+              marginTop: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            The daily habit tracker that keeps it simple. Build streaks, hit milestones, and watch consistency compound.
+          </div>
+
+          {/* Value prop pills */}
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              marginTop: 20,
+            }}
+          >
+            {[
+              { emoji: "⚡", label: "One-tap tracking" },
+              { emoji: "🟢", label: "Green days" },
+              { emoji: "🔥", label: "Streaks" },
+            ].map(({ emoji, label }) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "rgba(255,255,255,0.08)",
+                  borderRadius: 20,
+                  padding: "8px 16px",
+                  fontSize: 15,
+                  color: "#d4d4d4",
+                }}
+              >
+                <span>{emoji}</span>
+                <span>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
