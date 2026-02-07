@@ -7,9 +7,19 @@ import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 type AuthState = "checking" | "signed-in" | "signed-out";
 
+/** Check synchronously if returning user (has auth cookie) */
+function hasSessionCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.includes("r365_sb.");
+}
+
 export default function Home() {
   const router = useRouter();
-  const [authState, setAuthState] = useState<AuthState>("checking");
+  // New visitors → show landing immediately (no splash wait).
+  // Returning users (cookie exists) → show splash while we verify session.
+  const [authState, setAuthState] = useState<AuthState>(() =>
+    hasSessionCookie() ? "checking" : "signed-out"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "create" | "magic" | "forgot">("signin");
@@ -67,12 +77,18 @@ export default function Home() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (mode === "create") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: `${getSiteUrl()}/` },
         });
         if (error) throw error;
-        setStatus("Account created! Check your inbox if email confirmation is required.");
+        // If Supabase returned a session, user is signed in immediately — redirect.
+        if (data.session) {
+          setAuthState("signed-in");
+          return; // auto-redirect effect will handle navigation
+        }
+        // Fallback: email confirmation is required by Supabase project settings.
+        setStatus("Account created! Check your inbox to confirm your email.");
       } else if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
