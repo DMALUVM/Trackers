@@ -73,6 +73,16 @@ export function useStreaks(dateKey: string) {
 
           if (cancelled) return;
 
+          // Get account creation date so pre-account days don't count as red
+          let accountStartKey: string | null = null;
+          try {
+            const { supabase } = await import("@/lib/supabaseClient");
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user?.created_at) {
+              accountStartKey = userData.user.created_at.slice(0, 10);
+            }
+          } catch { /* ignore */ }
+
           // Build lookup maps
           const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
           for (const c of hist.checks) {
@@ -98,6 +108,8 @@ export function useStreaks(dateKey: string) {
               routineItems: active,
               checks: checksByDate.get(dk) ?? [],
               log: logMap.get(dk) ?? null,
+              todayKey: dateKey,
+              accountStartKey,
             });
             histDays.push({ dateKey: dk, color });
           }

@@ -109,9 +109,13 @@ export default function Home() {
   if (authState === "checking" || authState === "signed-in") {
     return (
       <main className="min-h-dvh bg-black text-white flex items-center justify-center">
-        <div className="text-center space-y-4 animate-fade-in">
+        <div className="text-center space-y-5 animate-fade-in">
           <img src="/brand/routines365-logo.jpg" alt="routines365"
             className="h-20 w-20 mx-auto rounded-2xl border border-white/10" />
+          <div>
+            <p className="text-lg font-bold tracking-tight">routines365</p>
+            <p className="text-xs text-neutral-500 mt-1">Stack your days. Change your life.</p>
+          </div>
           <div className="flex items-center justify-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-pulse" />
             <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: "0.15s" }} />
@@ -128,22 +132,26 @@ export default function Home() {
       <div className="mx-auto w-full max-w-md px-6 py-10">
 
         {/* ── Hero ── */}
-        <header className="space-y-5 text-center">
+        <header className="space-y-6 text-center">
           <img src="/brand/routines365-logo.jpg" alt="routines365"
-            className="h-24 w-24 mx-auto rounded-3xl border border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" />
+            className="h-24 w-24 mx-auto rounded-3xl border border-white/10 shadow-[0_0_40px_rgba(16,185,129,0.08)]" />
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">routines365</h1>
-            <p className="mt-2 text-sm text-neutral-400">A daily system you can actually stick with.</p>
+            <h1 className="text-3xl font-extrabold tracking-tight">routines365</h1>
+            <p className="mt-3 text-base font-medium text-emerald-400">Stack your days. Change your life.</p>
+            <p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-xs mx-auto">
+              The daily habit tracker that keeps it simple — check off your core habits, build streaks, and watch consistency compound.
+            </p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             {[
-              { top: "Fast", bot: "1-tap logging" },
-              { top: "Simple", bot: "Core habits" },
-              { top: "Motivating", bot: "Visible streaks" },
-            ].map(({ top, bot }) => (
+              { emoji: "⚡", top: "One-tap", bot: "Check off in seconds" },
+              { emoji: "🟢", top: "Green days", bot: "See your wins" },
+              { emoji: "🔥", top: "Streaks", bot: "Stay motivated" },
+            ].map(({ emoji, top, bot }) => (
               <div key={top} className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 text-neutral-300">
-                <span className="font-semibold">{top}</span>
-                <div className="mt-1 text-[11px] text-neutral-500">{bot}</div>
+                <span className="text-lg">{emoji}</span>
+                <div className="mt-1 font-semibold">{top}</div>
+                <div className="mt-0.5 text-[10px] text-neutral-500">{bot}</div>
               </div>
             ))}
           </div>
@@ -244,15 +252,39 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── Features (compact) ── */}
-        <section className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+        {/* ── How it works ── */}
+        <section className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <h3 className="text-xs font-bold tracking-wider uppercase text-neutral-500 mb-4">How it works</h3>
+          <div className="space-y-4 text-sm text-neutral-300">
+            {[
+              { n: "1", t: "Pick your habits", d: "Choose from 75+ built-in routines or create your own" },
+              { n: "2", t: "Mark your CORE", d: "Tag 3–5 non-negotiable habits that define a green day" },
+              { n: "3", t: "Check off daily", d: "One tap per habit — done in under 30 seconds" },
+              { n: "4", t: "Watch streaks grow", d: "Consistency compounds. See your calendar fill with green" },
+            ].map(({ n, t, d }) => (
+              <div key={n} className="flex items-start gap-3">
+                <span className="shrink-0 flex items-center justify-center rounded-full text-xs font-bold"
+                  style={{ width: 24, height: 24, background: "rgba(16,185,129,0.15)", color: "rgb(16,185,129)" }}>
+                  {n}
+                </span>
+                <div>
+                  <span className="font-semibold text-neutral-200">{t}</span>
+                  <p className="text-xs text-neutral-500 mt-0.5">{d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="space-y-3 text-sm text-neutral-300">
             {[
-              { e: "⚡", t: "One-tap habit tracking with haptic feedback" },
-              { e: "🟢", t: "Green/yellow/red days — always know where you stand" },
-              { e: "🔥", t: "Streaks, progress calendar, and weekly stats" },
-              { e: "🚣", t: "Activity logging with WTD/MTD/YTD totals" },
-              { e: "📱", t: "Install as a PWA — works offline on iPhone" },
+              { e: "🏆", t: "Trophies and milestones that celebrate your wins" },
+              { e: "📊", t: "Progress calendar, activity totals, and trend analytics" },
+              { e: "💪", t: "Modular design — add fitness, sleep, journal, and more" },
+              { e: "📱", t: "Installs as a PWA — feels native on iPhone and Android" },
+              { e: "🔒", t: "Private and secure — your data stays yours" },
             ].map(({ e, t }) => (
               <div key={t} className="flex items-start gap-3">
                 <span className="text-base shrink-0 mt-0.5">{e}</span>
@@ -264,19 +296,20 @@ export default function Home() {
 
         {/* ── Install instructions ── */}
         <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h3 className="text-sm font-bold">Install on iPhone</h3>
+          <h3 className="text-sm font-bold">📱 Install on your phone</h3>
           <div className="mt-2 space-y-1.5 text-sm text-neutral-400">
-            <p>1. Open in Safari → Tap <strong className="text-neutral-200">Share</strong> → <strong className="text-neutral-200">Add to Home Screen</strong></p>
-            <p>2. Launch from Home Screen for full-screen, native app feel.</p>
+            <p><strong className="text-neutral-200">iPhone:</strong> Open in Safari → Share → Add to Home Screen</p>
+            <p><strong className="text-neutral-200">Android:</strong> Chrome menu → Install app</p>
+            <p className="text-xs text-neutral-500 mt-2">Launches full-screen with no browser bar — feels like a native app.</p>
           </div>
         </section>
 
-        <footer className="mt-8 flex items-center justify-between text-xs text-neutral-600">
-          <span>routines365</span>
-          <span className="space-x-3">
+        <footer className="mt-8 text-center space-y-2">
+          <p className="text-xs text-neutral-500">routines365 — Stack your days. Change your life.</p>
+          <div className="text-xs text-neutral-600 space-x-3">
             <a className="hover:text-neutral-400 transition-colors" href="/privacy">Privacy</a>
             <a className="hover:text-neutral-400 transition-colors" href="/terms">Terms</a>
-          </span>
+          </div>
         </footer>
       </div>
     </main>

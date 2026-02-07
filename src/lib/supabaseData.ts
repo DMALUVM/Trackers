@@ -22,7 +22,7 @@ export type UserSettingsRow = {
   theme?: "system" | "dark" | "light";
 };
 
-const DEFAULT_ENABLED_MODULES = ["progress", "rowing", "settings"];
+const DEFAULT_ENABLED_MODULES = ["progress", "settings"];
 
 export async function getUserSettings(): Promise<UserSettingsRow> {
   const userId = await getUserId();

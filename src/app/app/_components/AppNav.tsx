@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   CalendarCheck2, Dumbbell, Brain, Settings, TrendingUp,
-  Footprints, Home, Flame,
+  Footprints, Home, Flame, Heart, Moon, Pill, Droplets, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getUserSettings } from "@/lib/supabaseData";
@@ -15,9 +15,15 @@ const allItems = [
   { key: "today", href: "/app/today", label: "Today", Icon: Home },
   { key: "routines", href: "/app/routines", label: "Routines", Icon: CalendarCheck2 },
   { key: "progress", href: "/app/routines/progress", label: "Progress", Icon: TrendingUp },
-  { key: "rowing", href: "/app/rowing", label: "Rowing", Icon: Dumbbell },
+  { key: "fitness", href: "/app/fitness", label: "Fitness", Icon: Dumbbell },
   { key: "cardio", href: "/app/cardio", label: "Cardio", Icon: Footprints },
   { key: "recovery", href: "/app/recovery", label: "Recovery", Icon: Flame },
+  { key: "mindfulness", href: "/app/mindfulness", label: "Mindful", Icon: Heart },
+  { key: "sleep", href: "/app/sleep", label: "Sleep", Icon: Moon },
+  { key: "supplements", href: "/app/supplements", label: "Supps", Icon: Pill },
+  { key: "hydration", href: "/app/hydration", label: "Water", Icon: Droplets },
+  { key: "journal", href: "/app/journal", label: "Journal", Icon: BookOpen },
+  { key: "rowing", href: "/app/rowing", label: "Rowing", Icon: Dumbbell },
   { key: "neuro", href: "/app/neuro", label: "Neuro", Icon: Brain },
   { key: "settings", href: "/app/settings", label: "Settings", Icon: Settings },
 ] as const;
@@ -30,7 +36,7 @@ export function AppNav() {
   useEffect(() => {
     const run = async () => {
       try { const s = await getUserSettings(); setEnabled(s.enabled_modules); }
-      catch { setEnabled(["progress", "rowing", "settings"]); }
+      catch { setEnabled(["progress", "settings"]); }
     };
     void run();
     const onSettings = () => void run();
@@ -41,13 +47,12 @@ export function AppNav() {
   const items = useMemo(() => {
     const enabledSet = new Set(["today", "routines", ...(enabled ?? [])]);
     const filtered = allItems.filter((i) => enabledSet.has(i.key));
+    // Fixed order: today first, routines second, settings last, everything else in between
+    const pinned = ["today", "routines"];
     const ordered = [
-      filtered.find((i) => i.key === "today"),
-      filtered.find((i) => i.key === "routines"),
-      filtered.find((i) => i.key === "progress"),
-      filtered.find((i) => i.key === "rowing"),
+      ...pinned.map((k) => filtered.find((i) => i.key === k)).filter(Boolean),
+      ...filtered.filter((i) => !pinned.includes(i.key) && i.key !== "settings"),
       filtered.find((i) => i.key === "settings"),
-      ...filtered.filter((i) => !["today", "routines", "progress", "rowing", "settings"].includes(i.key)),
     ].filter(Boolean) as unknown as Array<(typeof allItems)[number]>;
     return ordered.slice(0, 5);
   }, [enabled]);

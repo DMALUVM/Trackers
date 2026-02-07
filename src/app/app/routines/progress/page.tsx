@@ -55,9 +55,22 @@ export default function RoutinesProgressPage() {
   const [checks, setChecks] = useState<Array<{ date: string; routine_item_id: string; done: boolean }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [accountStartKey, setAccountStartKey] = useState<string | null>(null);
 
   const streaks = useStreaks(dateKey);
   const { data: actTotals, loading: actLoading } = useMultiActivityTotals(ACTIVITY_ENTRIES);
+
+  // Fetch account creation date (once) so calendar doesn't show red before user existed
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser();
+        if (data.user?.created_at) {
+          setAccountStartKey(data.user.created_at.slice(0, 10));
+        }
+      } catch { /* fallback: don't filter */ }
+    })();
+  }, []);
 
   const days = useMemo(() => monthGridDates(month), [month]);
   const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
@@ -128,6 +141,8 @@ export default function RoutinesProgressPage() {
               dateKey: dk, routineItems,
               checks: checksByDate.get(dk) ?? [],
               log: logMap.get(dk) ?? null,
+              todayKey: dateKey,
+              accountStartKey,
             });
             return (
               <Link key={dk} href={`/app/routines/edit/${dk}`} className="flex justify-center"

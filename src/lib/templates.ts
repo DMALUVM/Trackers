@@ -21,7 +21,8 @@ export type TemplatePack = {
   routines: TemplateRoutine[];
   addons?: TemplateAddon[];
   weeklyGoals?: Array<{ key: string; targetPerWeek: number; minPerWeek?: number }>;
-  modules?: Array<"progress" | "rowing" | "settings" | "neuro" | "cardio" | "recovery">;
+  modules?: Array<"progress" | "rowing" | "settings" | "neuro" | "cardio" | "recovery"
+    | "fitness" | "sleep" | "supplements" | "mindfulness" | "hydration" | "journal">;
   tier?: "general" | "advanced";
   goals?: OnboardingGoal[];
 };
@@ -74,7 +75,7 @@ export const templatePacks: TemplatePack[] = [
       { id: "cold", label: "Cold exposure", emoji: "🧊", section: "morning" },
       { id: "read", label: "Read (10 min)", emoji: "📚", section: "night" },
     ],
-    modules: ["progress", "settings"],
+    modules: ["progress", "fitness", "settings"],
   },
   {
     id: "morning-reset-10",
@@ -133,7 +134,7 @@ export const templatePacks: TemplatePack[] = [
       { id: "supplements", label: "Supplements", emoji: "💊", section: "anytime" },
       { id: "mobility", label: "Mobility (10 min)", emoji: "🧘‍♂️", section: "anytime" },
     ],
-    modules: ["progress", "settings"],
+    modules: ["progress", "fitness", "settings"],
   },
   {
     id: "productivity-focus",
@@ -171,5 +172,48 @@ export const templatePacks: TemplatePack[] = [
       { id: "read", label: "Read (10 min)", emoji: "📚", section: "night" },
     ],
     modules: ["progress", "settings"],
+  },
+  {
+    id: "balanced-wellness",
+    title: "Balanced Wellness",
+    tier: "general",
+    goals: ["energy", "sleep"],
+    desc: "Body, mind, and rest in one simple system.",
+    routines: [
+      { id: "water", label: "Drink water", emoji: "💧", section: "morning", defaultCore: true },
+      { id: "move", label: "Walk or move (20 min)", emoji: "🚶", section: "anytime", defaultCore: true },
+      { id: "greens", label: "Eat vegetables", emoji: "🥬", section: "anytime", defaultCore: true },
+      { id: "mindful", label: "Breathwork / meditation", emoji: "🌬️", section: "morning" },
+      { id: "gratitude", label: "Gratitude practice", emoji: "🙏", section: "morning" },
+      { id: "sleep", label: "Sleep by target time", emoji: "😴", section: "night", defaultCore: true },
+    ],
+    addons: [
+      { id: "journal", label: "Journal", emoji: "📓", section: "night" },
+      { id: "stretch", label: "Evening stretch", emoji: "🧘", section: "night" },
+      { id: "supplements", label: "Supplements", emoji: "💊", section: "morning" },
+      { id: "screens", label: "No screens 30 min before bed", emoji: "🌙", section: "night" },
+    ],
+    modules: ["progress", "mindfulness", "settings"],
+  },
+  {
+    id: "sleep-reset",
+    title: "Sleep Reset",
+    tier: "general",
+    goals: ["sleep"],
+    desc: "Fix your sleep in 2 weeks with proven habits.",
+    routines: [
+      { id: "sunlight", label: "Morning sunlight (10 min)", emoji: "🌅", section: "morning", defaultCore: true },
+      { id: "no-caffeine", label: "No caffeine after 2pm", emoji: "☕", section: "anytime", defaultCore: true },
+      { id: "screens", label: "No screens 30 min before bed", emoji: "🌙", section: "night", defaultCore: true },
+      { id: "sleep", label: "Sleep by target time", emoji: "😴", section: "night", defaultCore: true },
+      { id: "water", label: "Drink water", emoji: "💧", section: "morning" },
+      { id: "walk", label: "Walk (15 min)", emoji: "🚶", section: "anytime" },
+    ],
+    addons: [
+      { id: "magnesium", label: "Magnesium (evening)", emoji: "🧲", section: "night" },
+      { id: "stretch", label: "Evening stretch", emoji: "🧘", section: "night" },
+      { id: "journal", label: "Brain dump journal", emoji: "📓", section: "night" },
+    ],
+    modules: ["progress", "sleep", "settings"],
   },
 ];
