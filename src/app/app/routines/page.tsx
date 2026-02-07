@@ -425,16 +425,7 @@ export default function RoutinesPage() {
     await persist();
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-5">
-        <header className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Routines</h1>
-          <p className="text-sm text-neutral-400">Loading…</p>
-        </header>
-      </div>
-    );
-  }
+  const showLoading = loading && items.length === 0;
 
   return (
     <div className="space-y-5">
@@ -508,7 +499,7 @@ export default function RoutinesPage() {
           </div>
         </div>
         <p className="text-sm text-neutral-400">
-          Tap to check off. Save syncs to cloud.
+          {showLoading ? "Loading…" : "Tap to check off. Save syncs to cloud."}
         </p>
       </header>
 

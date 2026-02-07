@@ -662,17 +662,11 @@ export default function TodayPage() {
     });
   }, [dateKey, nextActions.immediateColor]);
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">Today</h1>
-        <p className="text-sm text-neutral-400">Loading…</p>
-      </div>
-    );
-  }
+  const showLoading = loading && items.length === 0;
 
-  const headline =
-    todayColor === "green"
+  const headline = showLoading
+    ? "Loading…"
+    : todayColor === "green"
       ? "Green day. Lock it in."
       : todayColor === "yellow"
         ? "Close. One core miss."
