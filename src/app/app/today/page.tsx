@@ -14,7 +14,6 @@ import {
   Toast,
   BottomSheet,
   ConfettiBurst,
-  EmptyState,
   MilestoneModal,
   MotivationBanner,
   NextMilestoneTeaser,
@@ -101,6 +100,13 @@ export default function TodayPage() {
   }, [routine.loading]);
 
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
+
+  // Auto-redirect to onboarding if user has no routines
+  useEffect(() => {
+    if (!routine.loading && items.length === 0) {
+      router.replace("/app/onboarding");
+    }
+  }, [routine.loading, items.length, router]);
 
   // Check for pending milestone on mount (from previous session)
   useEffect(() => {
@@ -259,18 +265,9 @@ export default function TodayPage() {
   // Loading
   if (routine.loading) return <TodayPageSkeleton />;
 
-  // Empty
+  // No routines yet → send straight to onboarding (no dead empty state)
   if (items.length === 0) {
-    return (
-      <div className="space-y-5">
-        <header>
-          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Today</h1>
-        </header>
-        <EmptyState emoji="🌱" title="No routines yet"
-          description="Set up your daily habits to start tracking. Takes 60 seconds."
-          actionLabel="Get started" actionHref="/app/onboarding" />
-      </div>
-    );
+    return <TodayPageSkeleton />;
   }
 
   return (
