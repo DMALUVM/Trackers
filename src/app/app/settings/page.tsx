@@ -1,35 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, LayoutGrid } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, LayoutGrid, ChevronRight } from "lucide-react";
+import { hapticLight } from "@/lib/haptics";
 
-const links = [
-  { href: "/app/settings/routines", label: "Routines", desc: "Edit, reorder, set Core", icon: Settings },
-  { href: "/app/settings/modules", label: "Modules", desc: "Choose which tabs to show", icon: LayoutGrid },
-  { href: "/app/settings/quests", label: "Quests", desc: "Weekly goals and streaks", icon: Trophy },
-  { href: "/app/settings/appearance", label: "Appearance", desc: "Theme and display", icon: Palette },
-  { href: "/app/settings/security", label: "Security", desc: "Face ID / Touch ID", icon: Lock },
-  { href: "/app/settings/backup", label: "Backup", desc: "Export your data", icon: Download },
+const sections = [
+  {
+    title: "Customize",
+    items: [
+      { href: "/app/settings/routines", label: "Routines", desc: "Edit habits, set Core priorities", icon: Settings },
+      { href: "/app/settings/modules", label: "Modules", desc: "Choose which tabs to show", icon: LayoutGrid },
+      { href: "/app/settings/quests", label: "Quests", desc: "Weekly goals and streaks", icon: Trophy },
+    ],
+  },
+  {
+    title: "Preferences",
+    items: [
+      { href: "/app/settings/appearance", label: "Appearance", desc: "Theme and display", icon: Palette },
+      { href: "/app/settings/security", label: "Security", desc: "Face ID / Touch ID", icon: Lock },
+    ],
+  },
+  {
+    title: "Data",
+    items: [
+      { href: "/app/settings/backup", label: "Backup", desc: "Export your data", icon: Download },
+    ],
+  },
 ];
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Settings</h1>
       </header>
 
-      <div className="space-y-2">
-        {links.map(({ href, label, desc, icon: Icon }) => (
-          <Link key={href} href={href} className="card-interactive px-4 py-3.5 flex items-center gap-4">
-            <Icon size={20} style={{ color: "var(--text-muted)" }} />
-            <div>
-              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{label}</p>
-              <p className="text-xs" style={{ color: "var(--text-faint)" }}>{desc}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
+      {sections.map((section) => (
+        <section key={section.title}>
+          <p className="text-xs font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
+            {section.title}
+          </p>
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-primary)" }}>
+            {section.items.map(({ href, label, desc, icon: Icon }, idx) => (
+              <Link key={href} href={href}
+                className="flex items-center gap-4 px-4 py-3.5 transition-colors"
+                style={{
+                  background: "var(--bg-card)",
+                  borderTop: idx > 0 ? "1px solid var(--border-secondary)" : undefined,
+                }}
+                onClick={() => hapticLight()}>
+                <div className="shrink-0 flex items-center justify-center rounded-xl"
+                  style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}>
+                  <Icon size={18} style={{ color: "var(--text-muted)" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{label}</p>
+                  <p className="text-xs truncate" style={{ color: "var(--text-faint)" }}>{desc}</p>
+                </div>
+                <ChevronRight size={16} style={{ color: "var(--text-faint)" }} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <p className="text-center text-[10px] pt-2 pb-4" style={{ color: "var(--text-faint)" }}>
+        Routines365 · Made with ❤️
+      </p>
     </div>
   );
 }

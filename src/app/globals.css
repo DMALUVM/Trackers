@@ -111,13 +111,31 @@
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Smooth scrolling within the app */
+html { scroll-behavior: smooth; }
 
 * { -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
 
+/* Prevent elastic overscroll revealing white bg */
+html, body { overscroll-behavior-y: none; }
+
+/* Selection color */
+::selection { background: var(--accent-green-soft); color: var(--accent-green-text); }
+
+/* Focus-visible ring for keyboard nav */
+:focus-visible { outline: 2px solid var(--accent-green); outline-offset: 2px; border-radius: 0.5rem; }
+/* But not for mouse clicks */
+:focus:not(:focus-visible) { outline: none; }
+
 /* Safe area for PWA bottom nav */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+/* Safe area for top notch/dynamic island */
+.pt-safe { padding-top: max(env(safe-area-inset-top, 0px), 1rem); }
 
 /* ============================================================
    ANIMATION KEYFRAMES
@@ -213,10 +231,10 @@ html { -webkit-text-size-adjust: 100%; }
   border: 1px solid var(--border-primary);
   border-radius: 0.75rem;
   box-shadow: var(--shadow-card);
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .card-interactive:hover { background: var(--bg-card-hover); }
-.card-interactive:active { background: var(--bg-card-active); }
+.card-interactive:active { background: var(--bg-card-active); transform: scale(0.98); }
 
 .btn-primary {
   background: var(--btn-primary-bg);
@@ -225,10 +243,10 @@ html { -webkit-text-size-adjust: 100%; }
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  transition: opacity 0.15s ease;
+  transition: transform 0.1s ease, opacity 0.15s ease;
 }
-.btn-primary:active { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.5; }
+.btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+.btn-primary:disabled { opacity: 0.5; transform: none; }
 
 .btn-secondary {
   background: var(--btn-secondary-bg);
@@ -238,10 +256,10 @@ html { -webkit-text-size-adjust: 100%; }
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  transition: background 0.15s ease;
+  transition: transform 0.1s ease, background 0.15s ease;
 }
 .btn-secondary:hover { background: var(--bg-card-hover); }
-.btn-secondary:active { background: var(--bg-card-active); }
+.btn-secondary:active { transform: scale(0.97); background: var(--bg-card-active); }
 
 .nav-bar {
   background: var(--bg-nav);
@@ -266,3 +284,14 @@ main > * { animation: fade-in-up 0.25s ease-out both; }
 .day-yellow { background: var(--accent-yellow); }
 .day-red { background: var(--accent-red); }
 .day-empty { background: var(--bg-card-hover); }
+
+/* Input focus glow */
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent-green) !important;
+  box-shadow: 0 0 0 3px var(--accent-green-soft);
+}
+
+/* Scrollbar hide for horizontal strips */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

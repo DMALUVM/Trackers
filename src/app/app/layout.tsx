@@ -13,7 +13,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <ThemeGate>
           <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
             <IosInstallPrompt />
-            <main className="flex-1 p-4 pb-2">
+            <main className="flex-1 px-4 pt-safe pb-2">
               <ErrorBoundary>{children}</ErrorBoundary>
             </main>
             <AppNav />
