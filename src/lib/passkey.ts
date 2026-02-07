@@ -14,6 +14,8 @@ function randomChallenge(len = 32) {
 
 const LS_ENABLED = "routines365:passkeyEnabled";
 const LS_UNLOCK_UNTIL = "routines365:passkeyUnlockUntil";
+const LS_CREDENTIAL_ID = "routines365:passkeyCredentialId"; // b64url(rawId)
+const LS_USER_ID = "routines365:passkeyUserId"; // b64url(32 bytes)
 
 export function isPasskeyEnabled() {
   if (typeof window === "undefined") return false;
@@ -24,11 +26,18 @@ export function clearPasskey() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(LS_ENABLED);
   localStorage.removeItem(LS_UNLOCK_UNTIL);
+  localStorage.removeItem(LS_CREDENTIAL_ID);
+  localStorage.removeItem(LS_USER_ID);
 }
 
 export function setPasskeyEnabled(enabled: boolean) {
   if (typeof window === "undefined") return;
   localStorage.setItem(LS_ENABLED, enabled ? "1" : "0");
+}
+
+export function getStoredCredentialId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(LS_CREDENTIAL_ID);
 }
 
 export function isUnlockValid() {
@@ -54,15 +63,46 @@ export async function registerPasskey(opts: { email: string }) {
     throw new Error("Passkeys are not supported on this device/browser.");
   }
 
+  // If we already registered a passkey on this device, don't create duplicates.
+  const existing = getStoredCredentialId();
+  if (isPasskeyEnabled() && existing) {
+    return { credentialId: existing };
+  }
+
   const rpId = window.location.hostname;
   const challenge = randomChallenge();
+
+  const getOrCreateUserId = () => {
+    const stored = localStorage.getItem(LS_USER_ID);
+    if (stored) return stored;
+    const bytes = randomChallenge(32);
+    const b = b64url(bytes.buffer);
+    localStorage.setItem(LS_USER_ID, b);
+    return b;
+  };
+
+  const userIdB64 = getOrCreateUserId();
+  const userIdBytes = Uint8Array.from(atob(userIdB64.replace(/-/g, "+").replace(/_/g, "/") + "==".slice((2 - (userIdB64.length * 3) % 4) % 4)), (c) => c.charCodeAt(0));
+
+  // Prevent creating the same credential again if one exists.
+  const exclude: PublicKeyCredentialDescriptor[] = [];
+  if (existing) {
+    try {
+      const pad = "===".slice((existing.length + 3) % 4);
+      const b64 = (existing + pad).replace(/-/g, "+").replace(/_/g, "/");
+      const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      exclude.push({ id: raw, type: "public-key" });
+    } catch {
+      // ignore
+    }
+  }
 
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge,
       rp: { name: "routines365", id: rpId },
       user: {
-        id: randomChallenge(32),
+        id: userIdBytes,
         name: opts.email,
         displayName: opts.email,
       },
@@ -71,6 +111,7 @@ export async function registerPasskey(opts: { email: string }) {
         residentKey: "preferred",
         userVerification: "required",
       },
+      excludeCredentials: exclude.length ? exclude : undefined,
       timeout: 60_000,
       attestation: "none",
     },
@@ -78,12 +119,15 @@ export async function registerPasskey(opts: { email: string }) {
 
   if (!credential) throw new Error("Passkey registration cancelled.");
 
+  const credentialId = b64url(credential.rawId);
+  localStorage.setItem(LS_CREDENTIAL_ID, credentialId);
+
   // We don't need to store the credential server-side for local unlock.
   // But we record that the user enabled it so we can show the unlock gate.
   setPasskeyEnabled(true);
 
   return {
-    credentialId: b64url(credential.rawId),
+    credentialId,
   };
 }
 

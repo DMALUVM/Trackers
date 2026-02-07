@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { clearPasskey, isPasskeyEnabled, registerPasskey } from "@/lib/passkey";
+import { clearPasskey, getStoredCredentialId, isPasskeyEnabled, registerPasskey } from "@/lib/passkey";
 
 export default function SecuritySettingsPage() {
   const [signedIn, setSignedIn] = useState(false);
@@ -10,6 +10,7 @@ export default function SecuritySettingsPage() {
   const [status, setStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [enabled, setEnabled] = useState(false);
+  const [credentialId, setCredentialId] = useState<string | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -17,6 +18,7 @@ export default function SecuritySettingsPage() {
       setSignedIn(!!data.session);
       setEmail(data.session?.user.email ?? null);
       setEnabled(isPasskeyEnabled());
+      setCredentialId(getStoredCredentialId());
     };
     void run();
   }, []);
@@ -29,8 +31,9 @@ export default function SecuritySettingsPage() {
     setBusy(true);
     setStatus("Enabling Face ID...");
     try {
-      await registerPasskey({ email });
+      const res = await registerPasskey({ email });
       setEnabled(true);
+      setCredentialId(res.credentialId);
       setStatus("Enabled. Next time, the app can unlock with Face ID.");
       setTimeout(() => setStatus(""), 2000);
     } catch (e: any) {
@@ -45,7 +48,7 @@ export default function SecuritySettingsPage() {
       <header className="space-y-1">
         <h1 className="text-xl font-semibold tracking-tight">Security</h1>
         <p className="text-sm text-neutral-400">
-          Enable passkeys so sign-in uses Face ID / Touch ID.
+          Use Face ID / Touch ID to <b>unlock the app</b> on this device.
         </p>
       </header>
 
@@ -64,8 +67,11 @@ export default function SecuritySettingsPage() {
           <div>
             <h2 className="text-base font-semibold">Passkeys (Face ID)</h2>
             <p className="mt-1 text-sm text-neutral-400">
-              After you enable this once, future sign-ins can be one-tap with Face ID.
+              After you enable this once, future unlocks should be one-tap with Face ID.
             </p>
+            {enabled && credentialId ? (
+              <p className="mt-2 text-xs text-neutral-500">Passkey saved on this device.</p>
+            ) : null}
           </div>
 
           <button
@@ -84,6 +90,7 @@ export default function SecuritySettingsPage() {
               onClick={() => {
                 clearPasskey();
                 setEnabled(false);
+                setCredentialId(null);
                 setStatus("Face ID disabled.");
                 setTimeout(() => setStatus(""), 1500);
               }}
