@@ -7,13 +7,14 @@ export type MetricKind =
   | { key: "running"; title: string; emoji: string }
   | { key: "walking"; title: string; emoji: string }
   | { key: "sauna"; title: string; emoji: string }
-  | { key: "cold"; title: string; emoji: string };
+  | { key: "cold"; title: string; emoji: string }
+  | { key: "sleep"; title: string; emoji: string };
 
 export function MetricSheet(opts: {
   open: boolean;
   kind: MetricKind | null;
   onClose: () => void;
-  onSave: (payload: { meters?: number; minutes?: number; miles?: number; steps?: number; sessions?: number }) => Promise<void>;
+  onSave: (payload: { meters?: number; minutes?: number; miles?: number; steps?: number; sessions?: number; score?: number }) => Promise<void>;
 }) {
   const { open, kind, onClose, onSave } = opts;
 
@@ -22,6 +23,7 @@ export function MetricSheet(opts: {
   const [miles, setMiles] = useState<string>("");
   const [steps, setSteps] = useState<string>("");
   const [status, setStatus] = useState<string>("");
+  const [sleepScore, setSleepScore] = useState<string>("");
 
   useEffect(() => {
     if (!open) return;
@@ -29,6 +31,7 @@ export function MetricSheet(opts: {
     setMinutes("");
     setMiles("");
     setSteps("");
+    setSleepScore("");
     setStatus("");
   }, [open, kind?.key]);
 
@@ -72,6 +75,17 @@ export function MetricSheet(opts: {
 
       if (kind.key === "sauna" || kind.key === "cold") {
         await onSave({ sessions: 1 });
+        onClose();
+        return;
+      }
+
+      if (kind.key === "sleep") {
+        const v = sleepScore.trim() ? Number(sleepScore) : NaN;
+        if (!Number.isFinite(v) || v < 0 || v > 100) {
+          setStatus("Enter a sleep score (0–100). ");
+          return;
+        }
+        await onSave({ score: Math.round(v) });
         onClose();
         return;
       }
@@ -166,6 +180,20 @@ export function MetricSheet(opts: {
 
           {kind.key === "sauna" || kind.key === "cold" ? (
             <p className="text-sm text-neutral-300">This will log <b>+1 session</b> for today.</p>
+          ) : kind.key === "sleep" ? (
+            <div>
+              <p className="text-xs text-neutral-400">Sleep score (0–100)</p>
+              <input
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-base text-white placeholder:text-neutral-500"
+                inputMode="numeric"
+                type="number"
+                step={1}
+                placeholder="82"
+                value={sleepScore}
+                onChange={(e) => setSleepScore(e.target.value)}
+              />
+              <p className="mt-2 text-xs text-neutral-500">Tip: use your Oura or Eight Sleep score.</p>
+            </div>
           ) : null}
 
           <button

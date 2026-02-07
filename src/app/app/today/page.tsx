@@ -97,6 +97,8 @@ export default function TodayPage() {
     mind: 0,
     sleep: 0,
   });
+  const [sleepScoreToday, setSleepScoreToday] = useState<number | null>(null);
+
   const [streakHelp, setStreakHelp] = useState<null | "movement" | "mind" | "sleep">(null);
   const [showOptional, setShowOptional] = useState(false);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
@@ -344,7 +346,7 @@ export default function TodayPage() {
 
                 const movementKeys = ["walk", "workout", "exercise", "rowing", "stretch", "mobility", "move"];
                 const mindKeys = ["breath", "meditat", "journal", "neuro", "mind"];
-                const sleepKeys = ["sleep"];
+                const sleepKeys = ["sleep"]; // legacy routine-based sleep; replaced by sleep_score metric below
 
                 const didCategory = (dk: string, keys: string[]) => {
                   const cs = checksByDate.get(dk) ?? [];
@@ -369,11 +371,52 @@ export default function TodayPage() {
                   return s;
                 };
 
-                setCategoryStreaks({
-                  movement: streakFor(movementKeys),
-                  mind: streakFor(mindKeys),
-                  sleep: streakFor(sleepKeys),
-                });
+                const sleepMinScore = 80;
+
+          // Sleep streak: counts days where sleep score (0–100) is logged and >= 80.
+          let sleepStreak = 0;
+          let todayScore: number | null = null;
+          try {
+            const from = format(subDays(today, 120), "yyyy-MM-dd");
+            const { data: sleepRows } = await supabase
+              .from("activity_logs")
+              .select("date,value")
+              .eq("activity_key", "sleep_score")
+              .eq("unit", "score")
+              .gte("date", from)
+              .lte("date", dateKey)
+              .order("date", { ascending: false });
+
+            const scoreByDate = new Map<string, number>();
+            for (const r of (sleepRows ?? []) as any[]) {
+              const dk = String(r.date);
+              const v = Number(r.value);
+              if (!Number.isFinite(v)) continue;
+              // keep max per day if multiple entries
+              const cur = scoreByDate.get(dk);
+              if (cur == null || v > cur) scoreByDate.set(dk, v);
+            }
+
+            todayScore = scoreByDate.get(dateKey) ?? null;
+
+            // consecutive days ending today
+            for (let i = 0; i < 121; i++) {
+              const dk = format(subDays(today, i), "yyyy-MM-dd");
+              const v = scoreByDate.get(dk);
+              if (v == null || v < sleepMinScore) break;
+              sleepStreak += 1;
+            }
+          } catch {
+            // ignore; keep default sleep streak
+          }
+
+          setSleepScoreToday(todayScore);
+
+          setCategoryStreaks({
+            movement: streakFor(movementKeys),
+            mind: streakFor(mindKeys),
+            sleep: sleepStreak,
+          });
               } catch {
                 // ignore
               }
@@ -862,7 +905,14 @@ export default function TodayPage() {
               <button
                 key={x.key}
                 type="button"
-                onClick={() => setStreakHelp((cur) => (cur === x.key ? null : x.key))}
+                onClick={() => {
+                  if (x.key === "sleep") {
+                    setMetricKind({ key: "sleep", title: "Sleep score", emoji: "😴" });
+                    setMetricOpen(true);
+                    return;
+                  }
+                  setStreakHelp((cur) => (cur === x.key ? null : x.key));
+                }}
                 className={
                   "rounded-full px-3 py-2 text-[12px] font-semibold transition " +
                   tone +
@@ -871,7 +921,7 @@ export default function TodayPage() {
                 title="Tap to see what counts"
               >
                 <span className="mr-2">{x.emoji}</span>
-                <span className="mr-2">{x.val}</span>
+                <span className="mr-2">{x.key === "sleep" && sleepScoreToday != null ? sleepScoreToday : x.val}</span>
                 <span className="text-[10px] opacity-70">{x.label}</span>
               </button>
             );
@@ -884,7 +934,7 @@ export default function TodayPage() {
               ? "🚶 Movement streak: Counts if you complete any movement habit that day (walk, workout, exercise, rowing, stretch, mobility, move)."
               : streakHelp === "mind"
                 ? "🧠 Mind streak: Counts if you complete breathwork/meditation, journaling, or anything with neuro in the label."
-                : "😴 Sleep streak: Counts if you complete a routine with sleep in the label (e.g. Sleep by target time)."}
+                : `😴 Sleep streak: Counts if you log a sleep score ≥ 80 (Oura/Eight Sleep). ${sleepScoreToday != null ? `Today: ${sleepScoreToday}` : "Tap to log today."}`}
           </div>
         ) : null}
       </section>
@@ -1233,6 +1283,12 @@ export default function TodayPage() {
           }
           if ((metricKind.key === "sauna" || metricKind.key === "cold") && p.sessions) {
             await addActivityLog({ dateKey, activityKey: metricKind.key, value: p.sessions, unit: "sessions" });
+            return;
+          }
+          if (metricKind.key === "sleep" && typeof p.score === "number") {
+            await addActivityLog({ dateKey, activityKey: "sleep_score", value: p.score, unit: "score" });
+            // update local display immediately
+            setSleepScoreToday(p.score);
             return;
           }
         }}
