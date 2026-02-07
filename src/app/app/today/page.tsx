@@ -682,9 +682,30 @@ export default function TodayPage() {
           </div>
         </div>
         {nextActions.missingCore.length > 0 ? (
-          <p className="mt-2 text-sm text-neutral-300">
-            Do <b>{Math.min(1, nextActions.missingCore.length)}</b> more Core habit to improve your score.
-          </p>
+          <>
+            <p className="mt-2 text-sm text-neutral-300">
+              Do <b>{Math.min(1, nextActions.missingCore.length)}</b> more Core habit to improve your score.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {nextActions.missingCore.slice(0, 3).map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => markDone(m.id)}
+                  className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-100 hover:bg-white/10"
+                >
+                  {m.emoji ? `${m.emoji} ` : ""}{m.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => router.push("/app/routines")}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
+              >
+                Quick Log
+              </button>
+            </div>
+          </>
         ) : (
           <p className="mt-2 text-sm text-neutral-300">
             All Core habits done. {nextActions.bonusDone > 0 ? `Bonus done: +${nextActions.bonusDone}.` : "Keep it simple."}
