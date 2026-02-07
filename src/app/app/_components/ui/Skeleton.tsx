@@ -1,12 +1,7 @@
 "use client";
 
 export function SkeletonLine({ width = "100%", height = "14px" }: { width?: string; height?: string }) {
-  return (
-    <div
-      className="animate-shimmer rounded-md"
-      style={{ width, height }}
-    />
-  );
+  return <div className="animate-shimmer rounded-md" style={{ width, height }} />;
 }
 
 export function SkeletonCard({ lines = 3 }: { lines?: number }) {
@@ -21,52 +16,54 @@ export function SkeletonCard({ lines = 3 }: { lines?: number }) {
 
 export function SkeletonCheckItem() {
   return (
-    <div className="card-interactive px-4 py-3 flex items-center gap-3">
-      <div className="animate-shimmer h-5 w-5 rounded-full shrink-0" />
+    <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+      <div className="animate-shimmer h-7 w-7 rounded-full shrink-0" />
       <div className="animate-shimmer h-4 w-4 rounded shrink-0" />
-      <SkeletonLine width="60%" />
-      <div className="ml-auto">
-        <SkeletonLine width="36px" />
-      </div>
+      <SkeletonLine width="55%" height="16px" />
     </div>
   );
 }
 
-export function SkeletonProgressRing({ size = 120 }: { size?: number }) {
-  return (
-    <div
-      className="animate-shimmer rounded-full"
-      style={{ width: size, height: size }}
-    />
-  );
+export function SkeletonProgressRing({ size = 88 }: { size?: number }) {
+  return <div className="animate-shimmer rounded-full" style={{ width: size, height: size }} />;
 }
 
-/** Full-page loading skeleton for the Today page */
+/** Full-page skeleton for the Today page */
 export function TodayPageSkeleton() {
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pt-1">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <SkeletonLine width="80px" height="24px" />
-        <SkeletonLine width="100px" height="32px" />
+      <div>
+        <SkeletonLine width="120px" height="16px" />
+        <div className="mt-1.5">
+          <SkeletonLine width="180px" height="28px" />
+        </div>
       </div>
 
-      {/* Progress ring + score */}
-      <div className="card p-6 flex flex-col items-center gap-3">
-        <SkeletonProgressRing size={120} />
-        <SkeletonLine width="120px" />
-        <div className="flex gap-2 mt-2">
+      {/* Score card */}
+      <div className="card p-5">
+        <div className="flex items-center gap-5">
+          <SkeletonProgressRing />
+          <div className="flex-1 space-y-2">
+            <SkeletonLine width="140px" height="18px" />
+            <SkeletonLine width="80px" height="14px" />
+            <SkeletonLine width="100px" height="14px" />
+          </div>
+        </div>
+        <div className="flex justify-center gap-3 mt-4">
           {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <div key={i} className="animate-shimmer h-3 w-8 rounded-full" />
+            <div key={i} className="animate-shimmer h-8 w-8 rounded-full" />
           ))}
         </div>
       </div>
 
+      {/* Core label */}
+      <SkeletonLine width="40px" height="12px" />
+
       {/* Habit items */}
-      <div className="space-y-2">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <SkeletonCheckItem key={i} />
-        ))}
+      <div className="space-y-2.5">
+        {[1, 2, 3, 4, 5].map((i) => <SkeletonCheckItem key={i} />)}
       </div>
     </div>
   );

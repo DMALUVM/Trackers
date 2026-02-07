@@ -4,17 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarCheck2,
-  Dumbbell,
-  Brain,
-  Settings,
-  TrendingUp,
-  Footprints,
-  Home,
-  Flame,
+  CalendarCheck2, Dumbbell, Brain, Settings, TrendingUp,
+  Footprints, Home, Flame,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getUserSettings } from "@/lib/supabaseData";
+import { hapticLight } from "@/lib/haptics";
 
 const allItems = [
   { key: "today", href: "/app/today", label: "Today", Icon: Home },
@@ -34,16 +29,10 @@ export function AppNav() {
 
   useEffect(() => {
     const run = async () => {
-      try {
-        const s = await getUserSettings();
-        setEnabled(s.enabled_modules);
-      } catch {
-        // fallback: show a sane default
-        setEnabled(["progress", "rowing", "settings"]);
-      }
+      try { const s = await getUserSettings(); setEnabled(s.enabled_modules); }
+      catch { setEnabled(["progress", "rowing", "settings"]); }
     };
     void run();
-
     const onSettings = () => void run();
     window.addEventListener("routines365:userSettingsChanged", onSettings);
     return () => window.removeEventListener("routines365:userSettingsChanged", onSettings);
@@ -58,58 +47,40 @@ export function AppNav() {
       filtered.find((i) => i.key === "progress"),
       filtered.find((i) => i.key === "rowing"),
       filtered.find((i) => i.key === "settings"),
-      ...filtered.filter(
-        (i) => !["today", "routines", "progress", "rowing", "settings"].includes(i.key)
-      ),
+      ...filtered.filter((i) => !["today", "routines", "progress", "rowing", "settings"].includes(i.key)),
     ].filter(Boolean) as unknown as Array<(typeof allItems)[number]>;
-
-    // If the user enables more than 4 modules, show 5 tabs and drop labels (icons only).
     return ordered.slice(0, 5);
   }, [enabled]);
 
   useEffect(() => {
-    // Aggressively prefetch nav routes for near-instant tab switches.
-    for (const it of items) {
-      try {
-        router.prefetch(it.href);
-      } catch {
-        // ignore
-      }
-    }
+    for (const it of items) { try { router.prefetch(it.href); } catch { /* ignore */ } }
   }, [items, router]);
 
   return (
-    <nav className="sticky bottom-0 border-t border-white/10 bg-black/60 backdrop-blur">
-      <div
-        className={cn(
-          "mx-auto grid max-w-md gap-1 p-2",
-          items.length === 5
-            ? "grid-cols-5"
-            : items.length === 3
-              ? "grid-cols-3"
-              : items.length === 2
-                ? "grid-cols-2"
-                : "grid-cols-4"
-        )}
-      >
+    <nav className="sticky bottom-0 nav-bar safe-bottom">
+      <div className={cn(
+        "mx-auto grid max-w-md py-1.5 px-1",
+        items.length === 5 ? "grid-cols-5" : items.length === 3 ? "grid-cols-3" : items.length === 2 ? "grid-cols-2" : "grid-cols-4"
+      )}>
         {items.map(({ href, label, Icon }) => {
-          const active = pathname === href;
-          const showLabel = items.length !== 5;
+          const active = pathname === href || (href !== "/app/today" && pathname?.startsWith(href));
           return (
-            <Link
-              key={href}
-              href={href}
-              prefetch
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] text-neutral-400",
-                "transition-colors",
-                active && "bg-white/10 text-white"
-              )}
+            <Link key={href} href={href} prefetch
+              className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 transition-all duration-150"
+              style={{ color: active ? "var(--accent-green)" : "var(--text-muted)" }}
               aria-label={label}
-              title={label}
-            >
-              <Icon size={18} className={cn(active ? "text-white" : "text-neutral-400")} />
-              {showLabel ? <span className="leading-none">{label}</span> : null}
+              aria-current={active ? "page" : undefined}
+              onClick={() => hapticLight()}>
+              <div className="relative flex items-center justify-center" style={{ width: 24, height: 24 }}>
+                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                {active && (
+                  <div className="absolute -bottom-1.5 h-1 w-1 rounded-full" style={{ background: "var(--accent-green)" }} />
+                )}
+              </div>
+              <span className="text-[10px] font-semibold leading-tight mt-0.5"
+                style={{ color: active ? "var(--accent-green)" : "var(--text-faint)" }}>
+                {label}
+              </span>
             </Link>
           );
         })}

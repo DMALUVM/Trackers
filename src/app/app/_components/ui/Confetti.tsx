@@ -2,58 +2,45 @@
 
 import { useEffect, useState } from "react";
 
-const CONFETTI_COLORS = [
-  "#10b981", "#facc15", "#ef4444", "#6366f1", "#f97316",
-  "#06b6d4", "#ec4899", "#84cc16",
-];
-
-const EMOJIS = ["🎉", "✨", "🔥", "⚡", "💪", "🏆", "🌟", "💯"];
+const COLORS = ["#10b981", "#facc15", "#6366f1", "#f97316", "#06b6d4", "#ec4899", "#84cc16", "#ef4444"];
 
 interface Particle {
   id: number;
   x: number;
-  y: number;
+  startY: number;
   color: string;
   emoji?: string;
   rotation: number;
   scale: number;
   delay: number;
+  duration: number;
+  drift: number;
 }
 
-function generateParticles(count: number): Particle[] {
+function generate(count: number): Particle[] {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
-    x: 30 + Math.random() * 40, // spread across 30-70% of width
-    y: -10,
-    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-    emoji: i < 3 ? EMOJIS[Math.floor(Math.random() * EMOJIS.length)] : undefined,
-    rotation: Math.random() * 360,
-    scale: 0.6 + Math.random() * 0.6,
-    delay: Math.random() * 300,
+    x: 10 + Math.random() * 80,
+    startY: -5 - Math.random() * 15,
+    color: COLORS[i % COLORS.length],
+    emoji: i < 4 ? ["🎉", "✨", "💪", "🔥", "⚡", "🏆"][Math.floor(Math.random() * 6)] : undefined,
+    rotation: Math.random() * 720 - 360,
+    scale: 0.5 + Math.random() * 0.7,
+    delay: Math.random() * 400,
+    duration: 1200 + Math.random() * 800,
+    drift: (Math.random() - 0.5) * 60,
   }));
 }
 
-interface ConfettiBurstProps {
-  /** Set to true to trigger the burst */
-  trigger: boolean;
-  /** How many particles */
-  count?: number;
-}
-
-export function ConfettiBurst({ trigger, count = 16 }: ConfettiBurstProps) {
+export function ConfettiBurst({ trigger, count = 24 }: { trigger: boolean; count?: number }) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!trigger) return;
-    setParticles(generateParticles(count));
+    setParticles(generate(count));
     setVisible(true);
-
-    const t = setTimeout(() => {
-      setVisible(false);
-      setParticles([]);
-    }, 1200);
-
+    const t = setTimeout(() => { setVisible(false); setParticles([]); }, 2200);
     return () => clearTimeout(t);
   }, [trigger, count]);
 
@@ -62,23 +49,27 @@ export function ConfettiBurst({ trigger, count = 16 }: ConfettiBurstProps) {
   return (
     <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
       {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute"
-          style={{
-            left: `${p.x}%`,
-            top: "40%",
-            animation: `confetti-fall ${0.6 + Math.random() * 0.4}s ease-out ${p.delay}ms forwards`,
-            transform: `rotate(${p.rotation}deg) scale(${p.scale})`,
-          }}
-        >
+        <div key={p.id} className="absolute" style={{
+          left: `${p.x}%`,
+          top: `${p.startY}%`,
+          animationName: "confetti-fall-v2",
+          animationDuration: `${p.duration}ms`,
+          animationTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          animationDelay: `${p.delay}ms`,
+          animationFillMode: "forwards",
+          ["--confetti-drift" as string]: `${p.drift}px`,
+          ["--confetti-rotate" as string]: `${p.rotation}deg`,
+        }}>
           {p.emoji ? (
-            <span className="text-2xl">{p.emoji}</span>
+            <span style={{ fontSize: `${16 + p.scale * 12}px` }}>{p.emoji}</span>
           ) : (
-            <div
-              className="h-2 w-2 rounded-sm"
-              style={{ background: p.color }}
-            />
+            <div style={{
+              width: `${6 + p.scale * 4}px`,
+              height: `${6 + p.scale * 4}px`,
+              borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+              background: p.color,
+              transform: `scale(${p.scale})`,
+            }} />
           )}
         </div>
       ))}
