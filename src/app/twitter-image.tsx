@@ -11,48 +11,58 @@ export default async function TwitterImage() {
   const logoData = await readFile(join(process.cwd(), "public/brand/routines365-logo.png"));
   const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
 
+  const fontData = await fetch(
+    "https://fonts.gstatic.com/s/montserrat/v29/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvr73w5aXo.ttf"
+  ).then((r) => r.arrayBuffer());
+
   return new ImageResponse(
     (
       <div
         style={{
-          background: "#000000",
+          background: "linear-gradient(135deg, #0f172a 0%, #020617 40%, #000000 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
-          fontFamily: "system-ui, sans-serif",
-          gap: 60,
-          padding: "0 80px",
+          gap: 50,
+          padding: "40px 60px",
         }}
       >
         <img
           src={logoBase64}
-          width={280}
-          height={280}
-          style={{ borderRadius: 48, boxShadow: "0 0 80px rgba(16,185,129,0.15)" }}
+          width={340}
+          height={340}
+          style={{ borderRadius: 56, flexShrink: 0 }}
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 600 }}>
-          <div style={{ fontSize: 52, fontWeight: 800, color: "#ffffff", letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+          <div style={{
+            fontFamily: "Montserrat", fontSize: 58, fontWeight: 800,
+            color: "#ffffff", letterSpacing: "-0.03em", lineHeight: 1.0,
+          }}>
             routines365
           </div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: "#10b981", marginTop: 4, lineHeight: 1.3 }}>
+          <div style={{
+            fontSize: 26, fontWeight: 700, color: "#34d399",
+            marginTop: 8, lineHeight: 1.2, fontFamily: "Montserrat",
+          }}>
             Stack your days. Change your life.
           </div>
-          <div style={{ fontSize: 18, color: "#a3a3a3", marginTop: 12, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 17, color: "#94a3b8", marginTop: 14, lineHeight: 1.5 }}>
             The daily habit tracker that keeps it simple. Build streaks, hit milestones, and watch consistency compound.
           </div>
-          <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
             {[
-              { emoji: "⚡", label: "One-tap tracking" },
+              { emoji: "⚡", label: "One-tap" },
               { emoji: "🟢", label: "Green days" },
               { emoji: "🔥", label: "Streaks" },
+              { emoji: "🏆", label: "Trophies" },
             ].map(({ emoji, label }) => (
               <div key={label} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: "rgba(255,255,255,0.08)", borderRadius: 20,
-                padding: "8px 16px", fontSize: 15, color: "#d4d4d4",
+                display: "flex", alignItems: "center", gap: 5,
+                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 20, padding: "7px 14px", fontSize: 14, color: "#e2e8f0",
               }}>
                 <span>{emoji}</span>
                 <span>{label}</span>
@@ -62,6 +72,9 @@ export default async function TwitterImage() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [{ name: "Montserrat", data: fontData, style: "normal" as const, weight: 800 }],
+    }
   );
 }
