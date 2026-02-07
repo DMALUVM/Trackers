@@ -13,10 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "routines365",
-  description: "Daily habit tracker with streaks, milestones, and beautiful progress.",
+  title: "routines365 — Stack your days. Change your life.",
+  description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
   applicationName: "routines365",
   manifest: "/manifest.json",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://routines365.vercel.app"),
+  openGraph: {
+    title: "routines365 — Stack your days. Change your life.",
+    description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
+    siteName: "routines365",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "routines365",
+    description: "Stack your days. Change your life.",
+  },
   appleWebApp: {
     capable: true,
     title: "routines365",
@@ -25,6 +37,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/brand/pwa/icon-192.png",
     apple: "/brand/pwa/apple-touch-icon.png",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
   },
 };
 
@@ -43,7 +58,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" style={{ background: "#000" }}>
+      <head>
+        {/* Apple splash: black background prevents white flash on PWA launch */}
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

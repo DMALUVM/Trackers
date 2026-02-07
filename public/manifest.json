@@ -1,7 +1,7 @@
 {
   "name": "routines365",
   "short_name": "routines365",
-  "description": "Daily habit tracker with streaks, milestones, and beautiful progress.",
+  "description": "Stack your days. Change your life. The daily habit tracker that keeps it simple.",
   "start_url": "/app/today",
   "scope": "/",
   "display": "standalone",
@@ -12,6 +12,22 @@
     { "src": "/brand/pwa/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/brand/pwa/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/brand/pwa/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ],
+  "screenshots": [
+    {
+      "src": "/brand/screenshots/routines.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Daily routine check-in"
+    },
+    {
+      "src": "/brand/screenshots/progress.png",
+      "sizes": "1170x2532",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Progress calendar and streaks"
+    }
   ],
   "categories": ["health", "lifestyle", "productivity"]
 }

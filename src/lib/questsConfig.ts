@@ -19,17 +19,17 @@ const KEY = "routines365:quests:v1";
 export function loadQuestConfig(): QuestConfig {
   try {
     if (typeof window === "undefined") {
-      return { enabled: true, maxShown: 3, selected: ["q-rowing", "q-walk", "q-green"], custom: [] };
+      return { enabled: true, maxShown: 3, selected: ["q-walk", "q-green", "q-run"], custom: [] };
     }
     const raw = window.localStorage.getItem(KEY);
     if (!raw) throw new Error("no");
     const parsed = JSON.parse(raw);
     const maxShown = [0, 1, 2, 3].includes(parsed.maxShown) ? parsed.maxShown : 3;
-    const selected = Array.isArray(parsed.selected) ? parsed.selected : ["q-rowing", "q-walk", "q-green"];
+    const selected = Array.isArray(parsed.selected) ? parsed.selected : ["q-walk", "q-green", "q-run"];
     const custom = Array.isArray(parsed.custom) ? parsed.custom : [];
     return { enabled: !!parsed.enabled, maxShown, selected, custom } as QuestConfig;
   } catch {
-    return { enabled: true, maxShown: 3, selected: ["q-rowing", "q-walk", "q-green"], custom: [] };
+    return { enabled: true, maxShown: 3, selected: ["q-walk", "q-green", "q-run"], custom: [] };
   }
 }
 
