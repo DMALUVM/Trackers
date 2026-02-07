@@ -41,7 +41,7 @@ export default function AppearancePage() {
   return (
     <div className="space-y-6">
       <Toast state={toast} />
-      <SubPageHeader title="Appearance" subtitle="Choose how routines365 looks" backHref="/app/settings" />
+      <SubPageHeader title="Appearance" subtitle="Choose how Routines365 looks" backHref="/app/settings" />
 
       <section className="space-y-2">
         {themes.map(({ key, label, Icon, desc }) => {

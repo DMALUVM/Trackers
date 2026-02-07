@@ -43,7 +43,7 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
           <img src="/brand/routines365-logo.jpg" alt=""
             className="h-20 w-20 mx-auto rounded-2xl"
             style={{ border: "1px solid var(--border-primary)" }} />
-          <h1 className="text-xl font-bold tracking-tight">Unlock routines365</h1>
+          <h1 className="text-xl font-bold tracking-tight">Unlock Routines365</h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Use Face ID to access your routines.
           </p>

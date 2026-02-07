@@ -4,7 +4,7 @@ export default function TermsPage() {
       <div className="mx-auto w-full max-w-md px-6 py-10 space-y-4">
         <h1 className="text-2xl font-semibold tracking-tight">Terms of Service</h1>
         <p className="text-sm text-neutral-300">
-          By using routines365, you agree to use the service responsibly. The app
+          By using Routines365, you agree to use the service responsibly. The app
           is provided “as is” without warranties. It is not medical advice.
         </p>
 

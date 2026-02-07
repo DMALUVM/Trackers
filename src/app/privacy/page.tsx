@@ -4,7 +4,7 @@ export default function PrivacyPage() {
       <div className="mx-auto w-full max-w-md px-6 py-10 space-y-4">
         <h1 className="text-2xl font-semibold tracking-tight">Privacy Policy</h1>
         <p className="text-sm text-neutral-300">
-          routines365 is a personal routines tracker. We collect the minimum data
+          Routines365 is a personal routines tracker. We collect the minimum data
           needed to run the app and sync your progress across devices.
         </p>
 

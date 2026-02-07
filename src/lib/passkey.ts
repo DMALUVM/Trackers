@@ -60,7 +60,7 @@ export async function registerPasskey(opts: { email: string }) {
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge,
-      rp: { name: "routines365", id: rpId },
+      rp: { name: "Routines365", id: rpId },
       user: {
         id: randomChallenge(32),
         name: opts.email,

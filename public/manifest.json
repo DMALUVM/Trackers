@@ -1,6 +1,6 @@
 {
-  "name": "routines365",
-  "short_name": "routines365",
+  "name": "Routines365",
+  "short_name": "Routines365",
   "description": "Stack your days. Change your life. The daily habit tracker that keeps it simple.",
   "start_url": "/app/today",
   "scope": "/",

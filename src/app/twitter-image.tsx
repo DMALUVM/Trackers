@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const runtime = "nodejs";
-export const alt = "routines365 — Stack your days. Change your life.";
+export const alt = "Routines365 — Stack your days. Change your life.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -38,7 +38,7 @@ export default async function TwitterImage() {
             fontSize: 58, fontWeight: 900,
             color: "#ffffff", letterSpacing: "-0.04em", lineHeight: 1.0,
           }}>
-            routines365
+            Routines365
           </div>
           <div style={{
             fontSize: 26, fontWeight: 700, color: "#34d399",

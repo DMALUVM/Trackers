@@ -13,25 +13,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "routines365 — Stack your days. Change your life.",
+  title: "Routines365 — Stack your days. Change your life.",
   description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
-  applicationName: "routines365",
+  applicationName: "Routines365",
   manifest: "/manifest.json",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://routines365.vercel.app"),
   openGraph: {
-    title: "routines365 — Stack your days. Change your life.",
+    title: "Routines365 — Stack your days. Change your life.",
     description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
-    siteName: "routines365",
+    siteName: "Routines365",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "routines365",
+    title: "Routines365",
     description: "Stack your days. Change your life.",
   },
   appleWebApp: {
     capable: true,
-    title: "routines365",
+    title: "Routines365",
     statusBarStyle: "black-translucent",
   },
   icons: {
