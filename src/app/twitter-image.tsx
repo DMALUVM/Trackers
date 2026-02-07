@@ -1,21 +1,18 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const alt = "Routines365 — Stack your days. Change your life.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default async function TwitterImage() {
-  const logoData = await readFile(join(process.cwd(), "public/brand/routines365-logo.png"));
-  const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
+const BAR_COLORS = ["#bef264", "#86efac", "#4ade80", "#34d399", "#10b981", "#059669"];
 
+export default function TwitterImage() {
   return new ImageResponse(
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #020617 40%, #000000 100%)",
+          background: "#000000",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -23,33 +20,40 @@ export default async function TwitterImage() {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "system-ui, -apple-system, sans-serif",
-          gap: 50,
-          padding: "40px 60px",
+          gap: 56,
+          padding: "40px 70px",
         }}
       >
-        <img
-          src={logoBase64}
-          width={340}
-          height={340}
-          style={{ borderRadius: 56, flexShrink: 0 }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
+          <div style={{
+            width: 140, height: 28, borderRadius: 8,
+            border: "3px solid rgba(255,255,255,0.8)",
+          }} />
+          {BAR_COLORS.map((color) => (
+            <div key={color} style={{
+              width: 140, height: 28, borderRadius: 8,
+              background: color,
+            }} />
+          ))}
+        </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
           <div style={{
-            fontSize: 58, fontWeight: 900,
-            color: "#ffffff", letterSpacing: "-0.04em", lineHeight: 1.0,
+            fontSize: 56, fontWeight: 600,
+            color: "#ffffff", letterSpacing: "0.06em", lineHeight: 1.0,
+            textTransform: "uppercase" as const,
           }}>
-            Routines365
+            ROUTINES365
           </div>
           <div style={{
-            fontSize: 26, fontWeight: 700, color: "#34d399",
-            marginTop: 8, lineHeight: 1.2,
+            fontSize: 26, fontWeight: 600, color: "#34d399",
+            marginTop: 10, lineHeight: 1.2,
           }}>
             Stack your days. Change your life.
           </div>
           <div style={{ fontSize: 17, color: "#94a3b8", marginTop: 14, lineHeight: 1.5 }}>
             The daily habit tracker that keeps it simple. Build streaks, hit milestones, and watch consistency compound.
           </div>
-          <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
+          <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
             {[
               { emoji: "⚡", label: "One-tap" },
               { emoji: "🟢", label: "Green days" },
@@ -58,7 +62,7 @@ export default async function TwitterImage() {
             ].map(({ emoji, label }) => (
               <div key={label} style={{
                 display: "flex", alignItems: "center", gap: 5,
-                background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 20, padding: "7px 14px", fontSize: 14, color: "#e2e8f0",
               }}>
                 <span>{emoji}</span>

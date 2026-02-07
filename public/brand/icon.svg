@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#000000"/>
+  
+  <!-- 7-bar vertical stack, centered -->
+  <!-- Bar dimensions: width=280, height=36, gap=14, rx=10 -->
+  <!-- Total stack height = 7*36 + 6*14 = 336, centered vertically: y_start = (512-336)/2 = 88 -->
+  <!-- Centered horizontally: x = (512-280)/2 = 116 -->
+  
+  <!-- Bar 1: Empty / outlined (today) -->
+  <rect x="116" y="88" width="280" height="36" rx="10" fill="none" stroke="#ffffff" stroke-width="5"/>
+  
+  <!-- Bar 2: Lightest yellow-green -->
+  <rect x="116" y="138" width="280" height="36" rx="10" fill="#bef264"/>
+  
+  <!-- Bar 3: Lime green -->
+  <rect x="116" y="188" width="280" height="36" rx="10" fill="#86efac"/>
+  
+  <!-- Bar 4: Green -->
+  <rect x="116" y="238" width="280" height="36" rx="10" fill="#4ade80"/>
+  
+  <!-- Bar 5: Emerald -->
+  <rect x="116" y="288" width="280" height="36" rx="10" fill="#34d399"/>
+  
+  <!-- Bar 6: Deep emerald -->
+  <rect x="116" y="338" width="280" height="36" rx="10" fill="#10b981"/>
+  
+  <!-- Bar 7: Teal -->
+  <rect x="116" y="388" width="280" height="36" rx="10" fill="#059669"/>
+</svg>

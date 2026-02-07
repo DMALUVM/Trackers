@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isPasskeyEnabled, isUnlockValid, unlockWithPasskey } from "@/lib/passkey";
+import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 export function PasskeyGate({ children }: { children: React.ReactNode }) {
   const [enabled, setEnabled] = useState(false);
@@ -40,9 +41,9 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
       style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <div className="w-full max-w-sm text-center space-y-6">
         <div className="space-y-3">
-          <img src="/brand/routines365-logo.jpg" alt=""
-            className="h-20 w-20 mx-auto rounded-2xl"
-            style={{ border: "1px solid var(--border-primary)" }} />
+          <div className="mx-auto" style={{ width: 80 }}>
+            <BrandIcon size={80} />
+          </div>
           <h1 className="text-xl font-bold tracking-tight">Unlock Routines365</h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             Use Face ID to access your routines.

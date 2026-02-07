@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 type AuthState = "checking" | "signed-in" | "signed-out";
 
@@ -110,11 +111,12 @@ export default function Home() {
     return (
       <main className="min-h-dvh bg-black text-white flex items-center justify-center">
         <div className="text-center space-y-5 animate-fade-in">
-          <img src="/brand/routines365-logo.jpg" alt="routines365"
-            className="h-20 w-20 mx-auto rounded-2xl border border-white/10" />
+          <div className="mx-auto" style={{ width: 72 }}>
+            <BrandIcon size={72} />
+          </div>
           <div>
-            <p className="text-lg font-bold tracking-tight">Routines365</p>
-            <p className="text-xs text-neutral-500 mt-1">Stack your days. Change your life.</p>
+            <p className="text-xl font-semibold uppercase" style={{ letterSpacing: "0.06em" }}>ROUTINES365</p>
+            <p className="text-xs text-neutral-500 mt-1.5">Stack your days. Change your life.</p>
           </div>
           <div className="flex items-center justify-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-white/40 animate-pulse" />
@@ -133,10 +135,11 @@ export default function Home() {
 
         {/* ── Hero ── */}
         <header className="space-y-6 text-center">
-          <img src="/brand/routines365-logo.jpg" alt="routines365"
-            className="h-24 w-24 mx-auto rounded-3xl border border-white/10 shadow-[0_0_40px_rgba(16,185,129,0.08)]" />
+          <div className="mx-auto" style={{ width: 96 }}>
+            <BrandIcon size={96} />
+          </div>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">Routines365</h1>
+            <h1 className="text-3xl font-semibold uppercase" style={{ letterSpacing: "0.06em" }}>ROUTINES365</h1>
             <p className="mt-3 text-base font-medium text-emerald-400">Stack your days. Change your life.</p>
             <p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-xs mx-auto">
               The daily habit tracker that keeps it simple — check off your core habits, build streaks, and watch consistency compound.

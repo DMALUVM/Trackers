@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { persistSessionToCookies, readSessionFromCookies } from "@/lib/sessionCookie";
 
 /**
@@ -106,8 +107,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           {/* Subtle glow */}
           <div className="absolute inset-0 rounded-2xl animate-pulse"
             style={{ background: "var(--accent-green-soft)", filter: "blur(20px)", transform: "scale(1.5)" }} />
-          <img src="/brand/routines365-logo.jpg" alt="" className="relative h-16 w-16 rounded-2xl"
-            style={{ border: "1px solid var(--border-primary)" }} />
+          <div className="relative">
+            <BrandIcon size={64} />
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {[0, 1, 2].map((i) => (

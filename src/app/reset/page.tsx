@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function ResetPasswordPage() {
     <main className="min-h-dvh bg-black text-white">
       <div className="mx-auto w-full max-w-md px-6 py-10 space-y-6">
         <header className="text-center space-y-3">
-          <img src="/brand/routines365-logo.jpg" alt="" className="h-16 w-16 mx-auto rounded-2xl border border-white/10" />
+          <div className="mx-auto" style={{ width: 64 }}><BrandIcon size={64} /></div>
           <h1 className="text-2xl font-bold tracking-tight">Reset password</h1>
           <p className="text-sm text-neutral-400">
             {!ready ? "Loading…" : signedInEmail ? `Signed in as ${signedInEmail}` : "Open the reset link from your email."}
