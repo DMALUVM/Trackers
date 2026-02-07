@@ -77,7 +77,7 @@ export const AUTOSAVE_DELAY_MS = 350;
 export const STREAK_LOOKBACK_DAYS = 90;
 
 /** Default timezone for date normalisation. */
-export const APP_TIMEZONE = "America/New_York";
+
 
 /** Snooze duration — "skip today" means hide for 24 hours. */
 export const SNOOZE_DURATION_MS = 24 * 60 * 60 * 1000;

@@ -5,7 +5,7 @@ import { tzDateKey } from "@/lib/time";
 import { cacheClear, cacheGet, cacheSet } from "@/lib/clientCache";
 
 export function toDateKey(d: Date) {
-  // Normalize to app timezone (America/New_York) so "days" don't drift while traveling.
+  // Normalize to app timezone (auto-detected from browser) so "days" don't drift while traveling.
   return tzDateKey(d);
 }
 

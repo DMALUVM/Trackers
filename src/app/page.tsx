@@ -125,8 +125,8 @@ export default function Home() {
       // Ensure UI resets even if auth event is slow.
       setSignedInEmail(null);
       window.location.href = "/";
-    } catch (e: any) {
-      setStatus(`Sign out failed: ${e?.message ?? String(e)}`);
+    } catch (e: unknown) {
+      setStatus(`Sign out failed: ${e instanceof Error ? e.message : String(e)}`);
       setSigningOut(false);
     }
   };

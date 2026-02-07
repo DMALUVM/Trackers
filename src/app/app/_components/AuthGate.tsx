@@ -120,7 +120,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (!ready) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-neutral-400">Loading…</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading…</p>
       </div>
     );
   }

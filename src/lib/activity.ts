@@ -173,7 +173,7 @@ export async function deleteActivityLogsForDate(opts: {
     .eq("activity_key", opts.activityKey)
     .eq("date", opts.dateKey);
   if (error) throw error;
-  const ids = (data ?? []).map((r: any) => r.id).filter(Boolean);
+  const ids = (data ?? []).map((r: { id: string }) => r.id).filter(Boolean);
   if (ids.length === 0) return;
   const { error: delErr } = await supabase.from("activity_logs").delete().in("id", ids);
   if (delErr) throw delErr;

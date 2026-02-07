@@ -49,8 +49,8 @@ export default function ResetPasswordPage() {
       if (error) throw error;
       setStatus("Password updated. Taking you to the app...");
       setTimeout(() => router.replace("/app/today"), 500);
-    } catch (e: any) {
-      setStatus(e?.message ?? String(e));
+    } catch (e: unknown) {
+      setStatus(e instanceof Error ? e.message : String(e));
       setSaving(false);
     }
   };
