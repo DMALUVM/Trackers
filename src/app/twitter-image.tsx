@@ -11,10 +11,6 @@ export default async function TwitterImage() {
   const logoData = await readFile(join(process.cwd(), "public/brand/routines365-logo.png"));
   const logoBase64 = `data:image/png;base64,${logoData.toString("base64")}`;
 
-  const fontData = await fetch(
-    "https://fonts.gstatic.com/s/montserrat/v29/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvr73w5aXo.ttf"
-  ).then((r) => r.arrayBuffer());
-
   return new ImageResponse(
     (
       <div
@@ -26,6 +22,7 @@ export default async function TwitterImage() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "center",
+          fontFamily: "system-ui, -apple-system, sans-serif",
           gap: 50,
           padding: "40px 60px",
         }}
@@ -38,14 +35,14 @@ export default async function TwitterImage() {
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
           <div style={{
-            fontFamily: "Montserrat", fontSize: 58, fontWeight: 800,
-            color: "#ffffff", letterSpacing: "-0.03em", lineHeight: 1.0,
+            fontSize: 58, fontWeight: 900,
+            color: "#ffffff", letterSpacing: "-0.04em", lineHeight: 1.0,
           }}>
             routines365
           </div>
           <div style={{
             fontSize: 26, fontWeight: 700, color: "#34d399",
-            marginTop: 8, lineHeight: 1.2, fontFamily: "Montserrat",
+            marginTop: 8, lineHeight: 1.2,
           }}>
             Stack your days. Change your life.
           </div>
@@ -72,9 +69,6 @@ export default async function TwitterImage() {
         </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [{ name: "Montserrat", data: fontData, style: "normal" as const, weight: 800 }],
-    }
+    { ...size }
   );
 }
