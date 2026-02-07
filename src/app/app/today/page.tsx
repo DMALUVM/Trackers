@@ -997,10 +997,16 @@ export default function TodayPage() {
                       ? "bg-rose-500"
                       : "bg-white/10";
               return (
-                <div key={d.dateKey} className="flex flex-col items-center gap-1">
+                <button
+                  key={d.dateKey}
+                  type="button"
+                  onClick={() => router.push(`/app/routines/edit/${d.dateKey}`)}
+                  className="flex flex-col items-center gap-1"
+                  title="Edit this day"
+                >
                   <div className={`h-3 w-7 rounded-full ${cls}`} />
                   <div className="text-[10px] text-neutral-500">{d.dateKey.slice(8)}</div>
-                </div>
+                </button>
               );
             })
           )}

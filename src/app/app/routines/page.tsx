@@ -585,17 +585,20 @@ export default function RoutinesPage() {
                         ? "R"
                         : "–";
                 return (
-                  <div
+                  <button
                     key={d.dateKey}
+                    type="button"
+                    onClick={() => router.push(`/app/routines/edit/${d.dateKey}`)}
                     className={
                       "flex h-6 w-6 items-center justify-center rounded-md border border-white/10 text-[10px] font-semibold text-white " +
-                      bg
+                      bg +
+                      " hover:brightness-110"
                     }
-                    title={d.dateKey}
-                    aria-label={`${d.dateKey}: ${label}`}
+                    title={`Edit ${d.dateKey}`}
+                    aria-label={`${d.dateKey}: ${label} (tap to edit)`}
                   >
                     {label}
-                  </div>
+                  </button>
                 );
               })}
             </div>
