@@ -276,7 +276,9 @@ export default function TodayPage() {
           setTimeout(() => {
             void (async () => {
               try {
-                const from = format(subDays(today, 60), "yyyy-MM-dd");
+                // If user navigates away fast (tab switch), don't burn cycles.
+                if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+                const from = format(subDays(today, 30), "yyyy-MM-dd");
                 const hist = await loadRangeStates({ from, to: dateKey });
                 const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
                 for (const c of hist.checks) {
