@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
@@ -91,6 +91,17 @@ export default function TodayPage() {
   const [comebackDismissed, setComebackDismissed] = useState(false);
   const [halfwayShown, setHalfwayShown] = useState(false);
 
+  // Guard: don't fire haptics / confetti on initial data load — only on
+  // user-initiated state changes. Becomes true after the first render
+  // with real data, so subsequent changes (user checking items) are live.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (!routine.loading && items.length > 0) {
+      const id = requestAnimationFrame(() => { hydrated.current = true; });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [routine.loading, items.length]);
+
   // Sync hook state → local
   useEffect(() => {
     setItems(routine.items);
@@ -176,6 +187,7 @@ export default function TodayPage() {
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
+    if (!hydrated.current) return;
     if (halfwayShown || coreTotal < 4) return;
     if (coreDone === Math.ceil(coreTotal / 2) && !allCoreDone) {
       setHalfwayShown(true);
@@ -219,6 +231,7 @@ export default function TodayPage() {
 
   // Confetti on natural all-core completion
   useEffect(() => {
+    if (!hydrated.current) return;
     if (allCoreDone && coreDone > 0 && !justCompletedAll) {
       hapticHeavy();
       setConfettiTrigger(true);
