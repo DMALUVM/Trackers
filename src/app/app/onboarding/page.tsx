@@ -130,12 +130,35 @@ export default function OnboardingPage() {
         ))}
       </section>
 
-      {/* More options — secondary path */}
+      {/* More options — secondary paths for both personas */}
       <section className="space-y-3">
         <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-          Or customize your way
+          Or build your own
         </p>
 
+        {/* PERSONA 2: Needs inspiration → 76-item library */}
+        <button type="button" disabled={!!busy}
+          className="card-interactive w-full p-4 text-left"
+          onClick={() => {
+            hapticMedium();
+            localStorage.removeItem("routines365:gettingStarted:dismissed");
+            router.push("/app/settings/routines/library?from=onboarding");
+          }}>
+          <div className="flex items-center gap-4">
+            <div className="shrink-0 flex items-center justify-center rounded-xl"
+              style={{ width: 44, height: 44, background: "var(--bg-card-hover)", fontSize: 20 }}>
+              📚
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Browse 76 habits</p>
+              <p className="mt-0.5 text-xs" style={{ color: "var(--text-faint)" }}>
+                Morning, fitness, nutrition, recovery, mindfulness, and more
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {/* Goal-matched templates */}
         <button type="button" disabled={!!busy}
           className="card-interactive w-full p-4 text-left"
           onClick={() => {
@@ -157,6 +180,7 @@ export default function OnboardingPage() {
           </div>
         </button>
 
+        {/* PERSONA 1: Already has routines → blank canvas */}
         <button type="button" disabled={!!busy}
           className="card-interactive w-full p-4 text-left"
           onClick={() => {
@@ -170,9 +194,9 @@ export default function OnboardingPage() {
               ✏️
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Build from scratch</p>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Start blank</p>
               <p className="mt-0.5 text-xs" style={{ color: "var(--text-faint)" }}>
-                You know exactly what you want
+                Type in your own habits one by one
               </p>
             </div>
           </div>

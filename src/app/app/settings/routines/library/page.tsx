@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { createRoutineItem, createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
 import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
@@ -139,6 +140,17 @@ export default function RoutineLibraryPage() {
   const [query, setQuery] = useState("");
   const [addingKey, setAddingKey] = useState("");
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [addedCount, setAddedCount] = useState(0);
+  const [fromOnboarding, setFromOnboarding] = useState(false);
+  const router = useRouter();
+
+  // Detect if user came from onboarding
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setFromOnboarding(params.get("from") === "onboarding");
+    }
+  }, []);
 
   const flat = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -161,6 +173,7 @@ export default function RoutineLibraryPage() {
         return;
       }
       await createRoutineItem({ label: it.label, emoji: it.emoji ?? null, section: it.section ?? "anytime", isNonNegotiable: !!it.suggestedCore });
+      setAddedCount((c) => c + 1);
       show("saved", "Added ✓");
     } catch { show("error", "Add failed"); }
     finally { setAddingKey(""); }
@@ -181,6 +194,7 @@ export default function RoutineLibraryPage() {
           isNonNegotiable: true, sortOrder: maxOrder + idx + 1,
         })),
       });
+      setAddedCount((c) => c + toAdd.length);
       show("saved", `Added ${toAdd.length} routines ✓`);
     } catch { show("error", "Add failed"); }
   };
@@ -209,7 +223,7 @@ export default function RoutineLibraryPage() {
       <Toast state={toast} message={toastMsg || undefined} />
 
       <SubPageHeader title="Routine library" subtitle={`${LIBRARY.reduce((n, g) => n + g.items.length, 0)} habits to choose from`}
-        backHref="/app/settings/routines"
+        backHref={fromOnboarding ? "/app/onboarding" : "/app/settings/routines"}
         rightAction={
           <button type="button" onClick={() => void addStarterSet()} className="btn-primary text-xs py-2 px-3">
             Starter set
@@ -256,6 +270,25 @@ export default function RoutineLibraryPage() {
           );
         })
       )}
+
+      {/* Floating "Done" CTA — appears after adding habits */}
+      {addedCount > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          style={{ background: "linear-gradient(transparent, var(--bg-primary) 30%)" }}>
+          <button type="button"
+            className="w-full max-w-md mx-auto block rounded-2xl py-4 text-base font-bold transition-transform active:scale-[0.98]"
+            style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}
+            onClick={() => {
+              localStorage.removeItem("routines365:gettingStarted:dismissed");
+              router.replace("/app/today");
+            }}>
+            Start tracking → ({addedCount} habit{addedCount !== 1 ? "s" : ""} added)
+          </button>
+        </div>
+      )}
+
+      {/* Spacer for floating button */}
+      {addedCount > 0 && <div className="h-24" />}
     </div>
   );
 }
