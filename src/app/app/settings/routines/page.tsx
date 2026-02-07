@@ -1,0 +1,211 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabaseClient";
+import { createRoutineItem, listRoutineItems, updateRoutineItem } from "@/lib/supabaseData";
+import type { RoutineItemRow } from "@/lib/types";
+import { Toast, type ToastState } from "@/app/app/_components/ui";
+
+/** Simple array reorder — replaces @dnd-kit/sortable dependency */
+function arrayMove<T>(arr: T[], from: number, to: number): T[] {
+  const next = [...arr];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+function SortRow({
+  item, index, total, onToggleNon, onArchive, onMove,
+}: {
+  item: RoutineItemRow; index: number; total: number;
+  onToggleNon: (item: RoutineItemRow) => void;
+  onArchive: (item: RoutineItemRow) => void;
+  onMove: (from: number, to: number) => void;
+}) {
+  return (
+    <div className="card-interactive p-3">
+      <div className="flex items-center gap-2">
+        {/* Reorder arrows */}
+        <div className="flex flex-col">
+          <button type="button" className="p-1 rounded-lg disabled:opacity-30"
+            style={{ color: "var(--text-faint)" }}
+            onClick={() => onMove(index, index - 1)} disabled={index === 0} title="Move up">
+            <ArrowUp size={14} />
+          </button>
+          <button type="button" className="p-1 rounded-lg disabled:opacity-30"
+            style={{ color: "var(--text-faint)" }}
+            onClick={() => onMove(index, index + 1)} disabled={index === total - 1} title="Move down">
+            <ArrowDown size={14} />
+          </button>
+        </div>
+
+        {/* Label link */}
+        <Link href={`/app/settings/routines/${item.id}`}
+          className="flex-1 rounded-lg px-3 py-2 text-sm truncate"
+          style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}>
+          {item.label || "(untitled)"}
+        </Link>
+
+        {/* Emoji */}
+        <div className="w-12 rounded-lg px-2 py-2 text-center text-sm"
+          style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}>
+          {item.emoji ?? ""}
+        </div>
+
+        {/* Core/Opt toggle */}
+        <button type="button" onClick={() => onToggleNon(item)}
+          className="rounded-full px-2 py-1.5 text-[11px] font-semibold"
+          style={{
+            background: item.is_non_negotiable ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
+            color: item.is_non_negotiable ? "var(--accent-green-text)" : "var(--text-muted)",
+          }}
+          title="Mark as Core habit">
+          {item.is_non_negotiable ? "CORE" : "OPT"}
+        </button>
+
+        {/* Archive */}
+        <button type="button" onClick={() => onArchive(item)}
+          className="p-2 rounded-lg" style={{ color: "var(--text-faint)" }} title="Archive">
+          <Trash2 size={18} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default function RoutinesSettingsPage() {
+  const [items, setItems] = useState<RoutineItemRow[]>([]);
+  const [toast, setToast] = useState<ToastState>("idle");
+  const [toastMsg, setToastMsg] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [newEmoji, setNewEmoji] = useState("");
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((i) =>
+      (i.label ?? "").toLowerCase().includes(q) || (i.emoji ?? "").toLowerCase().includes(q)
+    );
+  }, [items, search]);
+
+  const refresh = async () => {
+    const data = await listRoutineItems();
+    const sorted = [...data].sort((a, b) => (a.sort_order ?? 999999) - (b.sort_order ?? 999999));
+    setItems(sorted);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => { if (!cancelled) await refresh(); })();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { if (!cancelled) void refresh(); });
+    return () => { cancelled = true; subscription.unsubscribe(); };
+  }, []);
+
+  const showToast = (state: ToastState, msg?: string) => {
+    setToast(state);
+    setToastMsg(msg ?? "");
+    if (state === "saved" || state === "error") setTimeout(() => setToast("idle"), 1500);
+  };
+
+  const onToggleNon = async (item: RoutineItemRow) => {
+    showToast("saving");
+    const next = !item.is_non_negotiable;
+    setItems((prev) => prev.map((p) => (p.id === item.id ? { ...p, is_non_negotiable: next } : p)));
+    try {
+      const daysPatch = next && Array.isArray(item.days_of_week) && item.days_of_week.length === 0 ? null : undefined;
+      await updateRoutineItem(item.id, { is_non_negotiable: next, ...(daysPatch !== undefined ? { days_of_week: daysPatch } : {}) });
+      showToast("saved");
+    } catch { showToast("error", "Save failed"); }
+  };
+
+  const onArchive = async (item: RoutineItemRow) => {
+    showToast("saving");
+    try {
+      await updateRoutineItem(item.id, { is_active: false });
+      await refresh();
+      showToast("saved");
+    } catch { showToast("error", "Archive failed"); }
+  };
+
+  const onAdd = async () => {
+    if (!newLabel.trim()) return;
+    showToast("saving");
+    try {
+      const maxOrder = Math.max(...items.map((i) => i.sort_order ?? 0), 0);
+      await createRoutineItem({ label: newLabel.trim(), emoji: newEmoji.trim() || null, sortOrder: maxOrder + 1 });
+      setNewLabel(""); setNewEmoji("");
+      await refresh();
+      showToast("saved");
+    } catch { showToast("error", "Add failed"); }
+  };
+
+  const persistOrder = async (next: RoutineItemRow[]) => {
+    try {
+      await Promise.all(next.map((it, idx) => updateRoutineItem(it.id, { sort_order: idx })));
+    } catch { showToast("error", "Reorder failed"); }
+  };
+
+  const onMove = async (from: number, to: number) => {
+    if (to < 0 || to >= items.length) return;
+    const next = arrayMove(items, from, to);
+    setItems(next);
+    await persistOrder(next);
+  };
+
+  return (
+    <div className="space-y-5">
+      <Toast state={toast} message={toastMsg || undefined} />
+
+      <header className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Routine settings</h1>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          Edit labels/emojis, mark Core habits, and reorder.
+        </p>
+        <div className="pt-2">
+          <Link href="/app/settings/routines/library"
+            className="btn-secondary text-xs py-2 px-3 inline-flex items-center gap-2">
+            <Plus size={14} /> Routine library
+          </Link>
+        </div>
+      </header>
+
+      <section className="card p-4 space-y-3">
+        <div>
+          <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Search</label>
+          <input className="mt-2 w-full rounded-xl px-3 py-3 text-sm"
+            style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+            value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search routines…" />
+        </div>
+
+        <div className="flex gap-2">
+          <input className="flex-1 rounded-xl px-3 py-3 text-sm"
+            style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+            value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Add a routine (e.g. Journaling)" />
+          <input className="w-16 rounded-xl px-3 py-3 text-sm text-center"
+            style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+            value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} placeholder="📝" />
+          <button type="button" onClick={onAdd} className="btn-primary px-4">
+            <Plus size={18} />
+          </button>
+        </div>
+      </section>
+
+      <div className="space-y-2">
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          Use the arrows to reorder habits.
+        </p>
+        {filteredItems.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matches.</p>
+        ) : (
+          filteredItems.map((i, idx) => (
+            <SortRow key={i.id} item={i} index={idx} total={filteredItems.length}
+              onToggleNon={onToggleNon} onArchive={onArchive} onMove={onMove} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,184 @@
+import { useEffect, useState } from "react";
+import { format, subDays, startOfMonth, startOfWeek, endOfWeek } from "date-fns";
+import type { DayColor } from "@/lib/progress";
+import { computeDayColor } from "@/lib/progress";
+import { loadRangeStates, listRoutineItems } from "@/lib/supabaseData";
+import { tzIsoDow } from "@/lib/time";
+import type { RoutineItemRow } from "@/lib/types";
+import { CATEGORY_KEYWORDS, STREAK_LOOKBACK_DAYS } from "@/lib/constants";
+
+function shouldShow(item: RoutineItemRow, date: Date): boolean {
+  const dow = tzIsoDow(date);
+  const allowed = item.days_of_week;
+  if (!allowed || allowed.length === 0) return true;
+  return allowed.includes(dow);
+}
+
+export interface StreakData {
+  currentStreak: number;
+  bestStreak: number;
+  last7Days: Array<{ dateKey: string; color: DayColor }>;
+  categoryStreaks: { movement: number; mind: number; sleep: number };
+  /** Green days in the current calendar month (up to today). */
+  greenDaysThisMonth: number;
+  /** Core habit hit-rate for the current ISO week (0–100). */
+  coreHitRateThisWeek: number | null;
+  loading: boolean;
+}
+
+/**
+ * Loads history and computes streaks. Deferred after first paint so it
+ * doesn't block the main Today UI from rendering.
+ */
+export function useStreaks(dateKey: string) {
+  const [data, setData] = useState<StreakData>({
+    currentStreak: 0,
+    bestStreak: 0,
+    last7Days: [],
+    categoryStreaks: { movement: 0, mind: 0, sleep: 0 },
+    greenDaysThisMonth: 0,
+    coreHitRateThisWeek: null,
+    loading: true,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Defer heavy computation until after paint
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const today = new Date(dateKey + "T12:00:00");
+          const from = format(subDays(today, STREAK_LOOKBACK_DAYS), "yyyy-MM-dd");
+
+          const [routineItems, hist] = await Promise.all([
+            listRoutineItems(),
+            loadRangeStates({ from, to: dateKey }),
+          ]);
+
+          if (cancelled) return;
+
+          // Build lookup maps
+          const checksByDate = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
+          for (const c of hist.checks) {
+            const arr = checksByDate.get(c.date) ?? [];
+            arr.push({ routine_item_id: c.routine_item_id, done: c.done });
+            checksByDate.set(c.date, arr);
+          }
+          const logMap = new Map<string, (typeof hist.logs)[number]>();
+          for (const l of hist.logs) logMap.set(l.date, l);
+
+          const labelById = new Map(
+            routineItems.map((ri) => [ri.id, (ri.label ?? "").toLowerCase()])
+          );
+
+          // Compute color for each day
+          const histDays: Array<{ dateKey: string; color: DayColor }> = [];
+          for (let i = STREAK_LOOKBACK_DAYS; i >= 0; i--) {
+            const dk = format(subDays(today, i), "yyyy-MM-dd");
+            const d = new Date(dk + "T12:00:00");
+            const active = routineItems.filter((ri) => shouldShow(ri, d));
+            const color = computeDayColor({
+              dateKey: dk,
+              routineItems: active,
+              checks: checksByDate.get(dk) ?? [],
+              log: logMap.get(dk) ?? null,
+            });
+            histDays.push({ dateKey: dk, color });
+          }
+
+          // Current streak (consecutive green from today backward)
+          let currentStreak = 0;
+          for (let i = histDays.length - 1; i >= 0; i--) {
+            if (histDays[i].color !== "green") break;
+            currentStreak++;
+          }
+
+          // Best streak
+          let bestStreak = 0;
+          let run = 0;
+          for (const d of histDays) {
+            if (d.color === "green") {
+              run++;
+              if (run > bestStreak) bestStreak = run;
+            } else {
+              run = 0;
+            }
+          }
+
+          // Category streaks
+          const didCategory = (dk: string, keywords: readonly string[]) => {
+            const cs = checksByDate.get(dk) ?? [];
+            for (const c of cs) {
+              if (!c.done) continue;
+              const lbl = labelById.get(c.routine_item_id) ?? "";
+              if (keywords.some((k) => lbl.includes(k))) return true;
+            }
+            return false;
+          };
+
+          const streakFor = (keywords: readonly string[]) => {
+            let s = 0;
+            for (let i = histDays.length - 1; i >= 0; i--) {
+              if (!didCategory(histDays[i].dateKey, keywords)) break;
+              s++;
+            }
+            return s;
+          };
+
+          if (cancelled) return;
+
+          // Green days this month
+          const monthStart = format(startOfMonth(today), "yyyy-MM-dd");
+          let greenDaysThisMonth = 0;
+          for (const d of histDays) {
+            if (d.dateKey >= monthStart && d.color === "green") greenDaysThisMonth++;
+          }
+
+          // Core hit-rate this week
+          const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+          const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+          const coreIds = new Set(
+            routineItems.filter((ri) => ri.is_non_negotiable).map((ri) => ri.id)
+          );
+          let weekTotal = 0;
+          let weekDone = 0;
+          for (const [dk, cs] of checksByDate) {
+            if (dk < weekStart || dk > weekEnd) continue;
+            for (const c of cs) {
+              if (!coreIds.has(c.routine_item_id)) continue;
+              weekTotal++;
+              if (c.done) weekDone++;
+            }
+          }
+          const coreHitRateThisWeek = weekTotal === 0 ? 0 : Math.round((weekDone / weekTotal) * 100);
+
+          setData({
+            currentStreak,
+            bestStreak,
+            last7Days: histDays.slice(-7),
+            categoryStreaks: {
+              movement: streakFor(CATEGORY_KEYWORDS.movement),
+              mind: streakFor(CATEGORY_KEYWORDS.mind),
+              sleep: streakFor(CATEGORY_KEYWORDS.sleep),
+            },
+            greenDaysThisMonth,
+            coreHitRateThisWeek,
+            loading: false,
+          });
+        } catch {
+          if (!cancelled) {
+            setData((s) => ({ ...s, loading: false }));
+          }
+        }
+      })();
+    }, 50); // Small delay to let the UI render first
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [dateKey]);
+
+  return data;
+}
