@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { clearSessionCookies } from "@/lib/sessionCookie";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 type AuthState = "checking" | "signed-in" | "signed-out";
 
-/** Check synchronously if returning user (has auth cookie) */
+/** Check synchronously if returning user (has auth flag cookie) */
 function hasSessionCookie(): boolean {
   if (typeof document === "undefined") return false;
-  return document.cookie.includes("r365_sb.");
+  return document.cookie.includes("r365_sb.flag=");
 }
 
 export default function Home() {
@@ -117,6 +118,7 @@ export default function Home() {
     setBusy(true);
     try {
       await supabase.auth.signOut();
+      clearSessionCookies();
       setSignedInEmail(null);
       setAuthState("signed-out");
       window.location.href = "/";

@@ -70,8 +70,13 @@ export function useRoutineDay(dateKey: string) {
   const itemsRef = useRef<UiItem[]>([]);
   const routineItemsRef = useRef<RoutineItemRow[]>([]);
 
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+  const load = useCallback(async (isRefresh = false) => {
+    // Only show skeleton on initial load, not background refreshes.
+    // This prevents the flash: skeleton → content → skeleton → content
+    // that happens when onAuthStateChange fires INITIAL_SESSION on mount.
+    if (!isRefresh) {
+      setState((s) => ({ ...s, loading: true, error: null }));
+    }
 
     try {
       // Wait for auth
@@ -160,9 +165,13 @@ export function useRoutineDay(dateKey: string) {
   // Load on mount, on auth change, on visibility change
   useEffect(() => {
     let cancelled = false;
+    let hasLoadedOnce = false;
 
     const run = () => {
-      if (!cancelled) void load();
+      if (cancelled) return;
+      // First load shows skeleton; subsequent loads refresh silently
+      void load(hasLoadedOnce);
+      hasLoadedOnce = true;
     };
 
     run();
@@ -219,7 +228,7 @@ export function useRoutineDay(dateKey: string) {
     ...state,
     itemsRef,
     routineItemsRef,
-    reload: load,
+    reload: () => load(true),
 
     // Derived
     coreItems,

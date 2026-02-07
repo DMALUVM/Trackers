@@ -45,6 +45,9 @@ export function clearSessionCookies() {
   clearCookie(CK_AT);
   clearCookie(CK_RT);
   clearCookie(CK_EXP);
+  // Also clear the session flag cookie and any legacy oversized storage cookies
+  clearCookie("r365_sb.flag");
+  clearCookie("r365_sb.r365_sb");
 }
 
 export function readSessionFromCookies(): {

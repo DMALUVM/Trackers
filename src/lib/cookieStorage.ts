@@ -1,43 +1,56 @@
-// Minimal cookie-backed storage for Supabase auth.
-// iOS PWAs can be aggressive about clearing localStorage; cookies tend to persist.
+// Hybrid storage for Supabase auth.
+// Primary: localStorage (5 MB limit — more than enough for session tokens).
+// Secondary: sets a tiny flag cookie ("r365_sb.flag=1") so page.tsx can
+// synchronously detect a returning user before JS hydrates.
+//
+// iOS PWAs occasionally clear localStorage; the separate backup cookies
+// (r365_at / r365_rt in sessionCookie.ts) handle that recovery path.
+// We no longer store the full session JSON in a cookie — it routinely
+// exceeds Chrome's 4 KB-per-cookie limit and gets silently dropped,
+// which caused redirect loops on Chrome.
 
-function setCookie(name: string, value: string, maxAgeSec: number) {
+const FLAG_COOKIE = "r365_sb.flag";
+
+function setFlagCookie(present: boolean) {
   if (typeof document === "undefined") return;
-  const safe = encodeURIComponent(value);
-  const secure = typeof location !== "undefined" && location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${name}=${safe}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax${secure}`;
+  if (present) {
+    const secure =
+      typeof location !== "undefined" && location.protocol === "https:"
+        ? "; Secure"
+        : "";
+    document.cookie = `${FLAG_COOKIE}=1; Max-Age=${60 * 60 * 24 * 30}; Path=/; SameSite=Lax${secure}`;
+  } else {
+    document.cookie = `${FLAG_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax`;
+  }
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-function clearCookie(name: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
-}
-
-export function cookieStorage(prefix: string) {
-  const maxAge = 60 * 60 * 24 * 30; // 30 days
-
-  const nameForKey = (key: string) => {
-    // Use a stable prefix so Supabase can store multiple keys.
-    // Keep cookie name reasonably short and safe.
-    const safeKey = key.replace(/[^a-zA-Z0-9_\-:.]/g, "_");
-    return `${prefix}.${safeKey}`;
-  };
+export function cookieStorage(_prefix: string) {
+  const lsKey = (key: string) => key;
 
   return {
-    getItem: (key: string) => {
-      return getCookie(nameForKey(key));
+    getItem: (key: string): string | null => {
+      try {
+        return localStorage.getItem(lsKey(key));
+      } catch {
+        return null;
+      }
     },
     setItem: (key: string, value: string) => {
-      setCookie(nameForKey(key), value, maxAge);
+      try {
+        localStorage.setItem(lsKey(key), value);
+      } catch {
+        /* quota exceeded — rare, ignore */
+      }
+      // Keep the tiny flag cookie in sync so hasSessionCookie() works.
+      setFlagCookie(true);
     },
     removeItem: (key: string) => {
-      clearCookie(nameForKey(key));
+      try {
+        localStorage.removeItem(lsKey(key));
+      } catch {
+        /* ignore */
+      }
+      setFlagCookie(false);
     },
   };
 }
