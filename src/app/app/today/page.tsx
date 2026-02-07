@@ -84,6 +84,9 @@ export default function TodayPage() {
   const [metricOpen, setMetricOpen] = useState(false);
   const [metricKind, setMetricKind] = useState<MetricKind | null>(null);
 
+  // Quick Log modal (Today)
+  const [quickLogOpen, setQuickLogOpen] = useState(false);
+
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
     try {
@@ -665,6 +668,95 @@ export default function TodayPage() {
         ) : null}
       </header>
 
+      {quickLogOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setQuickLogOpen(false)}
+        >
+          <div
+            className="w-full rounded-2xl border border-white/10 bg-neutral-950 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold">Quick Log</h3>
+                <p className="mt-1 text-sm text-neutral-400">Knock out Core habits fast.</p>
+              </div>
+              <button
+                type="button"
+                className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                onClick={() => setQuickLogOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              {items.filter((i) => i.isNonNegotiable).length === 0 ? (
+                <p className="text-sm text-neutral-300">No Core habits yet. Set them first.</p>
+              ) : (
+                <div className="space-y-2">
+                  {items
+                    .filter((i) => i.isNonNegotiable)
+                    .map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => toggleItem(item.id)}
+                        type="button"
+                        className="group w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-neutral-100 transition-colors hover:bg-white/10"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={
+                                "inline-flex h-5 w-5 items-center justify-center rounded-full border " +
+                                (item.done ? "border-emerald-500 bg-emerald-500/20" : "border-white/15")
+                              }
+                            >
+                              {item.done ? "✓" : ""}
+                            </span>
+                            <span className="text-base">{item.emoji ?? ""}</span>
+                            <span className={item.done ? "text-neutral-300 line-through" : ""}>{item.label}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
+                onClick={() => {
+                  items
+                    .filter((i) => i.isNonNegotiable)
+                    .forEach((i) => {
+                      if (!i.done) markDone(i.id);
+                    });
+                  setQuickLogOpen(false);
+                }}
+              >
+                Mark all Core done
+              </button>
+              <button
+                type="button"
+                className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-white/90"
+                onClick={() => {
+                  setQuickLogOpen(false);
+                  router.push("/app/settings/routines");
+                }}
+              >
+                Edit Core habits
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs text-neutral-500">Daily score</p>
@@ -699,7 +791,7 @@ export default function TodayPage() {
               ))}
               <button
                 type="button"
-                onClick={() => router.push("/app/routines")}
+                onClick={() => setQuickLogOpen(true)}
                 className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-neutral-200 hover:bg-white/10"
               >
                 Quick Log
