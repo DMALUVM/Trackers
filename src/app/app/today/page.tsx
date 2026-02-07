@@ -57,7 +57,28 @@ export default function TodayPage() {
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [syncState, setSyncState] = useState<"synced" | "offline" | "syncing">("synced");
+
   const [queuedCount, setQueuedCount] = useState<number>(0);
+
+  const saveLabel =
+    saveState === "saving"
+      ? "Saving…"
+      : saveState === "saved"
+        ? `Saved${lastSavedAt ? ` ${format(new Date(lastSavedAt), "h:mm a")}` : ""}`
+        : saveState === "error"
+          ? "Save failed"
+          : lastSavedAt
+            ? `Last saved ${format(new Date(lastSavedAt), "h:mm a")}`
+            : "";
+
+  const syncLabel =
+    syncState === "syncing"
+      ? `Syncing${queuedCount ? ` (${queuedCount})` : ""}…`
+      : syncState === "offline"
+        ? `Offline${queuedCount ? ` (${queuedCount} queued)` : ""}`
+        : queuedCount
+          ? `${queuedCount} queued`
+          : "Synced";
   const persistTimerRef = useRef<any>(null);
   const pendingDayModeRef = useRef<DayMode | null>(null);
 
@@ -86,6 +107,17 @@ export default function TodayPage() {
 
   // Quick Log modal (Today)
   const [quickLogOpen, setQuickLogOpen] = useState(false);
+
+  useEffect(() => {
+    // Prevent background scroll when modal is open (mobile/PWA quality-of-life)
+    if (typeof document === "undefined") return;
+    if (!quickLogOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [quickLogOpen]);
 
   const setSnooze = async (routineItemId: string, untilMs: number) => {
     setSnoozedUntil((prev) => ({ ...prev, [routineItemId]: untilMs }));
@@ -633,25 +665,9 @@ export default function TodayPage() {
                       : "text-neutral-500")
               }
             >
-              {saveState === "saving"
-                ? "Saving…"
-                : saveState === "saved"
-                  ? `Saved${lastSavedAt ? ` ${format(new Date(lastSavedAt), "h:mm a")}` : ""}`
-                  : saveState === "error"
-                    ? "Save failed"
-                    : lastSavedAt
-                      ? `Last saved ${format(new Date(lastSavedAt), "h:mm a")}`
-                      : ""}
+              {saveLabel}
             </p>
-            <p className="text-[10px] text-neutral-500">
-              {syncState === "syncing"
-                ? `Syncing${queuedCount ? ` (${queuedCount})` : ""}…`
-                : syncState === "offline"
-                  ? `Offline${queuedCount ? ` (${queuedCount} queued)` : ""}`
-                  : queuedCount
-                    ? `${queuedCount} queued`
-                    : "Synced"}
-            </p>
+            <p className="text-[10px] text-neutral-500">{syncLabel}</p>
           </div>
         </div>
 
@@ -732,11 +748,23 @@ export default function TodayPage() {
                 type="button"
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white hover:bg-white/10"
                 onClick={() => {
-                  items
-                    .filter((i) => i.isNonNegotiable)
-                    .forEach((i) => {
-                      if (!i.done) markDone(i.id);
+                  // "Smart" mark-all: if the user already did rowing or weights,
+                  // don't force them to also manually check Workout.
+                  const cur = itemsRef.current;
+                  const didRowing = cur.some((i) => i.label.toLowerCase().startsWith("rowing") && i.done);
+                  const didWeights = cur.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+
+                  setItems((prev) => {
+                    const next = prev.map((i) => {
+                      if (!i.isNonNegotiable) return i;
+                      if (i.done) return i;
+                      if (isWorkoutLabel(i.label) && (didRowing || didWeights)) return i;
+                      return { ...i, done: true };
                     });
+                    itemsRef.current = next;
+                    return next;
+                  });
+                  persist();
                   setQuickLogOpen(false);
                 }}
               >
