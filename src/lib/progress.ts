@@ -33,7 +33,15 @@ export function computeDayColor(opts: {
   // ── Guard: days before account creation are empty ──
   if (accountStartKey && dateKey < accountStartKey) return "empty";
 
+  // ── Guard: if today, don't show red until user has had a chance to act ──
+  // (today starts as empty, turns yellow/green/red as they check things off)
+
   const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
+
+  // ── Guard: if user never interacted this day (zero checks), show empty ──
+  // This prevents showing red for days the user simply didn't open the app.
+  // Only show colors when there's at least one check (user was active that day).
+  if (checks.length === 0 && dateKey !== todayKey) return "empty";
 
   const nonnegs = routineItems.filter((i) => i.is_non_negotiable);
   if (nonnegs.length === 0) return "empty";

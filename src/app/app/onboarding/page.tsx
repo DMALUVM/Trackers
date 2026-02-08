@@ -7,18 +7,11 @@ import { templatePacks } from "@/lib/templates";
 import { hapticMedium, hapticHeavy } from "@/lib/haptics";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
-/**
- * Onboarding welcome — the user's first impression.
- *
- * Design goals:
- * 1. Excitement: "You're about to level up" energy.
- * 2. Speed: One-tap Quick Start gets you into the app in 3 seconds.
- * 3. Optionality: Customize path exists but doesn't slow anyone down.
- */
 export default function OnboardingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
+  const [step, setStep] = useState(0); // 0 = welcome, 1 = how it works, 2 = pick template
 
   useEffect(() => {
     void (async () => {
@@ -28,7 +21,6 @@ export default function OnboardingPage() {
     })();
   }, [router]);
 
-  // One-tap quick start: applies a template instantly
   const quickStart = async (templateId: string) => {
     setBusy(templateId);
     hapticHeavy();
@@ -62,50 +54,93 @@ export default function OnboardingPage() {
           <div className="mx-auto" style={{ width: 64 }}>
             <BrandIcon size={64} />
           </div>
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Preparing your space…</p>
+          <p className="text-base" style={{ color: "var(--text-muted)" }}>Getting things ready…</p>
         </div>
       </div>
     );
   }
 
+  // ─── STEP 0: Welcome ───
+  if (step === 0) {
+    return (
+      <div className="space-y-6 animate-fade-in pt-8">
+        <header className="text-center space-y-4">
+          <div className="mx-auto" style={{ width: 80 }}>
+            <BrandIcon size={80} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
+              Welcome! 👋
+            </h1>
+            <p className="mt-3 text-lg leading-relaxed mx-auto max-w-xs" style={{ color: "var(--text-secondary)" }}>
+              You&apos;re about to build a daily routine that sticks.
+            </p>
+          </div>
+        </header>
+
+        <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+          <p className="text-base font-bold mb-3" style={{ color: "var(--text-primary)" }}>Here&apos;s how it works:</p>
+          <div className="space-y-4">
+            {[
+              { emoji: "✅", title: "Pick your daily habits", desc: "We'll give you a starter set — you can always change them later." },
+              { emoji: "⭐", title: "Some habits are \"Core\"", desc: "These are your must-dos. Complete all core habits = a green day." },
+              { emoji: "📅", title: "Track every day", desc: "Open the app, check off what you did. Takes about 10 seconds." },
+              { emoji: "🔥", title: "Build streaks", desc: "Consecutive green days build streaks. Watch consistency compound." },
+            ].map(({ emoji, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
+                <div>
+                  <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+                  <p className="text-sm mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button type="button"
+          className="w-full rounded-2xl py-4 text-lg font-bold transition-all active:scale-[0.98]"
+          style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}
+          onClick={() => { hapticMedium(); setStep(1); }}>
+          Let&apos;s get started →
+        </button>
+      </div>
+    );
+  }
+
+  // ─── STEP 1: Pick your starting routine ───
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Hero — excitement first */}
-      <header className="text-center space-y-4 pt-6">
-        <div className="mx-auto" style={{ width: 72 }}>
-          <BrandIcon size={72} />
-        </div>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
-            Let&apos;s go 🔥
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed mx-auto max-w-xs" style={{ color: "var(--text-secondary)" }}>
-            Pick a starter routine and you&apos;re in. Customize everything later — nothing is permanent.
-          </p>
-        </div>
+    <div className="space-y-5 animate-fade-in">
+      <header className="text-center space-y-2 pt-4">
+        <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
+          Pick a Starter Routine
+        </h1>
+        <p className="text-base leading-relaxed mx-auto max-w-xs" style={{ color: "var(--text-secondary)" }}>
+          Choose one to start with. You can add, remove, or change any habit later — nothing is permanent!
+        </p>
       </header>
 
-      {/* Quick start options — the fastest path */}
+      {/* Quick start templates */}
       <section className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-          One tap to start
+        <p className="text-sm font-bold uppercase tracking-wider px-1" style={{ color: "var(--text-faint)" }}>
+          Most popular — one tap to start
         </p>
 
         {[
-          { id: "morning-reset-10", emoji: "⚡", title: "Morning Reset", subtitle: "Water, sunlight, movement, plan your day", tag: "Most popular" },
-          { id: "fitness-consistency", emoji: "🏋️", title: "Fitness Focus", subtitle: "Workout, walk, protein, hydration", tag: null },
-        ].map(({ id, emoji, title, subtitle, tag }) => (
+          { id: "morning-reset-10", emoji: "⚡", title: "Morning Reset", subtitle: "Water, sunlight, movement, plan your day", habits: "10 habits · 5 core", tag: "Recommended" },
+          { id: "fitness-consistency", emoji: "🏋️", title: "Fitness Focus", subtitle: "Workout, walk, protein, hydration", habits: "8 habits · 4 core", tag: null },
+        ].map(({ id, emoji, title, subtitle, habits, tag }) => (
           <button key={id} type="button" disabled={!!busy}
             className="w-full rounded-2xl p-5 text-left transition-all active:scale-[0.98] disabled:opacity-60"
             style={{
               background: tag ? "var(--accent-green-soft)" : "var(--bg-card)",
-              border: `1px solid ${tag ? "var(--accent-green)" : "var(--border-primary)"}`,
+              border: `2px solid ${tag ? "var(--accent-green)" : "var(--border-primary)"}`,
             }}
             onClick={() => void quickStart(id)}>
             <div className="flex items-center gap-4">
               <div className="shrink-0 flex items-center justify-center rounded-xl"
                 style={{
-                  width: 48, height: 48, fontSize: 24,
+                  width: 52, height: 52, fontSize: 26,
                   background: tag ? "var(--accent-green)" : "var(--bg-card-hover)",
                 }}>
                 {busy === id ? (
@@ -114,51 +149,29 @@ export default function OnboardingPage() {
                 ) : emoji}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
                   {tag && (
-                    <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold"
                       style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
                       {tag}
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
+                <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
+                <p className="mt-0.5 text-xs font-medium" style={{ color: "var(--text-faint)" }}>{habits}</p>
               </div>
             </div>
           </button>
         ))}
       </section>
 
-      {/* More options — secondary paths for both personas */}
+      {/* Other options */}
       <section className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-          Or build your own
+        <p className="text-sm font-bold uppercase tracking-wider px-1" style={{ color: "var(--text-faint)" }}>
+          Or customize your own
         </p>
 
-        {/* PERSONA 2: Needs inspiration → 76-item library */}
-        <button type="button" disabled={!!busy}
-          className="card-interactive w-full p-4 text-left"
-          onClick={() => {
-            hapticMedium();
-            localStorage.removeItem("routines365:gettingStarted:dismissed");
-            router.push("/app/settings/routines/library?from=onboarding");
-          }}>
-          <div className="flex items-center gap-4">
-            <div className="shrink-0 flex items-center justify-center rounded-xl"
-              style={{ width: 44, height: 44, background: "var(--bg-card-hover)", fontSize: 20 }}>
-              📚
-            </div>
-            <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Browse 76 habits</p>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--text-faint)" }}>
-                Morning, fitness, nutrition, recovery, mindfulness, and more
-              </p>
-            </div>
-          </div>
-        </button>
-
-        {/* Goal-matched templates */}
         <button type="button" disabled={!!busy}
           className="card-interactive w-full p-4 text-left"
           onClick={() => {
@@ -168,19 +181,39 @@ export default function OnboardingPage() {
           }}>
           <div className="flex items-center gap-4">
             <div className="shrink-0 flex items-center justify-center rounded-xl"
-              style={{ width: 44, height: 44, background: "var(--bg-card-hover)", fontSize: 20 }}>
+              style={{ width: 48, height: 48, background: "var(--bg-card-hover)", fontSize: 22 }}>
               🎯
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Pick a goal → get matched</p>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--text-faint)" }}>
-                Energy, Fitness, Focus, or Sleep templates
+              <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Pick a goal → get matched</p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                Tell us your focus (Energy, Fitness, Focus, or Sleep) and we&apos;ll suggest the right habits.
               </p>
             </div>
           </div>
         </button>
 
-        {/* PERSONA 1: Already has routines → blank canvas */}
+        <button type="button" disabled={!!busy}
+          className="card-interactive w-full p-4 text-left"
+          onClick={() => {
+            hapticMedium();
+            localStorage.removeItem("routines365:gettingStarted:dismissed");
+            router.push("/app/settings/routines/library?from=onboarding");
+          }}>
+          <div className="flex items-center gap-4">
+            <div className="shrink-0 flex items-center justify-center rounded-xl"
+              style={{ width: 48, height: 48, background: "var(--bg-card-hover)", fontSize: 22 }}>
+              📚
+            </div>
+            <div>
+              <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Browse the full library</p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                76 habits across Morning, Fitness, Nutrition, Recovery, Mindfulness, and more.
+              </p>
+            </div>
+          </div>
+        </button>
+
         <button type="button" disabled={!!busy}
           className="card-interactive w-full p-4 text-left"
           onClick={() => {
@@ -190,22 +223,28 @@ export default function OnboardingPage() {
           }}>
           <div className="flex items-center gap-4">
             <div className="shrink-0 flex items-center justify-center rounded-xl"
-              style={{ width: 44, height: 44, background: "var(--bg-card-hover)", fontSize: 20 }}>
+              style={{ width: 48, height: 48, background: "var(--bg-card-hover)", fontSize: 22 }}>
               ✏️
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Start blank</p>
-              <p className="mt-0.5 text-xs" style={{ color: "var(--text-faint)" }}>
-                Type in your own habits one by one
+              <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Start blank</p>
+              <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                Already know your habits? Type them in one by one.
               </p>
             </div>
           </div>
         </button>
       </section>
 
-      {/* Reassurance */}
-      <p className="text-center text-xs pb-4" style={{ color: "var(--text-faint)" }}>
-        Takes 5 seconds. Change everything anytime.
+      {/* Back button */}
+      <button type="button" onClick={() => setStep(0)}
+        className="w-full text-center text-sm py-3"
+        style={{ color: "var(--text-faint)" }}>
+        ← Back
+      </button>
+
+      <p className="text-center text-sm pb-4" style={{ color: "var(--text-faint)" }}>
+        You can change everything anytime in Settings.
       </p>
     </div>
   );

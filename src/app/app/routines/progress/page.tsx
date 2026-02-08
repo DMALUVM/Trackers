@@ -60,27 +60,24 @@ export default function RoutinesProgressPage() {
   const streaks = useStreaks(dateKey);
   const { data: actTotals, loading: actLoading } = useMultiActivityTotals(ACTIVITY_ENTRIES);
 
-  // Fetch account creation date (once) so calendar doesn't show red before user existed
-  useEffect(() => {
-    void (async () => {
-      try {
-        const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser();
-        if (data.user?.created_at) {
-          setAccountStartKey(data.user.created_at.slice(0, 10));
-        }
-      } catch { /* fallback: don't filter */ }
-    })();
-  }, []);
-
   const days = useMemo(() => monthGridDates(month), [month]);
   const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
   const toKey = useMemo(() => format(days[days.length - 1], "yyyy-MM-dd"), [days]);
 
+  // Load everything together so calendar never renders without accountStartKey
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       setLoading(true); setError("");
       try {
+        const { supabase } = await import("@/lib/supabaseClient");
+
+        // Get account start date (instant — from in-memory session)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!cancelled && session?.user?.created_at) {
+          setAccountStartKey(session.user.created_at.slice(0, 10));
+        }
+
         const [items, dataRange] = await Promise.all([listRoutineItems(), loadRangeStates({ from: fromKey, to: toKey })]);
         if (cancelled) return;
         setRoutineItems(items); setLogs(dataRange.logs); setChecks(dataRange.checks);
