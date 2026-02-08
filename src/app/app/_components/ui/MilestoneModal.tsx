@@ -40,7 +40,7 @@ export function MilestoneModal({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-6"
+      className="fixed inset-0 z-[200] flex items-start justify-center p-6 pt-24"
       style={{
         background: phase === "show" ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0)",
         backdropFilter: phase === "show" ? "blur(12px)" : "blur(0)",
