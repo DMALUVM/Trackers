@@ -8,8 +8,8 @@ export function SettingsGear() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Hide on settings pages and onboarding
-  if (pathname?.startsWith("/app/settings") || pathname?.startsWith("/app/onboarding")) {
+  // Hide on settings pages, onboarding, and today (which has its own header buttons)
+  if (pathname?.startsWith("/app/settings") || pathname?.startsWith("/app/onboarding") || pathname === "/app/today") {
     return null;
   }
 
