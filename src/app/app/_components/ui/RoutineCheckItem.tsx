@@ -135,7 +135,7 @@ export function RoutineCheckItem({
         {/* Label */}
         <span className="flex-1 min-w-0 truncate font-medium transition-all duration-200"
           style={{
-            fontSize: compact ? "1rem" : "1.0625rem",
+            fontSize: compact ? "1.0625rem" : "1.125rem",
             color: done ? "var(--accent-green-text)" : "var(--text-primary)",
             textDecoration: done ? "line-through" : "none",
             textDecorationColor: done ? "var(--accent-green)" : undefined,

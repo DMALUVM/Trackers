@@ -22,14 +22,14 @@ export function SettingsGear() {
         top: "env(safe-area-inset-top, 12px)",
         right: 16,
         marginTop: 12,
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
         background: "var(--bg-card)",
         border: "1px solid var(--border-primary)",
         boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
       }}
       aria-label="Settings">
-      <Settings size={16} style={{ color: "var(--text-muted)" }} />
+      <Settings size={18} style={{ color: "var(--text-muted)" }} />
     </button>
   );
 }

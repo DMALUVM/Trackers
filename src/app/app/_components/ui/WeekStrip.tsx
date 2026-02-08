@@ -11,13 +11,13 @@ const DOW_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 function dotStyle(color: DayColor, isToday: boolean): React.CSSProperties {
   const base: React.CSSProperties = {
-    width: 32,
-    height: 32,
+    width: 36,
+    height: 36,
     borderRadius: "50%",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "11px",
+    fontSize: "13px",
     fontWeight: 700,
     transition: "background 0.3s, transform 0.3s, box-shadow 0.3s",
     transform: isToday ? "scale(1.1)" : "scale(1)",

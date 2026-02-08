@@ -6,6 +6,7 @@ import { IosInstallPrompt } from "@/app/app/_components/IosInstallPrompt";
 import { ThemeGate } from "@/app/app/_components/ThemeGate";
 import { ErrorBoundary } from "@/app/app/_components/ErrorBoundary";
 import { SettingsGear } from "@/app/app/_components/SettingsGear";
+import { GlobalPullToRefresh } from "@/app/app/_components/GlobalPullToRefresh";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -16,7 +17,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <IosInstallPrompt />
             <SettingsGear />
             <main className="flex-1 px-4 pt-safe pb-2">
-              <ErrorBoundary>{children}</ErrorBoundary>
+              <GlobalPullToRefresh>
+                <ErrorBoundary>{children}</ErrorBoundary>
+              </GlobalPullToRefresh>
             </main>
             <AppNav />
           </div>

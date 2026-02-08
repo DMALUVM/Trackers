@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
 
-import { useToday, useRoutineDay, usePersist, useStreaks, usePullToRefresh } from "@/lib/hooks";
+import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
 import {
   ProgressRing,
   WeekStrip,
@@ -18,7 +18,6 @@ import {
   MotivationBanner,
   NextMilestoneTeaser,
   ComebackBanner,
-  PullToRefreshIndicator,
   GettingStartedTips,
   ReminderSheet,
 } from "@/app/app/_components/ui";
@@ -67,12 +66,6 @@ export default function TodayPage() {
   const { saveState, debouncedPersist, flushNow, persistSnooze } = usePersist({
     dateKey,
     itemsRef: routine.itemsRef,
-  });
-
-  // Pull-to-refresh — the #1 PWA gesture
-  const pullToRefresh = usePullToRefresh(async () => {
-    // Force reload routine data by navigating to self
-    window.location.reload();
   });
 
   // Local UI state
@@ -311,7 +304,6 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-5 pb-2">
-      <PullToRefreshIndicator {...pullToRefresh} />
       <ConfettiBurst trigger={confettiTrigger} />
       <Toast state={saveState} queuedCount={syncQueueCount} />
       <MilestoneModal milestone={milestoneToShow} onDismiss={() => setMilestoneToShow(null)} />
@@ -365,7 +357,7 @@ export default function TodayPage() {
       {/* ─── SCORE CARD ─── */}
       <section className="card p-5">
         <div className="flex items-center gap-5">
-          <ProgressRing progress={score} size={88} strokeWidth={7} subtitle={allCoreDone ? "done!" : "score"} />
+          <ProgressRing progress={score} size={96} strokeWidth={8} subtitle={allCoreDone ? "done!" : "score"} />
 
           <div className="flex-1 space-y-1.5">
             <p className="text-base font-semibold" style={{ color: allCoreDone ? "var(--accent-green-text)" : "var(--text-primary)" }}>
@@ -388,11 +380,11 @@ export default function TodayPage() {
               <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
                 className="flex items-center gap-1.5 -ml-0.5"
                 aria-label={`${streaks.currentStreak} day streak - view trophies`}>
-                <span className={streaks.currentStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "14px" }}>🔥</span>
-                <span className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                <span className={streaks.currentStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "18px" }}>🔥</span>
+                <span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
                   {streaks.currentStreak}
                 </span>
-                <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                <span className="text-sm" style={{ color: "var(--text-faint)" }}>
                   day streak
                   {streaks.bestStreak > streaks.currentStreak ? ` · best ${streaks.bestStreak}` : ""}
                 </span>

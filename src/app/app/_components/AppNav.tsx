@@ -82,7 +82,7 @@ export function AppNav() {
               aria-current={active ? "page" : undefined}
               onClick={() => hapticLight()}>
               <div className="relative flex items-center justify-center" style={{ width: 24, height: 24 }}>
-                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                <Icon size={24} strokeWidth={active ? 2.5 : 1.8} />
                 {active && (
                   <div className="absolute -bottom-1.5 h-1 w-1 rounded-full" style={{ background: "var(--accent-green)" }} />
                 )}

@@ -17,7 +17,7 @@ import { hapticLight } from "@/lib/haptics";
 // Calendar cell color
 function cellStyle(color: DayColor, inMonth: boolean, today: boolean): React.CSSProperties {
   const opacity = inMonth ? 1 : 0.25;
-  const base: React.CSSProperties = { opacity, borderRadius: "50%", width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 600, transition: "background 0.2s, transform 0.15s" };
+  const base: React.CSSProperties = { opacity, borderRadius: "50%", width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 600, transition: "background 0.2s, transform 0.15s" };
   if (today) base.boxShadow = "0 0 0 2px var(--accent-green)";
   switch (color) {
     case "green": return { ...base, background: "var(--accent-green)", color: "var(--text-inverse)" };
@@ -65,6 +65,19 @@ export default function RoutinesProgressPage() {
   const toKey = useMemo(() => format(days[days.length - 1], "yyyy-MM-dd"), [days]);
 
   // Load everything together so calendar never renders without accountStartKey
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for pull-to-refresh events
+  useEffect(() => {
+    const onPull = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("routines365:pullRefresh", onPull);
+    window.addEventListener("routines365:routinesChanged", onPull);
+    return () => {
+      window.removeEventListener("routines365:pullRefresh", onPull);
+      window.removeEventListener("routines365:routinesChanged", onPull);
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -85,7 +98,7 @@ export default function RoutinesProgressPage() {
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [fromKey, toKey]);
+  }, [fromKey, toKey, refreshKey]);
 
   const logMap = useMemo(() => { const m = new Map<string, DailyLogRow>(); for (const l of logs) m.set(l.date, l); return m; }, [logs]);
   const checksByDate = useMemo(() => {
