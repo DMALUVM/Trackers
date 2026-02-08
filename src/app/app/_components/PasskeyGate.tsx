@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { isPasskeyEnabled, isUnlockValid, unlockWithPasskey, clearPasskey } from "@/lib/passkey";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
@@ -9,23 +9,23 @@ import { BrandIcon } from "@/app/app/_components/BrandIcon";
  *
  * IMPORTANT: This component renders OUTSIDE ThemeGate, so CSS variables
  * like var(--bg-primary) are NOT available. Use hardcoded colors only.
+ *
+ * Key design decisions:
+ * - Initialize state synchronously from localStorage to avoid flash
+ *   (children must never mount and then unmount — that causes AuthGate
+ *   to start session loading, get torn down, then restart).
+ * - Do NOT auto-prompt Face ID on mount. Show the lock screen and let
+ *   the user tap "Unlock". Auto-prompting caused loops on Chrome/desktop
+ *   where WebAuthn has no biometrics available.
  */
 export function PasskeyGate({ children }: { children: React.ReactNode }) {
-  const [enabled, setEnabled] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  // Synchronous init — no flash, no children mount/unmount cycle
+  const [enabled] = useState(() => isPasskeyEnabled());
+  const [unlocked, setUnlocked] = useState(() => !isPasskeyEnabled() || isUnlockValid());
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const e = isPasskeyEnabled();
-    setEnabled(e);
-    setUnlocked(!e || isUnlockValid());
-    if (e && !isUnlockValid()) {
-      void handleUnlock();
-    }
-  }, []); // eslint-disable-line
-
-  const handleUnlock = async () => {
+  const handleUnlock = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     setStatus("");
@@ -37,13 +37,17 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
     } finally {
       setBusy(false);
     }
-  };
+  }, [busy]);
 
-  const handleDisable = () => {
-    clearPasskey();
-    setEnabled(false);
-    setUnlocked(true);
-  };
+  // Auto-prompt ONLY on mobile devices where Face ID / Touch ID is likely.
+  // Skip on desktop (Chrome etc.) where WebAuthn prompts are disruptive.
+  useEffect(() => {
+    if (!enabled || unlocked) return;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      void handleUnlock();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!enabled || unlocked) return <>{children}</>;
 
@@ -98,7 +102,7 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
 
         {/* Escape hatch — disable Face ID if stuck */}
         <button type="button"
-          onClick={handleDisable}
+          onClick={() => { clearPasskey(); setUnlocked(true); }}
           style={{
             marginTop: 24, fontSize: 12, color: "#6b7280",
             background: "none", border: "none", cursor: "pointer",
