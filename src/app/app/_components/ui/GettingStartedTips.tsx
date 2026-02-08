@@ -75,7 +75,7 @@ export function GettingStartedTips() {
   const tip = TIPS[step];
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-[150] flex items-start justify-center p-4 pt-24"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={dismiss}>
       <div
