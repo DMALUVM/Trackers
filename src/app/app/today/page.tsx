@@ -547,7 +547,7 @@ export default function TodayPage() {
                 className="btn-secondary w-full text-sm">
                 Edit routines
               </button>
-              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/settings"); }}
+              <button type="button" onClick={() => { setMenuOpen(false); setTimeout(() => router.push("/app/settings"), 150); }}
                 className="btn-secondary w-full text-sm">
                 ⚙️ Settings
               </button>
