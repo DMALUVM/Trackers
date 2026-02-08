@@ -202,13 +202,35 @@ export default function TodayPage() {
 
   // Actions
   const toggleItem = useCallback((id: string) => {
+    let wasCheckedOn = false;
     setItems((prev) => {
+      const item = prev.find((i) => i.id === id);
+      wasCheckedOn = !!item && !item.done; // unchecked → checked
       const next = prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i));
       routine.itemsRef.current = next;
       return next;
     });
     debouncedPersist(dayMode);
-  }, [dayMode, debouncedPersist, routine.itemsRef]);
+
+    // Phase 2: auto-open metric sheet when checking a metric item done
+    if (wasCheckedOn) {
+      const item = items.find((i) => i.id === id);
+      if (item) {
+        const metricKey = labelToMetricKey(item.label);
+        if (metricKey && METRIC_ACTIVITIES[metricKey]) {
+          const promptedKey = `routines365:metricPrompted:${dateKey}:${id}`;
+          if (!localStorage.getItem(promptedKey)) {
+            setTimeout(() => {
+              const act = METRIC_ACTIVITIES[metricKey];
+              setMetricKind({ key: act.key, title: act.title, emoji: act.emoji } as MetricKind);
+              setMetricOpen(true);
+              try { localStorage.setItem(promptedKey, "1"); } catch { /* ignore */ }
+            }, 400); // brief delay so checkbox animation plays first
+          }
+        }
+      }
+    }
+  }, [dayMode, debouncedPersist, routine.itemsRef, items, dateKey]);
 
   const markDone = useCallback((id: string) => {
     setRecentlyDoneId(id);

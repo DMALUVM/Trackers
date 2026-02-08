@@ -166,6 +166,12 @@ export function MetricSheet(opts: {
           {saving ? "Saving…" : "Save"}
         </button>
 
+        <button type="button" onClick={onClose}
+          className="w-full text-center text-sm py-1"
+          style={{ color: "var(--text-faint)" }}>
+          Skip for now
+        </button>
+
         {status && (
           <p className="text-xs text-center" style={{ color: "var(--accent-red-text)" }}>
             {status}
