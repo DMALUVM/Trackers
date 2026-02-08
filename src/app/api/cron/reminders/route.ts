@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import webpush from "web-push";
 
 // This endpoint is called by Vercel Cron every minute.
 // It finds reminders due right now and sends push notifications.
@@ -22,7 +21,19 @@ export async function GET(request: Request) {
   }
 
   if (!supabaseServiceKey || !vapidPublicKey || !vapidPrivateKey) {
-    return NextResponse.json({ error: "Missing env vars" }, { status: 500 });
+    return NextResponse.json({ error: "Missing env vars", details: {
+      hasServiceKey: !!supabaseServiceKey,
+      hasVapidPublic: !!vapidPublicKey,
+      hasVapidPrivate: !!vapidPrivateKey,
+    }}, { status: 500 });
+  }
+
+  // Dynamically import web-push (avoids build issues if not installed)
+  let webpush: typeof import("web-push");
+  try {
+    webpush = await import("web-push");
+  } catch {
+    return NextResponse.json({ error: "web-push package not installed. Run: npm install web-push" }, { status: 500 });
   }
 
   // Configure web-push
@@ -31,30 +42,29 @@ export async function GET(request: Request) {
   // Admin client — bypasses RLS
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Current time in HH:MM and ISO day-of-week
-  // Note: reminders store time in user's local timezone, but we process
-  // in UTC. For v1, we'll check the current UTC time. For production,
-  // you'd want to group users by timezone.
+  // Current time in HH:MM (24h) and ISO day-of-week
+  // Using America/New_York — adjust to your timezone
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("en-US", {
+  const formatter = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-    timeZone: "America/New_York", // TODO: per-user timezone
+    timeZone: "America/New_York",
   });
-  const isoDay = now.getDay() === 0 ? 7 : now.getDay(); // JS: 0=Sun → ISO: 7=Sun
+  const parts = formatter.formatToParts(now);
+  const hour = parts.find(p => p.type === "hour")?.value ?? "00";
+  const minute = parts.find(p => p.type === "minute")?.value ?? "00";
+  const timeStr = `${hour}:${minute}`; // "06:00" format matching <input type="time">
 
-  // Find reminders due now
+  // Get ISO day of week in ET
+  const etNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const jsDay = etNow.getDay(); // 0=Sun
+  const isoDay = jsDay === 0 ? 7 : jsDay; // ISO: 1=Mon … 7=Sun
+
+  // Find enabled reminders matching this time
   const { data: reminders, error: remErr } = await supabase
     .from("reminders")
-    .select(`
-      id,
-      user_id,
-      routine_item_id,
-      time,
-      days_of_week,
-      routine_items!inner(label, emoji)
-    `)
+    .select("id, user_id, routine_item_id, time, days_of_week")
     .eq("enabled", true)
     .eq("time", timeStr)
     .contains("days_of_week", [isoDay]);
@@ -65,16 +75,26 @@ export async function GET(request: Request) {
   }
 
   if (!reminders || reminders.length === 0) {
-    return NextResponse.json({ sent: 0 });
+    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay });
   }
 
-  // Get unique user IDs
-  const userIds = [...new Set(reminders.map((r: any) => r.user_id))];
+  // Get routine item labels for notification text
+  const routineItemIds = [...new Set(reminders.map((r: any) => r.routine_item_id))];
+  const { data: routineItems } = await supabase
+    .from("routine_items")
+    .select("id, label, emoji")
+    .in("id", routineItemIds);
 
-  // Fetch push subscriptions for these users
+  const itemMap = new Map<string, { label: string; emoji: string | null }>();
+  for (const ri of routineItems ?? []) {
+    itemMap.set(ri.id, { label: ri.label, emoji: ri.emoji });
+  }
+
+  // Get unique user IDs and fetch push subscriptions
+  const userIds = [...new Set(reminders.map((r: any) => r.user_id))];
   const { data: subs, error: subErr } = await supabase
     .from("push_subscriptions")
-    .select("user_id,endpoint,p256dh,auth")
+    .select("user_id, endpoint, p256dh, auth")
     .in("user_id", userIds);
 
   if (subErr) {
@@ -93,12 +113,13 @@ export async function GET(request: Request) {
   // Send notifications
   let sent = 0;
   let failed = 0;
+  const errors: string[] = [];
 
   for (const reminder of reminders) {
     const userSubs = subsByUser.get(reminder.user_id);
     if (!userSubs || userSubs.length === 0) continue;
 
-    const item = (reminder as any).routine_items;
+    const item = itemMap.get(reminder.routine_item_id);
     const emoji = item?.emoji ? `${item.emoji} ` : "";
     const label = item?.label ?? "your routine";
 
@@ -121,6 +142,7 @@ export async function GET(request: Request) {
         sent++;
       } catch (err: any) {
         failed++;
+        errors.push(`${err.statusCode ?? "?"}: ${err.body ?? err.message ?? "unknown"}`);
         // Remove expired/invalid subscriptions
         if (err.statusCode === 410 || err.statusCode === 404) {
           await supabase
@@ -133,5 +155,12 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ sent, failed, remindersChecked: reminders.length });
+  return NextResponse.json({
+    sent,
+    failed,
+    remindersChecked: reminders.length,
+    time: timeStr,
+    day: isoDay,
+    errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+  });
 }
