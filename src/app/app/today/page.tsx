@@ -92,15 +92,17 @@ export default function TodayPage() {
   const [halfwayShown, setHalfwayShown] = useState(false);
 
   // Guard: don't fire haptics / confetti on initial data load — only on
-  // user-initiated state changes. Becomes true after the first render
-  // with real data, so subsequent changes (user checking items) are live.
-  const hydrated = useRef(false);
+  // user-initiated state changes. We track the initial snapshot of allCoreDone
+  // so confetti only fires on transitions, not on page load with cores already done.
+  const initialLoadDone = useRef(false);
+  const prevAllCoreDone = useRef(false);
   useEffect(() => {
-    if (!routine.loading && items.length > 0) {
-      const id = requestAnimationFrame(() => { hydrated.current = true; });
-      return () => cancelAnimationFrame(id);
+    if (!routine.loading && items.length > 0 && !initialLoadDone.current) {
+      // Capture the initial state — if cores are already done on load, don't celebrate
+      initialLoadDone.current = true;
+      prevAllCoreDone.current = allCoreDone;
     }
-  }, [routine.loading, items.length]);
+  }, [routine.loading, items.length, allCoreDone]);
 
   // Sync hook state → local
   useEffect(() => {
@@ -113,11 +115,13 @@ export default function TodayPage() {
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
 
   // Auto-redirect to onboarding if user has no routines
+  // IMPORTANT: check routine.items (source of truth), NOT local `items` state,
+  // because the sync effect may not have run yet after loading completes.
   useEffect(() => {
-    if (!routine.loading && items.length === 0) {
+    if (!routine.loading && routine.items.length === 0) {
       router.replace("/app/onboarding");
     }
-  }, [routine.loading, items.length, router]);
+  }, [routine.loading, routine.items.length, router]);
 
   // Check for pending milestone on mount (from previous session)
   useEffect(() => {
@@ -187,7 +191,7 @@ export default function TodayPage() {
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
-    if (!hydrated.current) return;
+    if (!initialLoadDone.current) return;
     if (halfwayShown || coreTotal < 4) return;
     if (coreDone === Math.ceil(coreTotal / 2) && !allCoreDone) {
       setHalfwayShown(true);
@@ -229,14 +233,17 @@ export default function TodayPage() {
     debouncedPersist(dayMode);
   }, [dayMode, debouncedPersist, routine.itemsRef]);
 
-  // Confetti on natural all-core completion
+  // Confetti on natural all-core completion — only when user completes cores
+  // during this session, NOT on page load when they're already done.
   useEffect(() => {
-    if (!hydrated.current) return;
-    if (allCoreDone && coreDone > 0 && !justCompletedAll) {
+    if (!initialLoadDone.current) return;
+    // Only fire when allCoreDone transitions from false → true
+    if (allCoreDone && !prevAllCoreDone.current && coreDone > 0 && !justCompletedAll) {
       hapticHeavy();
       setConfettiTrigger(true);
       setTimeout(() => setConfettiTrigger(false), 100);
     }
+    prevAllCoreDone.current = allCoreDone;
     if (!allCoreDone) setJustCompletedAll(false);
   }, [allCoreDone, coreDone, justCompletedAll]);
 
@@ -279,6 +286,12 @@ export default function TodayPage() {
   if (routine.loading) return <TodayPageSkeleton />;
 
   // No routines yet → send straight to onboarding (no dead empty state)
+  // Use routine.items (source of truth) to avoid flash from sync effect lag.
+  if (routine.items.length === 0) {
+    return <TodayPageSkeleton />;
+  }
+
+  // Sync effect hasn't run yet — keep showing skeleton until local state catches up
   if (items.length === 0) {
     return <TodayPageSkeleton />;
   }
