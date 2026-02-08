@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
+import { usePremium } from "@/lib/premium";
 
 const sections = [
   {
@@ -38,11 +39,40 @@ const sections = [
 ];
 
 export default function SettingsPage() {
+  const { isPremium, toggleDev } = usePremium();
+
   return (
     <div className="space-y-6 stagger-sections">
       <header>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Settings</h1>
       </header>
+
+      {/* Premium banner */}
+      {!isPremium ? (
+        <Link href="/app/settings/premium" onClick={() => hapticLight()}
+          className="flex items-center gap-3.5 rounded-2xl p-4 tap-btn"
+          style={{
+            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.03))",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+          }}>
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, var(--accent-green), var(--accent-green-text))" }}>
+            <Crown size={22} color="white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Upgrade to Pro</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>Unlock deep insights, streak freezes, and more</p>
+          </div>
+          <ChevronRight size={16} style={{ color: "var(--text-faint)" }} />
+        </Link>
+      ) : (
+        <div className="flex items-center gap-3 rounded-2xl p-4"
+          style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+          <Crown size={20} style={{ color: "var(--accent-green-text)" }} />
+          <p className="text-sm font-bold flex-1" style={{ color: "var(--accent-green-text)" }}>Routines365 Pro</p>
+          <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ background: "var(--accent-green)", color: "white" }}>ACTIVE</span>
+        </div>
+      )}
 
       {sections.map((section) => (
         <section key={section.title}>
@@ -80,6 +110,12 @@ export default function SettingsPage() {
         <p className="text-[10px]" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
           Made with ❤️ · Build better habits, one day at a time
         </p>
+        {/* Dev toggle — remove before App Store submission */}
+        <button type="button" onClick={toggleDev}
+          className="text-[10px] mt-3 px-3 py-1.5 rounded-lg"
+          style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+          {isPremium ? "🔓 Dev: Premium ON" : "🔒 Dev: Premium OFF"}
+        </button>
       </footer>
     </div>
   );

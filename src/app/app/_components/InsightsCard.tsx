@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, Lightbulb } from "lucide-react";
 import { useInsights, type Insight } from "@/lib/hooks";
 import { SkeletonCard } from "@/app/app/_components/ui";
+import { usePremium, PREMIUM_FEATURES, FREE_LIMITS } from "@/lib/premium";
+import { ProBadge, PremiumGate } from "@/app/app/_components/PremiumGate";
 import { hapticLight } from "@/lib/haptics";
 
 function InsightRow({ insight, index }: { insight: Insight; index: number }) {
@@ -30,13 +32,19 @@ function InsightRow({ insight, index }: { insight: Insight; index: number }) {
 
 export function InsightsCard() {
   const { insights, loading, error } = useInsights();
+  const { hasFeature } = usePremium();
   const [expanded, setExpanded] = useState(true);
+  const isPro = hasFeature(PREMIUM_FEATURES.unlimitedInsights);
 
   if (loading) return <SkeletonCard lines={4} />;
   if (error || insights.length === 0) return null;
 
-  const preview = insights.slice(0, 2);
-  const rest = insights.slice(2);
+  const maxFree = FREE_LIMITS.maxInsights;
+  const visibleInsights = isPro ? insights : insights.slice(0, maxFree);
+  const lockedCount = isPro ? 0 : Math.max(0, insights.length - maxFree);
+
+  const preview = visibleInsights.slice(0, 2);
+  const rest = visibleInsights.slice(2);
 
   return (
     <section className="card p-5">
@@ -46,6 +54,7 @@ export function InsightsCard() {
           <h3 className="text-sm font-bold tracking-wide uppercase" style={{ color: "var(--text-faint)" }}>
             Insights
           </h3>
+          {!isPro && <ProBadge />}
         </div>
         {rest.length > 0 && (
           <button
@@ -72,6 +81,12 @@ export function InsightsCard() {
       <p className="text-[10px] mt-2" style={{ color: "var(--text-faint)" }}>
         Based on your last 60 days · Updates daily
       </p>
+
+      {lockedCount > 0 && (
+        <div className="mt-3">
+          <PremiumGate feature={`${lockedCount} more insight${lockedCount > 1 ? "s" : ""}`} compact />
+        </div>
+      )}
     </section>
   );
 }

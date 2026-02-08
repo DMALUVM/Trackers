@@ -28,6 +28,9 @@ import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/c
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
+import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
+import { usePremium } from "@/lib/premium";
+import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
@@ -88,6 +91,9 @@ export default function TodayPage() {
   const [comebackDismissed, setComebackDismissed] = useState(false);
   const [halfwayShown, setHalfwayShown] = useState(false);
   const [todayIsRest, setTodayIsRest] = useState(false);
+  const [habitDetailOpen, setHabitDetailOpen] = useState(false);
+  const [habitDetailItem, setHabitDetailItem] = useState<{ id: string; label: string; emoji: string | null; isCore: boolean } | null>(null);
+  const { isPremium } = usePremium();
 
   // Auto-detect rest day and offer to apply
   useEffect(() => {
@@ -539,6 +545,10 @@ export default function TodayPage() {
               onSkip={skipItem}
               onLogMetric={openMetric}
               onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
+              onLabelTap={(id) => {
+                setHabitDetailItem({ id, label: item.label, emoji: item.emoji ?? null, isCore: true });
+                setHabitDetailOpen(true);
+              }}
             />
           ))}
         </div>
@@ -572,6 +582,10 @@ export default function TodayPage() {
                 onSkip={skipItem}
                 onLogMetric={openMetric}
                 onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
+                onLabelTap={(id) => {
+                  setHabitDetailItem({ id, label: item.label, emoji: item.emoji ?? null, isCore: false });
+                  setHabitDetailOpen(true);
+                }}
                 compact
               />
             ))}
@@ -598,10 +612,25 @@ export default function TodayPage() {
           {!allCoreDone && coreTotal > 0 && (
             <div>
               <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Quick actions</p>
-              <button type="button" onClick={() => { markAllCoreDone(); setMenuOpen(false); }}
-                className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
-                <Zap size={14} /> Mark all core done
-              </button>
+              <div className="space-y-2">
+                <button type="button" onClick={() => { markAllCoreDone(); setMenuOpen(false); }}
+                  className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
+                  <Zap size={14} /> Mark all core done
+                </button>
+                {streaks.currentStreak > 0 && canUseFreeze(isPremium) && (
+                  <button type="button" onClick={() => {
+                    const ok = useStreakFreeze(isPremium);
+                    if (ok) { changeDayMode("travel"); setMenuOpen(false); }
+                  }}
+                    className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
+                    🧊 Use streak freeze
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1"
+                      style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                      {(() => { const r = remainingFreezes(isPremium); return r === "unlimited" ? "∞" : `${r} left`; })()}
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -673,6 +702,13 @@ export default function TodayPage() {
         routineEmoji={reminderTarget?.emoji}
         existing={reminderTarget ? reminderMap.get(reminderTarget.id) ?? null : null}
         onSaved={() => { listReminders().then(setReminders).catch(() => {}); }}
+      />
+
+      {/* Habit Detail Sheet (per-habit analytics) */}
+      <HabitDetailSheet
+        open={habitDetailOpen}
+        onClose={() => setHabitDetailOpen(false)}
+        habit={habitDetailItem}
       />
     </div>
   );

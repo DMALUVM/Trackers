@@ -18,6 +18,7 @@ export interface RoutineCheckItemProps {
   onSkip?: (id: string) => void;
   onLogMetric?: (id: string) => void;
   onSetReminder?: (id: string) => void;
+  onLabelTap?: (id: string) => void;
   compact?: boolean;
 }
 
@@ -35,6 +36,7 @@ export function RoutineCheckItem({
   onSkip,
   onLogMetric,
   onSetReminder,
+  onLabelTap,
   compact = false,
 }: RoutineCheckItemProps) {
   const [swipeX, setSwipeX] = useState(0);
@@ -141,6 +143,9 @@ export function RoutineCheckItem({
 
         {/* Label */}
         <span className="flex-1 min-w-0 truncate font-medium"
+          role={onLabelTap ? "button" : undefined}
+          tabIndex={onLabelTap ? 0 : undefined}
+          onClick={onLabelTap ? (e) => { e.stopPropagation(); onLabelTap(id); } : undefined}
           style={{
             fontSize: compact ? "1.0625rem" : "1.125rem",
             color: done ? "var(--accent-green-text)" : "var(--text-primary)",
@@ -148,6 +153,7 @@ export function RoutineCheckItem({
             textDecorationColor: done ? "var(--accent-green)" : undefined,
             opacity: done ? 0.8 : 1,
             transition: "color 0.25s ease, opacity 0.25s ease",
+            cursor: onLabelTap ? "pointer" : undefined,
           }}>
           {label}
         </span>

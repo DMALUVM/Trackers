@@ -18,6 +18,8 @@ import { hapticLight } from "@/lib/haptics";
 import { InsightsCard } from "@/app/app/_components/InsightsCard";
 import { WeeklyTrend } from "@/app/app/_components/WeeklyTrend";
 import { ShareCard } from "@/app/app/_components/ShareCard";
+import { usePremium, PREMIUM_FEATURES } from "@/lib/premium";
+import { PremiumGate } from "@/app/app/_components/PremiumGate";
 
 // Calendar cell color
 function cellStyle(color: DayColor, inMonth: boolean, today: boolean): React.CSSProperties {
@@ -58,6 +60,7 @@ export default function RoutinesProgressPage() {
   const [accountStartKey, setAccountStartKey] = useState<string | null>(null);
 
   const streaks = useStreaks(dateKey);
+  const { hasFeature } = usePremium();
 
   // Dynamically detect which activities to show totals for based on user's routine items
   // Always include hydration since the WaterTracker is on the Today page
@@ -231,7 +234,7 @@ export default function RoutinesProgressPage() {
       <WeeklyTrend />
 
       {/* ── SHARE & DOWNLOAD ── */}
-      {!streaks.loading && (
+      {!streaks.loading && hasFeature(PREMIUM_FEATURES.shareCards) && (
         <ShareCard
           streaks={streaks}
           greenPct={streaks.coreHitRateThisWeek ?? 0}
@@ -240,12 +243,16 @@ export default function RoutinesProgressPage() {
           last7={streaks.last7Days.map(d => ({ color: d.color }))}
         />
       )}
-      <Link href="/app/report" onClick={() => hapticLight()}
-        className="card-interactive flex items-center justify-center gap-2 px-4 py-3.5 w-full"
-        style={{ textDecoration: "none" }}>
-        <FileText size={16} style={{ color: "var(--text-muted)" }} />
-        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Download Progress Report</span>
-      </Link>
+      {hasFeature(PREMIUM_FEATURES.pdfReports) ? (
+        <Link href="/app/report" onClick={() => hapticLight()}
+          className="card-interactive flex items-center justify-center gap-2 px-4 py-3.5 w-full"
+          style={{ textDecoration: "none" }}>
+          <FileText size={16} style={{ color: "var(--text-muted)" }} />
+          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Download Progress Report</span>
+        </Link>
+      ) : (
+        <PremiumGate feature="Reports & Sharing" compact />
+      )}
 
       {/* ── ACTIVITY TOTALS ── */}
       {activityEntries.length > 0 && (
