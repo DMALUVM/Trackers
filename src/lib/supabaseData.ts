@@ -23,13 +23,30 @@ export async function getUserId() {
   return _cachedUserId;
 }
 
-// Clear cached userId on sign-out
+// Clear cached userId on sign-out, and flush per-user localStorage
 if (typeof window !== "undefined") {
   supabase.auth.onAuthStateChange((event) => {
     if (event === "SIGNED_OUT") {
       _cachedUserId = null;
       cacheClear();
-    } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      // Clear all per-user localStorage caches
+      try {
+        localStorage.removeItem(LS_SETTINGS);
+        localStorage.removeItem(LS_ROUTINE_ITEMS);
+        localStorage.removeItem("routines365:theme");
+      } catch { /* ignore */ }
+    } else if (event === "SIGNED_IN") {
+      // New sign-in — clear stale data from previous user
+      _cachedUserId = null;
+      cacheClear();
+      try {
+        localStorage.removeItem(LS_SETTINGS);
+        localStorage.removeItem(LS_ROUTINE_ITEMS);
+      } catch { /* ignore */ }
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) _cachedUserId = session.user.id;
+      });
+    } else if (event === "TOKEN_REFRESHED") {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) _cachedUserId = session.user.id;
       });

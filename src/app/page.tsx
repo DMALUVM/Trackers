@@ -25,6 +25,7 @@ export default function Home() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // ── Session check: fast path for returning users ──
   useEffect(() => {
@@ -218,10 +219,18 @@ export default function Home() {
               {(mode === "signin" || mode === "create") && (
                 <>
                   <label className="mt-3 block text-xs font-medium text-neutral-400">Password</label>
-                  <input className="mt-1.5 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder:text-neutral-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition"
-                    type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••" autoComplete={mode === "create" ? "new-password" : "current-password"}
-                    required minLength={mode === "create" ? 8 : undefined} />
+                  <div className="relative mt-1.5">
+                    <input className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 pr-12 text-base text-white placeholder:text-neutral-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/50 outline-none transition"
+                      type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••" autoComplete={mode === "create" ? "new-password" : "current-password"}
+                      required minLength={mode === "create" ? 8 : undefined} />
+                    <button type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-neutral-500 hover:text-neutral-300 transition-colors px-1 py-1"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}>
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
                 </>
               )}
 
@@ -249,25 +258,25 @@ export default function Home() {
               <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
                 {mode !== "signin" && (
                   <button type="button" className="hover:text-neutral-300 transition-colors underline-offset-2 hover:underline"
-                    onClick={() => { setMode("signin"); setStatus(""); }}>
+                    onClick={() => { setMode("signin"); setStatus(""); setShowPassword(false); }}>
                     Sign in with password
                   </button>
                 )}
                 {mode !== "create" && (
                   <button type="button" className="hover:text-neutral-300 transition-colors underline-offset-2 hover:underline"
-                    onClick={() => { setMode("create"); setStatus(""); }}>
+                    onClick={() => { setMode("create"); setStatus(""); setShowPassword(false); }}>
                     Create account
                   </button>
                 )}
                 {mode !== "magic" && (
                   <button type="button" className="hover:text-neutral-300 transition-colors underline-offset-2 hover:underline"
-                    onClick={() => { setMode("magic"); setStatus(""); }}>
+                    onClick={() => { setMode("magic"); setStatus(""); setShowPassword(false); }}>
                     Magic link (no password)
                   </button>
                 )}
                 {mode === "signin" && (
                   <button type="button" className="hover:text-neutral-300 transition-colors underline-offset-2 hover:underline"
-                    onClick={() => { setMode("forgot"); setStatus(""); }}>
+                    onClick={() => { setMode("forgot"); setStatus(""); setShowPassword(false); }}>
                     Forgot password?
                   </button>
                 )}
