@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 
 const sections = [
@@ -30,6 +30,7 @@ const sections = [
   {
     title: "Help",
     items: [
+      { href: "/app/settings/knowledge", label: "Knowledge Base", desc: "The science behind your habits", icon: BookOpen },
       { href: "/app/settings/how-it-works", label: "How it works", desc: "Core vs bonus, colors, streaks, and more", icon: HelpCircle },
     ],
   },

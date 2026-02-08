@@ -3,7 +3,7 @@
 import { format, isSameMonth, isToday as isTodayFn } from "date-fns";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Award } from "lucide-react";
+import { ChevronLeft, ChevronRight, Award, FileText } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
@@ -15,6 +15,7 @@ import { useMultiActivityTotals, type MultiTotalsEntry } from "@/lib/hooks/useAc
 import { SkeletonCard } from "@/app/app/_components/ui";
 import { toDateKey } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
+import { InsightsCard } from "@/app/app/_components/InsightsCard";
 
 // Calendar cell color
 function cellStyle(color: DayColor, inMonth: boolean, today: boolean): React.CSSProperties {
@@ -220,6 +221,17 @@ export default function RoutinesProgressPage() {
           </div>
         </section>
       )}
+
+      {/* ── INSIGHTS ── */}
+      <InsightsCard />
+
+      {/* ── DOWNLOAD REPORT ── */}
+      <Link href="/app/report" onClick={() => hapticLight()}
+        className="card-interactive flex items-center justify-center gap-2 px-4 py-3.5 w-full"
+        style={{ textDecoration: "none" }}>
+        <FileText size={16} style={{ color: "var(--text-muted)" }} />
+        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Download Progress Report</span>
+      </Link>
 
       {/* ── ACTIVITY TOTALS ── */}
       {activityEntries.length > 0 && (
