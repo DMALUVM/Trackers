@@ -319,7 +319,7 @@ export default function TodayPage() {
       {/* ─── HEADER ─── */}
       <header className="flex items-center justify-between pt-1">
         <div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+          <p className="text-base font-medium" style={{ color: "var(--text-muted)" }}>
             {greeting()} 👋
           </p>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>

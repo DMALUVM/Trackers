@@ -109,7 +109,7 @@ export function RoutineCheckItem({
           background: done ? "var(--accent-green-soft)" : "var(--bg-card)",
           border: `1px solid ${done ? "var(--accent-green)" : "var(--border-primary)"}`,
           borderRadius: "1rem",
-          padding: compact ? "0.7rem 1rem" : "0.85rem 1rem",
+          padding: compact ? "0.8rem 1rem" : "1rem 1rem",
           cursor: "pointer",
         }}
         onTouchStart={handleTouchStart}
@@ -121,21 +121,21 @@ export function RoutineCheckItem({
         {/* Checkbox circle */}
         <div className="shrink-0 flex items-center justify-center transition-all duration-200"
           style={{
-            width: 28, height: 28, borderRadius: "50%",
+            width: 32, height: 32, borderRadius: "50%",
             background: done ? "var(--accent-green)" : "transparent",
             border: done ? "none" : "2px solid var(--text-faint)",
             transform: justCompleted ? "scale(1.15)" : "scale(1)",
           }}>
-          {done && <Check size={16} strokeWidth={3} style={{ color: "var(--text-inverse)" }} />}
+          {done && <Check size={18} strokeWidth={3} style={{ color: "var(--text-inverse)" }} />}
         </div>
 
         {/* Emoji */}
-        {emoji && <span className="text-lg shrink-0 select-none">{emoji}</span>}
+        {emoji && <span className="text-xl shrink-0 select-none">{emoji}</span>}
 
         {/* Label */}
         <span className="flex-1 min-w-0 truncate font-medium transition-all duration-200"
           style={{
-            fontSize: compact ? "0.875rem" : "0.9375rem",
+            fontSize: compact ? "1rem" : "1.0625rem",
             color: done ? "var(--accent-green-text)" : "var(--text-primary)",
             textDecoration: done ? "line-through" : "none",
             textDecorationColor: done ? "var(--accent-green)" : undefined,
@@ -146,7 +146,7 @@ export function RoutineCheckItem({
 
         {/* Core badge (only when undone — when done the green bg already signals importance) */}
         {isCore && !done && (
-          <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide"
+          <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide"
             style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
             CORE
           </span>

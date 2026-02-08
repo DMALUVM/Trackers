@@ -87,7 +87,7 @@ export function AppNav() {
                   <div className="absolute -bottom-1.5 h-1 w-1 rounded-full" style={{ background: "var(--accent-green)" }} />
                 )}
               </div>
-              <span className="text-[10px] font-semibold leading-tight mt-0.5"
+              <span className="text-[11px] font-semibold leading-tight mt-0.5"
                 style={{ color: active ? "var(--accent-green)" : "var(--text-faint)" }}>
                 {label}
               </span>
