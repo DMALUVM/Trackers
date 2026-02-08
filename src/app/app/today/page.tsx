@@ -22,6 +22,7 @@ import {
   ReminderSheet,
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
+import { QuestsCard } from "@/app/app/_components/QuestsCard";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
@@ -455,6 +456,14 @@ export default function TodayPage() {
             }
           </p>
         </section>
+      )}
+
+      {/* ─── QUESTS ─── */}
+      {!streaks.loading && (
+        <QuestsCard
+          greenDaysThisWeek={streaks.greenDaysThisWeek}
+          checkedLabels={items.filter((i) => i.done).map((i) => i.label)}
+        />
       )}
 
       {/* ─── CORE HABITS ─── */}

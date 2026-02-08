@@ -52,8 +52,8 @@ const MODULE_GROUPS: ModuleGroup[] = [
 
 // Home and Progress are always in the nav bar.
 // Settings is accessible via the gear icon in the header.
-// User can pick up to 3 modules for the remaining nav slots.
-const MAX_PICKS = 3;
+// User can pick up to 4 modules for the remaining nav slots.
+const MAX_PICKS = 4;
 
 // These keys are always enabled but don't count toward the user's picks
 const ALWAYS_ON = new Set(["progress", "settings"]);

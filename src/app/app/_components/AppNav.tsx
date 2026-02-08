@@ -54,8 +54,8 @@ export function AppNav() {
 
   const items = useMemo(() => {
     const enabledSet = new Set(enabled ?? []);
-    // Pick up to 3 enabled modules to fill remaining slots
-    const userModules = moduleItems.filter((i) => enabledSet.has(i.key)).slice(0, 3);
+    // Pick up to 4 enabled modules to fill remaining slots
+    const userModules = moduleItems.filter((i) => enabledSet.has(i.key)).slice(0, 4);
     return [...fixedItems, ...userModules];
   }, [enabled]);
 
@@ -64,6 +64,7 @@ export function AppNav() {
   }, [items, router]);
 
   const colClass =
+    items.length === 6 ? "grid-cols-6" :
     items.length === 5 ? "grid-cols-5" :
     items.length === 4 ? "grid-cols-4" :
     items.length === 3 ? "grid-cols-3" :
