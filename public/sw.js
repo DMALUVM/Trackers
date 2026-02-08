@@ -8,7 +8,58 @@
 // - Stale-while-revalidate for everything else
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v3";
+const CACHE_NAME = "routines365-v4";
+
+// ---------------------------------------------------------------------------
+// Push Notifications
+// ---------------------------------------------------------------------------
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let payload;
+  try {
+    payload = event.data.json();
+  } catch {
+    payload = { title: "Routine Reminder", body: event.data.text() };
+  }
+
+  const options = {
+    body: payload.body || "Time to check in!",
+    icon: "/brand/pwa/icon-192.png",
+    badge: "/brand/pwa/icon-192.png",
+    tag: payload.tag || "routine-reminder",
+    data: { url: payload.url || "/app/today" },
+    vibrate: [100, 50, 100],
+    actions: [
+      { action: "open", title: "Open" },
+      { action: "dismiss", title: "Dismiss" },
+    ],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Routines 365", options)
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  if (event.action === "dismiss") return;
+
+  const url = event.notification.data?.url || "/app/today";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Focus existing window if available
+      for (const client of clients) {
+        if (client.url.includes("/app/") && "focus" in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      return self.clients.openWindow(url);
+    })
+  );
+});
 const SHELL_ASSETS = [
   "/app/today",
   "/brand/pwa/icon-192.png",

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Settings, Zap, Trophy } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks, usePullToRefresh } from "@/lib/hooks";
 import {
@@ -20,11 +20,13 @@ import {
   ComebackBanner,
   PullToRefreshIndicator,
   GettingStartedTips,
+  ReminderSheet,
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
+import { listReminders, type Reminder } from "@/lib/reminders";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
 import type { MotivationContext } from "@/lib/motivation";
@@ -90,6 +92,20 @@ export default function TodayPage() {
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
   const [comebackDismissed, setComebackDismissed] = useState(false);
   const [halfwayShown, setHalfwayShown] = useState(false);
+
+  // Reminder state
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminderTarget, setReminderTarget] = useState<{ id: string; label: string; emoji?: string } | null>(null);
+  const reminderMap = useMemo(() => {
+    const m = new Map<string, Reminder>();
+    for (const r of reminders) m.set(r.routine_item_id, r);
+    return m;
+  }, [reminders]);
+
+  // Load reminders on mount
+  useEffect(() => {
+    listReminders().then(setReminders).catch(() => {});
+  }, []);
 
   // Guard: don't fire haptics / confetti on initial data load — only on
   // user-initiated state changes.
@@ -329,6 +345,12 @@ export default function TodayPage() {
             aria-label="More options">
             <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
           </button>
+          <button type="button" onClick={() => { hapticLight(); router.push("/app/settings"); }}
+            className="flex items-center justify-center rounded-full transition-colors"
+            style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
+            aria-label="Settings">
+            <Settings size={18} style={{ color: "var(--text-muted)" }} />
+          </button>
         </div>
       </header>
 
@@ -440,9 +462,11 @@ export default function TodayPage() {
               done={item.done}
               justCompleted={recentlyDoneId === item.id}
               hasMetric={!!labelToMetricKey(item.label)}
+              hasReminder={reminderMap.has(item.id)}
               onToggle={item.done ? toggleItem : markDone}
               onSkip={skipItem}
               onLogMetric={openMetric}
+              onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
             />
           ))}
         </div>
@@ -479,9 +503,11 @@ export default function TodayPage() {
                   done={item.done}
                   justCompleted={recentlyDoneId === item.id}
                   hasMetric={!!labelToMetricKey(item.label)}
+                  hasReminder={reminderMap.has(item.id)}
                   onToggle={item.done ? toggleItem : markDone}
                   onSkip={skipItem}
                   onLogMetric={openMetric}
+                  onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
                   compact
                 />
               ))}
@@ -565,6 +591,17 @@ export default function TodayPage() {
       )}
 
       <GettingStartedTips />
+
+      {/* Reminder Sheet */}
+      <ReminderSheet
+        open={!!reminderTarget}
+        onClose={() => setReminderTarget(null)}
+        routineItemId={reminderTarget?.id ?? ""}
+        routineLabel={reminderTarget?.label ?? ""}
+        routineEmoji={reminderTarget?.emoji}
+        existing={reminderTarget ? reminderMap.get(reminderTarget.id) ?? null : null}
+        onSaved={() => { listReminders().then(setReminders).catch(() => {}); }}
+      />
     </div>
   );
 }

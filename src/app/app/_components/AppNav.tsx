@@ -4,17 +4,15 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarCheck2, Dumbbell, Brain, Settings, TrendingUp,
+  CalendarCheck2, Dumbbell, Brain, TrendingUp,
   Footprints, Home, Flame, Heart, Moon, Pill, Droplets, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getUserSettings, getUserSettingsSync } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
 
-const allItems = [
-  { key: "today", href: "/app/today", label: "Today", Icon: Home },
-  { key: "routines", href: "/app/routines", label: "Routines", Icon: CalendarCheck2 },
-  { key: "progress", href: "/app/routines/progress", label: "Progress", Icon: TrendingUp },
+// All available module nav items (Settings excluded — it's a gear icon in the header now)
+const moduleItems = [
   { key: "fitness", href: "/app/fitness", label: "Fitness", Icon: Dumbbell },
   { key: "cardio", href: "/app/cardio", label: "Cardio", Icon: Footprints },
   { key: "recovery", href: "/app/recovery", label: "Recovery", Icon: Flame },
@@ -25,7 +23,13 @@ const allItems = [
   { key: "journal", href: "/app/journal", label: "Journal", Icon: BookOpen },
   { key: "rowing", href: "/app/rowing", label: "Rowing", Icon: Dumbbell },
   { key: "neuro", href: "/app/neuro", label: "Neuro", Icon: Brain },
-  { key: "settings", href: "/app/settings", label: "Settings", Icon: Settings },
+] as const;
+
+// These 3 are always visible — never removed
+const fixedItems = [
+  { key: "today", href: "/app/today", label: "Today", Icon: Home },
+  { key: "routines", href: "/app/routines", label: "Routines", Icon: CalendarCheck2 },
+  { key: "progress", href: "/app/routines/progress", label: "Progress", Icon: TrendingUp },
 ] as const;
 
 export function AppNav() {
@@ -41,7 +45,7 @@ export function AppNav() {
   useEffect(() => {
     const run = async () => {
       try { const s = await getUserSettings(); setEnabled(s.enabled_modules); }
-      catch { setEnabled((prev) => prev ?? ["progress", "settings"]); }
+      catch { setEnabled((prev) => prev ?? ["progress"]); }
     };
     void run();
     const onSettings = () => void run();
@@ -50,27 +54,24 @@ export function AppNav() {
   }, []);
 
   const items = useMemo(() => {
-    const enabledSet = new Set(["today", "routines", ...(enabled ?? [])]);
-    const filtered = allItems.filter((i) => enabledSet.has(i.key));
-    const pinned = ["today", "routines"];
-    const ordered = [
-      ...pinned.map((k) => filtered.find((i) => i.key === k)).filter(Boolean),
-      ...filtered.filter((i) => !pinned.includes(i.key) && i.key !== "settings"),
-      filtered.find((i) => i.key === "settings"),
-    ].filter(Boolean) as unknown as Array<(typeof allItems)[number]>;
-    return ordered.slice(0, 5);
+    const enabledSet = new Set(enabled ?? []);
+    // Pick up to 2 enabled modules to fill remaining slots
+    const userModules = moduleItems.filter((i) => enabledSet.has(i.key)).slice(0, 2);
+    return [...fixedItems, ...userModules];
   }, [enabled]);
 
   useEffect(() => {
     for (const it of items) { try { router.prefetch(it.href); } catch { /* ignore */ } }
   }, [items, router]);
 
+  const colClass =
+    items.length === 5 ? "grid-cols-5" :
+    items.length === 4 ? "grid-cols-4" :
+    "grid-cols-3";
+
   return (
     <nav className="sticky bottom-0 nav-bar safe-bottom">
-      <div className={cn(
-        "mx-auto grid max-w-md py-1.5 px-1",
-        items.length === 5 ? "grid-cols-5" : items.length === 3 ? "grid-cols-3" : items.length === 2 ? "grid-cols-2" : "grid-cols-4"
-      )}>
+      <div className={cn("mx-auto grid max-w-md py-1.5 px-1", colClass)}>
         {items.map(({ href, label, Icon }) => {
           const active = pathname === href || (href !== "/app/today" && pathname?.startsWith(href));
           return (

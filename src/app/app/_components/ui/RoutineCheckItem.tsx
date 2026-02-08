@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { Check } from "lucide-react";
+import { Check, Bell } from "lucide-react";
 import { hapticMedium, hapticSuccess } from "@/lib/haptics";
 
 export interface RoutineCheckItemProps {
@@ -12,10 +12,12 @@ export interface RoutineCheckItemProps {
   done: boolean;
   snoozed?: boolean;
   hasMetric?: boolean;
+  hasReminder?: boolean;
   justCompleted?: boolean;
   onToggle: (id: string) => void;
   onSkip?: (id: string) => void;
   onLogMetric?: (id: string) => void;
+  onSetReminder?: (id: string) => void;
   compact?: boolean;
 }
 
@@ -27,10 +29,12 @@ export function RoutineCheckItem({
   done,
   snoozed,
   hasMetric,
+  hasReminder,
   justCompleted,
   onToggle,
   onSkip,
   onLogMetric,
+  onSetReminder,
   compact = false,
 }: RoutineCheckItemProps) {
   const [swipeX, setSwipeX] = useState(0);
@@ -156,6 +160,18 @@ export function RoutineCheckItem({
             style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}
             aria-label={`Log metric for ${label}`}>
             + Log
+          </button>
+        )}
+
+        {/* Reminder bell */}
+        {onSetReminder && (
+          <button type="button"
+            onClick={(e) => { e.stopPropagation(); onSetReminder(id); }}
+            className="shrink-0 flex items-center justify-center rounded-full transition-colors"
+            style={{ width: 28, height: 28 }}
+            aria-label={`${hasReminder ? "Edit" : "Set"} reminder for ${label}`}>
+            <Bell size={14} strokeWidth={hasReminder ? 2.5 : 1.5}
+              style={{ color: hasReminder ? "var(--accent-green)" : "var(--text-faint)" }} />
           </button>
         )}
       </div>
