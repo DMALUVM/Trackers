@@ -110,8 +110,8 @@ export function ReminderSheet({
 
       {/* Sheet */}
       <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md animate-slide-up">
-        <div className="rounded-t-2xl p-5 pb-8"
-          style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border-primary)" }}>
+        <div className="rounded-t-2xl p-5 pb-8 safe-bottom"
+          style={{ background: "var(--bg-sheet)", borderTop: "1px solid var(--border-primary)" }}>
 
           {/* Handle + close */}
           <div className="flex items-center justify-between mb-4">

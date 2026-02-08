@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import type { DayColor } from "@/lib/progress";
+import { hapticLight } from "@/lib/haptics";
 
 interface WeekStripProps {
   days: Array<{ dateKey: string; color: DayColor }>;
@@ -51,14 +53,19 @@ export function WeekStrip({ days, className = "" }: WeekStripProps) {
         const isToday = d.dateKey === todayKey;
         const dayNum = d.dateKey.slice(8);
         return (
-          <div key={d.dateKey} className="flex flex-col items-center gap-1">
+          <Link
+            key={d.dateKey}
+            href={`/app/routines/edit/${d.dateKey}`}
+            className="flex flex-col items-center gap-1 transition-transform active:scale-95"
+            onClick={() => hapticLight()}
+          >
             <div className="text-[10px] font-semibold" style={{ color: isToday ? "var(--text-primary)" : "var(--text-faint)" }}>
               {DOW_LABELS[dowIdx]}
             </div>
             <div style={dotStyle(d.color, isToday)}>
               {dayNum.replace(/^0/, "")}
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>
