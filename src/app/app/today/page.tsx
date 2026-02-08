@@ -27,6 +27,7 @@ import { WaterTracker } from "@/app/app/_components/WaterTracker";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
+import { isRestDay } from "@/lib/restDays";
 import { listReminders, type Reminder } from "@/lib/reminders";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
@@ -86,6 +87,14 @@ export default function TodayPage() {
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
   const [comebackDismissed, setComebackDismissed] = useState(false);
   const [halfwayShown, setHalfwayShown] = useState(false);
+  const [todayIsRest, setTodayIsRest] = useState(false);
+
+  // Auto-detect rest day and offer to apply
+  useEffect(() => {
+    if (isRestDay(dateKey) && dayMode === "normal") {
+      setTodayIsRest(true);
+    }
+  }, [dateKey, dayMode]);
 
   // Reminder state
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -371,6 +380,34 @@ export default function TodayPage() {
           </button>
         </div>
       </header>
+
+      {/* ─── REST DAY BANNER ─── */}
+      {todayIsRest && dayMode === "normal" && (
+        <section className="rounded-2xl p-4 animate-fade-in-up"
+          style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🧘</span>
+              <div>
+                <p className="text-sm font-bold" style={{ color: "var(--accent-green-text)" }}>Scheduled rest day</p>
+                <p className="text-xs" style={{ color: "var(--accent-green-text)", opacity: 0.8 }}>Take today off without breaking your streak</p>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button type="button" onClick={() => setTodayIsRest(false)}
+                className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
+                style={{ color: "var(--text-muted)", background: "var(--bg-card-hover)" }}>
+                Skip
+              </button>
+              <button type="button" onClick={() => { changeDayMode("travel"); setTodayIsRest(false); }}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg"
+                style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
+                Rest today
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── COMEBACK BANNER (after 2+ missed days) ─── */}
       {!streaks.loading && !comebackDismissed && streaks.daysSinceLastGreen >= 2 && streaks.currentStreak === 0 && (

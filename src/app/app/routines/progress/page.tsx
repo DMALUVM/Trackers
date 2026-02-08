@@ -16,6 +16,8 @@ import { SkeletonCard } from "@/app/app/_components/ui";
 import { toDateKey } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
 import { InsightsCard } from "@/app/app/_components/InsightsCard";
+import { WeeklyTrend } from "@/app/app/_components/WeeklyTrend";
+import { ShareCard } from "@/app/app/_components/ShareCard";
 
 // Calendar cell color
 function cellStyle(color: DayColor, inMonth: boolean, today: boolean): React.CSSProperties {
@@ -225,7 +227,19 @@ export default function RoutinesProgressPage() {
       {/* ── INSIGHTS ── */}
       <InsightsCard />
 
-      {/* ── DOWNLOAD REPORT ── */}
+      {/* ── WEEKLY TREND ── */}
+      <WeeklyTrend />
+
+      {/* ── SHARE & DOWNLOAD ── */}
+      {!streaks.loading && (
+        <ShareCard
+          streaks={streaks}
+          greenPct={streaks.coreHitRateThisWeek ?? 0}
+          greenDays={streaks.totalGreenDays}
+          totalDays={streaks.totalGreenDays}
+          last7={streaks.last7Days.map(d => ({ color: d.color }))}
+        />
+      )}
       <Link href="/app/report" onClick={() => hapticLight()}
         className="card-interactive flex items-center justify-center gap-2 px-4 py-3.5 w-full"
         style={{ textDecoration: "none" }}>
