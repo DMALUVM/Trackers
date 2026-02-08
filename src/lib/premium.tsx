@@ -38,12 +38,22 @@ export const FREE_LIMITS = {
 
 const LS_KEY = "routines365:premium";
 
+// ── Beta/promo codes that grant premium ──
+// Add codes here. When you're done with beta, just clear this array.
+const VALID_CODES = new Set([
+  "BETA2026",
+  "FOUNDER",
+  "EARLYBIRD",
+]);
+
 interface PremiumState {
   isPremium: boolean;
   /** ISO date when premium was activated (for trial tracking) */
   activatedAt: string | null;
   /** For dev/testing — manual override */
   devOverride: boolean;
+  /** Code used to redeem (if any) */
+  redeemedCode: string | null;
 }
 
 function loadState(): PremiumState {
@@ -51,7 +61,7 @@ function loadState(): PremiumState {
     const raw = localStorage.getItem(LS_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
-  return { isPremium: false, activatedAt: null, devOverride: false };
+  return { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null };
 }
 
 function saveState(state: PremiumState) {
@@ -72,6 +82,10 @@ interface PremiumContextValue {
   deactivate: () => void;
   /** Dev toggle for testing */
   toggleDev: () => void;
+  /** Redeem a promo/beta code. Returns true if valid. */
+  redeemCode: (code: string) => boolean;
+  /** The code used (if any) */
+  redeemedCode: string | null;
 }
 
 const PremiumContext = createContext<PremiumContextValue>({
@@ -80,10 +94,12 @@ const PremiumContext = createContext<PremiumContextValue>({
   activate: () => {},
   deactivate: () => {},
   toggleDev: () => {},
+  redeemCode: () => false,
+  redeemedCode: null,
 });
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PremiumState>({ isPremium: false, activatedAt: null, devOverride: false });
+  const [state, setState] = useState<PremiumState>({ isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null });
 
   useEffect(() => {
     setState(loadState());
@@ -109,13 +125,13 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   };
 
   const activate = () => {
-    const next: PremiumState = { isPremium: true, activatedAt: new Date().toISOString(), devOverride: false };
+    const next: PremiumState = { isPremium: true, activatedAt: new Date().toISOString(), devOverride: false, redeemedCode: state.redeemedCode };
     saveState(next);
     setState(next);
   };
 
   const deactivate = () => {
-    const next: PremiumState = { isPremium: false, activatedAt: null, devOverride: false };
+    const next: PremiumState = { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null };
     saveState(next);
     setState(next);
   };
@@ -126,8 +142,22 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     setState(next);
   };
 
+  const redeemCode = (code: string): boolean => {
+    const normalized = code.trim().toUpperCase();
+    if (!VALID_CODES.has(normalized)) return false;
+    const next: PremiumState = {
+      isPremium: true,
+      activatedAt: new Date().toISOString(),
+      devOverride: false,
+      redeemedCode: normalized,
+    };
+    saveState(next);
+    setState(next);
+    return true;
+  };
+
   return (
-    <PremiumContext.Provider value={{ isPremium, hasFeature, activate, deactivate, toggleDev }}>
+    <PremiumContext.Provider value={{ isPremium, hasFeature, activate, deactivate, toggleDev, redeemCode, redeemedCode: state.redeemedCode }}>
       {children}
     </PremiumContext.Provider>
   );

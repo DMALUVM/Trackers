@@ -39,9 +39,12 @@ const FEATURES = [
 
 export default function PremiumPage() {
   const router = useRouter();
-  const { isPremium, activate, toggleDev } = usePremium();
+  const { isPremium, activate, redeemCode, redeemedCode } = usePremium();
   const [selectedPlan, setSelectedPlan] = useState<"yearly" | "monthly">("yearly");
   const [restoring, setRestoring] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState(false);
+  const [showCodeField, setShowCodeField] = useState(false);
 
   // Already premium
   if (isPremium) {
@@ -52,9 +55,14 @@ export default function PremiumPage() {
           <Crown size={32} style={{ color: "var(--accent-green-text)" }} />
         </div>
         <h1 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>You&apos;re Premium!</h1>
-        <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>All features are unlocked. Thank you for your support.</p>
+        <p className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>All features are unlocked. Thank you for your support.</p>
+        {redeemedCode && (
+          <p className="text-xs mb-4" style={{ color: "var(--text-faint)" }}>
+            Redeemed with code: <strong>{redeemedCode}</strong>
+          </p>
+        )}
         <button type="button" onClick={() => router.back()}
-          className="btn-primary px-6 py-3 rounded-xl text-sm font-bold">
+          className="btn-primary px-6 py-3 rounded-xl text-sm font-bold mt-4">
           Back to app
         </button>
       </div>
@@ -188,6 +196,54 @@ export default function PremiumPage() {
           style={{ color: "var(--text-muted)" }}>
           {restoring ? "Checking..." : "Restore purchase"}
         </button>
+
+        {/* Code redemption */}
+        {!showCodeField ? (
+          <button type="button" onClick={() => setShowCodeField(true)}
+            className="w-full text-center text-xs font-medium py-2"
+            style={{ color: "var(--text-muted)" }}>
+            Have a code?
+          </button>
+        ) : (
+          <div className="space-y-2 animate-fade-in-up">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={codeInput}
+                onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(false); }}
+                placeholder="Enter code"
+                className="flex-1 text-sm font-mono tracking-wider text-center px-3 py-2.5 rounded-xl outline-none"
+                style={{
+                  background: "var(--bg-card)",
+                  border: codeError ? "2px solid var(--accent-red)" : "2px solid var(--border-primary)",
+                  color: "var(--text-primary)",
+                }}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+              <button type="button"
+                onClick={() => {
+                  hapticMedium();
+                  const ok = redeemCode(codeInput);
+                  if (!ok) setCodeError(true);
+                }}
+                disabled={codeInput.length < 3}
+                className="px-4 py-2.5 rounded-xl text-sm font-bold shrink-0"
+                style={{
+                  background: codeInput.length >= 3 ? "var(--accent-green)" : "var(--bg-card-hover)",
+                  color: codeInput.length >= 3 ? "white" : "var(--text-faint)",
+                }}>
+                Redeem
+              </button>
+            </div>
+            {codeError && (
+              <p className="text-xs text-center" style={{ color: "var(--accent-red)" }}>
+                Invalid code. Please check and try again.
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Social proof */}
