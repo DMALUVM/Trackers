@@ -52,10 +52,24 @@ export async function GET(request: Request) {
   const { data: rawAll, error: rawErr, count: rawCount } = await supabase
     .from("reminders")
     .select("*", { count: "exact" });
-  console.log(`[CRON] RAW query: count=${rawCount}, rows=${rawAll?.length ?? 0}, error=${rawErr?.message ?? "none"}`);
+  console.log(`[CRON] RAW reminders: count=${rawCount}, rows=${rawAll?.length ?? 0}, error=${rawErr?.message ?? "none"}`);
   if (rawAll && rawAll.length > 0) {
     console.log(`[CRON] First row:`, JSON.stringify(rawAll[0]));
   }
+
+  // Try another table as control test
+  const { data: riTest, error: riErr } = await supabase
+    .from("routine_items")
+    .select("id", { count: "exact", head: true });
+  const { count: riCount } = await supabase
+    .from("routine_items")
+    .select("*", { count: "exact", head: true });
+  console.log(`[CRON] routine_items count=${riCount}, error=${riErr?.message ?? "none"}`);
+
+  const { count: usCount } = await supabase
+    .from("user_settings")
+    .select("*", { count: "exact", head: true });
+  console.log(`[CRON] user_settings count=${usCount}`);
 
   // Current time in HH:MM (24h) and ISO day-of-week
   // Using America/New_York — adjust to your timezone
