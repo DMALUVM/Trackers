@@ -14,65 +14,30 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized access
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!supabaseServiceKey || !vapidPublicKey || !vapidPrivateKey) {
-    return NextResponse.json({ error: "Missing env vars", details: {
-      hasServiceKey: !!supabaseServiceKey,
-      hasVapidPublic: !!vapidPublicKey,
-      hasVapidPrivate: !!vapidPrivateKey,
-    }}, { status: 500 });
+    return NextResponse.json({ error: "Missing env vars" }, { status: 500 });
   }
 
-  // Dynamically import web-push (avoids build issues if not installed)
   let webpush: typeof import("web-push");
   try {
     webpush = await import("web-push");
   } catch {
-    return NextResponse.json({ error: "web-push package not installed. Run: npm install web-push" }, { status: 500 });
+    return NextResponse.json({ error: "web-push not installed" }, { status: 500 });
   }
 
-  // Configure web-push
   webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
 
-  // Admin client — must explicitly disable auth to bypass RLS with service role key
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${supabaseServiceKey}` } },
   });
 
-  console.log(`[CRON] Supabase URL: ${supabaseUrl?.slice(0, 30)}...`);
-  console.log(`[CRON] Service key starts with: ${supabaseServiceKey?.slice(0, 10)}...`);
-
-  // RAW DIAGNOSTIC: try to read anything from the reminders table with NO filters
-  const { data: rawAll, error: rawErr, count: rawCount } = await supabase
-    .from("reminders")
-    .select("*", { count: "exact" });
-  console.log(`[CRON] RAW reminders: count=${rawCount}, rows=${rawAll?.length ?? 0}, error=${rawErr?.message ?? "none"}`);
-  if (rawAll && rawAll.length > 0) {
-    console.log(`[CRON] First row:`, JSON.stringify(rawAll[0]));
-  }
-
-  // Try another table as control test
-  const { data: riTest, error: riErr } = await supabase
-    .from("routine_items")
-    .select("id", { count: "exact", head: true });
-  const { count: riCount } = await supabase
-    .from("routine_items")
-    .select("*", { count: "exact", head: true });
-  console.log(`[CRON] routine_items count=${riCount}, error=${riErr?.message ?? "none"}`);
-
-  const { count: usCount } = await supabase
-    .from("user_settings")
-    .select("*", { count: "exact", head: true });
-  console.log(`[CRON] user_settings count=${usCount}`);
-
-  // Current time in HH:MM (24h) and ISO day-of-week
-  // Using America/New_York — adjust to your timezone
+  // Current time in HH:MM (24h) and ISO day-of-week in ET
   const now = new Date();
   const formatter = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
@@ -83,24 +48,13 @@ export async function GET(request: Request) {
   const parts = formatter.formatToParts(now);
   const hour = parts.find(p => p.type === "hour")?.value ?? "00";
   const minute = parts.find(p => p.type === "minute")?.value ?? "00";
-  const timeStr = `${hour}:${minute}`; // "06:00" format matching <input type="time">
+  const timeStr = `${hour}:${minute}`;
 
-  // Get ISO day of week in ET
   const etNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  const jsDay = etNow.getDay(); // 0=Sun
-  const isoDay = jsDay === 0 ? 7 : jsDay; // ISO: 1=Mon … 7=Sun
+  const jsDay = etNow.getDay();
+  const isoDay = jsDay === 0 ? 7 : jsDay;
 
-  console.log(`[CRON] Checking reminders for time=${timeStr} day=${isoDay} (UTC=${now.toISOString()})`);
-
-  // First, log ALL reminders for debugging
-  const { data: allReminders, error: debugErr } = await supabase
-    .from("reminders")
-    .select("id, time, days_of_week, enabled")
-    .eq("enabled", true);
-  console.log(`[CRON] All enabled reminders (${allReminders?.length ?? 0}):`, JSON.stringify(allReminders));
-  if (debugErr) console.error(`[CRON] Debug query error:`, debugErr);
-
-  // Find enabled reminders matching this time
+  // Find enabled reminders matching this exact time + day
   const { data: reminders, error: remErr } = await supabase
     .from("reminders")
     .select("id, user_id, routine_item_id, time, days_of_week")
@@ -108,18 +62,15 @@ export async function GET(request: Request) {
     .eq("time", timeStr)
     .contains("days_of_week", [isoDay]);
 
-  console.log(`[CRON] Matched reminders: ${reminders?.length ?? 0}`);
-
   if (remErr) {
-    console.error("Failed to query reminders:", remErr);
     return NextResponse.json({ error: remErr.message }, { status: 500 });
   }
 
   if (!reminders || reminders.length === 0) {
-    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay, allReminders: allReminders?.map(r => ({ time: r.time, days: r.days_of_week })) });
+    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay });
   }
 
-  // Get routine item labels for notification text
+  // Get routine item labels
   const routineItemIds = [...new Set(reminders.map((r: any) => r.routine_item_id))];
   const { data: routineItems } = await supabase
     .from("routine_items")
@@ -131,7 +82,7 @@ export async function GET(request: Request) {
     itemMap.set(ri.id, { label: ri.label, emoji: ri.emoji });
   }
 
-  // Get unique user IDs and fetch push subscriptions
+  // Get push subscriptions
   const userIds = [...new Set(reminders.map((r: any) => r.user_id))];
   const { data: subs, error: subErr } = await supabase
     .from("push_subscriptions")
@@ -139,11 +90,9 @@ export async function GET(request: Request) {
     .in("user_id", userIds);
 
   if (subErr) {
-    console.error("Failed to query push subscriptions:", subErr);
     return NextResponse.json({ error: subErr.message }, { status: 500 });
   }
 
-  // Group subscriptions by user
   const subsByUser = new Map<string, Array<{ endpoint: string; p256dh: string; auth: string }>>();
   for (const s of subs ?? []) {
     const arr = subsByUser.get(s.user_id) ?? [];
@@ -151,12 +100,8 @@ export async function GET(request: Request) {
     subsByUser.set(s.user_id, arr);
   }
 
-  console.log(`[CRON] Found ${subs?.length ?? 0} push subscriptions for ${userIds.length} users`);
-
-  // Send notifications
   let sent = 0;
   let failed = 0;
-  const errors: string[] = [];
 
   for (const reminder of reminders) {
     const userSubs = subsByUser.get(reminder.user_id);
@@ -176,19 +121,12 @@ export async function GET(request: Request) {
     for (const sub of userSubs) {
       try {
         await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         );
         sent++;
-        console.log(`[CRON] ✅ Sent to ${sub.endpoint.slice(0, 60)}...`);
       } catch (err: any) {
         failed++;
-        console.error(`[CRON] ❌ Failed: ${err.statusCode} ${err.body ?? err.message}`);
-        errors.push(`${err.statusCode ?? "?"}: ${err.body ?? err.message ?? "unknown"}`);
-        // Remove expired/invalid subscriptions
         if (err.statusCode === 410 || err.statusCode === 404) {
           await supabase
             .from("push_subscriptions")
@@ -200,12 +138,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({
-    sent,
-    failed,
-    remindersChecked: reminders.length,
-    time: timeStr,
-    day: isoDay,
-    errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
-  });
+  return NextResponse.json({ sent, failed, time: timeStr, day: isoDay });
 }
