@@ -107,10 +107,9 @@ export default function ModulesPage() {
       <SubPageHeader title="Modules" subtitle="Add extra tracking features to your app" backHref="/app/settings" />
 
       <div className="rounded-2xl px-4 py-3" style={{ background: "var(--accent-green-soft)", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
-        <p className="text-sm font-bold mb-1" style={{ color: "var(--accent-green-text)" }}>💡 What are modules?</p>
+        <p className="text-sm font-bold mb-1" style={{ color: "var(--accent-green-text)" }}>💡 Habits check it off. Modules log the details.</p>
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          Modules add extra tracking pages to your app — things like Sleep, Fitness, Hydration, and more.
-          Each one you turn on gets its own tab in the bottom navigation bar.
+          Your habits on the Today screen track <em>whether</em> you did something. Modules give you a dedicated page to log <em>how much</em> — like hours slept, meters rowed, or glasses of water. Each module gets its own tab in the nav bar.
         </p>
       </div>
 

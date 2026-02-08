@@ -44,12 +44,12 @@ function loadCfg(): QuestConfig {
 
 const BUILTIN_META: Record<
   BuiltinQuestId,
-  { emoji: string; label: string; unit: string; activityKey?: ActivityKey; activityUnit?: ActivityUnit }
+  { emoji: string; label: string; unit: string; activityKey?: ActivityKey; activityUnit?: ActivityUnit; metricKey?: string }
 > = {
-  "q-rowing": { emoji: "🚣", label: "Rowing", unit: "m", activityKey: "rowing", activityUnit: "meters" },
-  "q-walk": { emoji: "🚶", label: "Walking", unit: "steps", activityKey: "walking", activityUnit: "steps" },
-  "q-run": { emoji: "🏃", label: "Running", unit: "mi", activityKey: "running", activityUnit: "miles" },
-  "q-recovery": { emoji: "🔥", label: "Recovery", unit: "sessions", activityKey: "sauna", activityUnit: "sessions" },
+  "q-rowing": { emoji: "🚣", label: "Rowing", unit: "m", activityKey: "rowing", activityUnit: "meters", metricKey: "rowing" },
+  "q-walk": { emoji: "🚶", label: "Walking", unit: "steps", activityKey: "walking", activityUnit: "steps", metricKey: "walking" },
+  "q-run": { emoji: "🏃", label: "Running", unit: "mi", activityKey: "running", activityUnit: "miles", metricKey: "running" },
+  "q-recovery": { emoji: "🔥", label: "Recovery", unit: "sessions", activityKey: "sauna", activityUnit: "sessions", metricKey: "sauna" },
   "q-green": { emoji: "🟢", label: "Green days", unit: "days" },
 };
 
@@ -57,11 +57,12 @@ const BUILTIN_META: Record<
 
 interface QuestsCardProps {
   greenDaysThisWeek: number;
-  /** Labels of items the user checked today — used for custom quest streak display */
   checkedLabels?: string[];
+  /** Called when user taps a loggable quest — pass the metric activity key */
+  onLogActivity?: (metricKey: string) => void;
 }
 
-export function QuestsCard({ greenDaysThisWeek, checkedLabels = [] }: QuestsCardProps) {
+export function QuestsCard({ greenDaysThisWeek, checkedLabels = [], onLogActivity }: QuestsCardProps) {
   const [cfg, setCfg] = useState<QuestConfig | null>(null);
 
   useEffect(() => {
@@ -93,7 +94,7 @@ export function QuestsCard({ greenDaysThisWeek, checkedLabels = [] }: QuestsCard
   if (cfg.selected.length === 0 && cfg.custom.length === 0) return null;
 
   // Build quest rows
-  type QuestRow = { id: string; emoji: string; label: string; value: string };
+  type QuestRow = { id: string; emoji: string; label: string; value: string; metricKey?: string };
   const rows: QuestRow[] = [];
 
   // Builtins
@@ -114,11 +115,15 @@ export function QuestsCard({ greenDaysThisWeek, checkedLabels = [] }: QuestsCard
       const formatted = meta.activityUnit === "miles"
         ? wtd.toFixed(1)
         : wtd >= 10000 ? `${(wtd / 1000).toFixed(1)}k` : Math.round(wtd).toLocaleString();
-      rows.push({ id, emoji: meta.emoji, label: meta.label, value: `${formatted} ${meta.unit} this week` });
+      rows.push({
+        id, emoji: meta.emoji, label: meta.label,
+        value: `${formatted} ${meta.unit} this week`,
+        metricKey: meta.metricKey,
+      });
     }
   }
 
-  // Custom quests (keyword-matched streak display)
+  // Custom quests
   for (const cq of cfg.custom) {
     if (rows.length >= cfg.maxShown) break;
     const matched = checkedLabels.some((lbl) =>
@@ -140,18 +145,36 @@ export function QuestsCard({ greenDaysThisWeek, checkedLabels = [] }: QuestsCard
         Quests
       </p>
       <div className="grid gap-2" style={{ gridTemplateColumns: rows.length === 1 ? "1fr" : "1fr 1fr" }}>
-        {rows.map((r) => (
-          <div key={r.id} className="rounded-2xl px-3 py-3"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{r.emoji}</span>
-              <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{r.label}</p>
-            </div>
-            <p className="mt-1 text-xs font-medium tabular-nums" style={{ color: "var(--text-muted)" }}>
-              {r.value}
-            </p>
-          </div>
-        ))}
+        {rows.map((r) => {
+          const tappable = !!r.metricKey && !!onLogActivity;
+          return (
+            <button
+              key={r.id}
+              type="button"
+              className="rounded-2xl px-3 py-3.5 flex flex-col items-center justify-center text-center transition-transform active:scale-[0.97]"
+              style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border-primary)",
+                cursor: tappable ? "pointer" : "default",
+                minHeight: 80,
+              }}
+              onClick={tappable ? () => onLogActivity!(r.metricKey!) : undefined}
+            >
+              <span className="text-2xl leading-none">{r.emoji}</span>
+              <p className="text-sm font-bold mt-1.5 truncate w-full" style={{ color: "var(--text-primary)" }}>
+                {r.label}
+              </p>
+              <p className="text-xs font-semibold tabular-nums mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                {r.value}
+              </p>
+              {tappable && (
+                <p className="text-[10px] mt-1" style={{ color: "var(--accent-green-text)" }}>
+                  Tap to log
+                </p>
+              )}
+            </button>
+          );
+        })}
       </div>
     </section>
   );

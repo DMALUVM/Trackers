@@ -8,7 +8,8 @@ export type MetricKind =
   | { key: "running"; title: string; emoji: string }
   | { key: "walking"; title: string; emoji: string }
   | { key: "sauna"; title: string; emoji: string }
-  | { key: "cold"; title: string; emoji: string };
+  | { key: "cold"; title: string; emoji: string }
+  | { key: "sleep"; title: string; emoji: string };
 
 export function MetricSheet(opts: {
   open: boolean;
@@ -20,6 +21,8 @@ export function MetricSheet(opts: {
     miles?: number;
     steps?: number;
     sessions?: number;
+    hours?: number;
+    score?: number;
   }) => Promise<void>;
 }) {
   const { open, kind, onClose, onSave } = opts;
@@ -28,17 +31,16 @@ export function MetricSheet(opts: {
   const [minutes, setMinutes] = useState("");
   const [miles, setMiles] = useState("");
   const [steps, setSteps] = useState("");
+  const [hours, setHours] = useState("");
+  const [sleepScore, setSleepScore] = useState("");
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setMeters("");
-    setMinutes("");
-    setMiles("");
-    setSteps("");
-    setStatus("");
-    setSaving(false);
+    setMeters(""); setMinutes(""); setMiles(""); setSteps("");
+    setHours(""); setSleepScore("");
+    setStatus(""); setSaving(false);
   }, [open, kind?.key]);
 
   const save = async () => {
@@ -71,6 +73,14 @@ export function MetricSheet(opts: {
       }
       if (kind.key === "sauna" || kind.key === "cold") {
         await onSave({ sessions: 1 });
+        onClose();
+        return;
+      }
+      if (kind.key === "sleep") {
+        const h = hours.trim() ? Number(hours) : NaN;
+        if (!Number.isFinite(h) || h <= 0) { setStatus("Enter hours slept."); setSaving(false); return; }
+        const sc = sleepScore.trim() ? Number(sleepScore) : NaN;
+        await onSave({ hours: h, score: Number.isFinite(sc) && sc > 0 ? sc : undefined });
         onClose();
         return;
       }
@@ -155,6 +165,37 @@ export function MetricSheet(opts: {
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             This will log <strong>+1 session</strong> for today.
           </p>
+        )}
+
+        {kind?.key === "sleep" && (
+          <>
+            <div>
+              <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Hours slept</label>
+              <input
+                className="mt-1.5 w-full rounded-xl px-3 py-3 text-base"
+                style={{ background: "var(--bg-input)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}
+                inputMode="decimal"
+                type="number"
+                step={0.5}
+                placeholder="7.5"
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Sleep score 1–100 (optional)</label>
+              <input
+                className="mt-1.5 w-full rounded-xl px-3 py-3 text-base"
+                style={{ background: "var(--bg-input)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}
+                inputMode="numeric"
+                type="number"
+                placeholder="85"
+                value={sleepScore}
+                onChange={(e) => setSleepScore(e.target.value)}
+              />
+            </div>
+          </>
         )}
 
         <button

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
+import { MoreHorizontal, Zap, Trophy } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
 import {
@@ -74,7 +74,6 @@ export default function TodayPage() {
   const [items, setItems] = useState(routine.items);
   const [snoozedUntil, setSnoozedUntil] = useState(routine.snoozedUntil);
   const [recentlyDoneId, setRecentlyDoneId] = useState<string | null>(null);
-  const [showOptional, setShowOptional] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(false);
   const [metricOpen, setMetricOpen] = useState(false);
   const [metricKind, setMetricKind] = useState<MetricKind | null>(null);
@@ -450,7 +449,7 @@ export default function TodayPage() {
               ? `${streaks.currentStreak} days and counting. You're built different.`
               : streaks.currentStreak >= 3
                 ? `${streaks.currentStreak}-day streak! The momentum is real.`
-                : optionalItems.length > 0 && !showOptional
+                : optionalItems.length > 0 && optionalDone < optionalItems.length
                   ? "All core done. Check off some bonus habits?"
                   : "All core habits done. You earned this."
             }
@@ -463,6 +462,12 @@ export default function TodayPage() {
         <QuestsCard
           greenDaysThisWeek={streaks.greenDaysThisWeek}
           checkedLabels={items.filter((i) => i.done).map((i) => i.label)}
+          onLogActivity={(metricKey) => {
+            const act = METRIC_ACTIVITIES[metricKey];
+            if (!act) return;
+            setMetricKind({ key: act.key, title: act.title, emoji: act.emoji } as MetricKind);
+            setMetricOpen(true);
+          }}
         />
       )}
 
@@ -498,47 +503,38 @@ export default function TodayPage() {
         </div>
       </section>
 
-      {/* ─── OPTIONAL HABITS ─── */}
+      {/* ─── BONUS HABITS ─── */}
       {optionalItems.length > 0 && (
         <section>
-          <button type="button" className="flex items-center justify-between w-full mb-3"
-            onClick={() => { setShowOptional((v) => !v); hapticLight(); }}>
+          <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>
               Bonus
             </p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs tabular-nums font-semibold" style={{ color: "var(--text-faint)" }}>
-                {optionalDone}/{optionalItems.length}
-              </span>
-              {showOptional
-                ? <ChevronUp size={14} style={{ color: "var(--text-faint)" }} />
-                : <ChevronDown size={14} style={{ color: "var(--text-faint)" }} />
-              }
-            </div>
-          </button>
+            <span className="text-xs tabular-nums font-semibold" style={{ color: "var(--text-faint)" }}>
+              {optionalDone}/{optionalItems.length}
+            </span>
+          </div>
 
-          {showOptional && (
-            <div className="space-y-2 stagger-children">
-              {optionalItems.map((item) => (
-                <RoutineCheckItem
-                  key={item.id}
-                  id={item.id}
-                  label={item.label}
-                  emoji={item.emoji}
-                  isCore={false}
-                  done={item.done}
-                  justCompleted={recentlyDoneId === item.id}
-                  hasMetric={!!labelToMetricKey(item.label)}
-                  hasReminder={reminderMap.has(item.id)}
-                  onToggle={item.done ? toggleItem : markDone}
-                  onSkip={skipItem}
-                  onLogMetric={openMetric}
-                  onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
-                  compact
-                />
-              ))}
-            </div>
-          )}
+          <div className="space-y-2 stagger-children">
+            {optionalItems.map((item) => (
+              <RoutineCheckItem
+                key={item.id}
+                id={item.id}
+                label={item.label}
+                emoji={item.emoji}
+                isCore={false}
+                done={item.done}
+                justCompleted={recentlyDoneId === item.id}
+                hasMetric={!!labelToMetricKey(item.label)}
+                hasReminder={reminderMap.has(item.id)}
+                onToggle={item.done ? toggleItem : markDone}
+                onSkip={skipItem}
+                onLogMetric={openMetric}
+                onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
+                compact
+              />
+            ))}
+          </div>
         </section>
       )}
 
@@ -610,6 +606,11 @@ export default function TodayPage() {
           }
           if ((metricKind.key === "sauna" || metricKind.key === "cold") && p.sessions) {
             await addActivityLog({ dateKey, activityKey: metricKind.key, value: p.sessions, unit: "sessions" });
+            return;
+          }
+          if (metricKind.key === "sleep" && p.hours) {
+            await addActivityLog({ dateKey, activityKey: "sleep_hours", value: p.hours, unit: "hours" });
+            if (p.score) await addActivityLog({ dateKey, activityKey: "sleep_score", value: p.score, unit: "score" });
           }
         }}
       />
