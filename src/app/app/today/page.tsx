@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ChevronDown, ChevronUp, MoreHorizontal, Settings, Zap, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, MoreHorizontal, Zap, Trophy } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks, usePullToRefresh } from "@/lib/hooks";
 import {
@@ -344,12 +344,6 @@ export default function TodayPage() {
             style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
             aria-label="More options">
             <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
-          </button>
-          <button type="button" onClick={() => { hapticLight(); router.push("/app/settings"); }}
-            className="flex items-center justify-center rounded-full transition-colors"
-            style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
-            aria-label="Settings">
-            <Settings size={18} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
       </header>
