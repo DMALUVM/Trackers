@@ -33,7 +33,7 @@ export function SubPageHeader({
   return (
     <header className="flex items-center gap-3 pt-1">
       <button type="button" onClick={goBack}
-        className="shrink-0 flex items-center justify-center rounded-full transition-colors active:scale-95"
+        className="tap-btn shrink-0 flex items-center justify-center rounded-full"
         style={{ width: 36, height: 36, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
         aria-label="Go back">
         <ChevronLeft size={18} style={{ color: "var(--text-muted)" }} />

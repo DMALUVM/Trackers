@@ -63,8 +63,10 @@ export function Toast({ state, message, queuedCount = 0, className = "" }: Toast
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg transition-all duration-300 ${className}`}
+      className={`fixed z-50 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold shadow-lg transition-all duration-300 ${className}`}
       style={{
+        top: "max(env(safe-area-inset-top, 16px), 16px)",
+        right: "16px",
         background: config.bg,
         color: config.color,
         opacity: visible ? 1 : 0,

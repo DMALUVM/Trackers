@@ -190,9 +190,10 @@ html, body { overscroll-behavior-y: none; }
   100% { background-position: 200% 0; }
 }
 .animate-shimmer {
-  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 37%, var(--bg-card) 63%);
+  background: linear-gradient(90deg, var(--bg-card-hover) 25%, color-mix(in srgb, var(--bg-card-hover) 50%, var(--text-faint) 8%) 37%, var(--bg-card-hover) 63%);
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 8px;
 }
 
 @keyframes score-pop {
@@ -264,15 +265,73 @@ html, body { overscroll-behavior-y: none; }
 /* Stagger children entrance */
 .stagger-children > * { animation: fade-in-up 0.3s ease-out both; }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 240ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 280ms; }
-.stagger-children > *:nth-child(9) { animation-delay: 320ms; }
-.stagger-children > *:nth-child(10) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 30ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 90ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 210ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 270ms; }
+.stagger-children > *:nth-child(11) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(12) { animation-delay: 330ms; }
+.stagger-children > *:nth-child(13) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(14) { animation-delay: 390ms; }
+.stagger-children > *:nth-child(15) { animation-delay: 420ms; }
+
+/* Page section stagger — slower, for top-level sections */
+.stagger-sections > * { animation: fade-in-up 0.35s ease-out both; }
+.stagger-sections > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-sections > *:nth-child(2) { animation-delay: 80ms; }
+.stagger-sections > *:nth-child(3) { animation-delay: 160ms; }
+.stagger-sections > *:nth-child(4) { animation-delay: 240ms; }
+.stagger-sections > *:nth-child(5) { animation-delay: 320ms; }
+.stagger-sections > *:nth-child(6) { animation-delay: 400ms; }
+.stagger-sections > *:nth-child(7) { animation-delay: 480ms; }
+.stagger-sections > *:nth-child(8) { animation-delay: 560ms; }
+
+/* Calendar month slide */
+@keyframes slide-in-right {
+  from { transform: translateX(40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-40px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-right { animation: slide-in-right 0.25s ease-out both; }
+.animate-slide-in-left { animation: slide-in-left 0.25s ease-out both; }
+
+/* Checkmark SVG draw */
+@keyframes check-draw {
+  from { stroke-dashoffset: 24; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-check-draw { animation: check-draw 0.25s ease-out both; }
+
+/* Circle fill pop */
+@keyframes circle-fill {
+  0% { transform: scale(0.7); opacity: 0; }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-circle-fill { animation: circle-fill 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Celebration entrance */
+@keyframes celebrate-in {
+  0% { transform: scale(0.9) translateY(10px); opacity: 0; }
+  50% { transform: scale(1.02) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+.animate-celebrate-in { animation: celebrate-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* Subtle breathing glow for active streaks */
+@keyframes breathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.animate-breathe { animation: breathe 3s ease-in-out infinite; }
 
 /* ============================================================
    COMPONENT CLASSES (theme-aware)
@@ -334,6 +393,10 @@ html, body { overscroll-behavior-y: none; }
 /* Check row interaction */
 .check-row { transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease; }
 .check-row:active { transform: scale(0.98) !important; }
+
+/* Tappable round button — used on icon buttons like settings gear, nav arrows */
+.tap-btn { transition: transform 0.1s ease, background 0.15s ease; }
+.tap-btn:active { transform: scale(0.88); opacity: 0.7; }
 
 /* Page-level fade-in for smoother navigation */
 main > * { animation: fade-in-up 0.25s ease-out both; }

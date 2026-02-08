@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback } from "react";
-import { Check, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { hapticMedium, hapticSuccess } from "@/lib/haptics";
 
 export interface RoutineCheckItemProps {
@@ -119,27 +119,35 @@ export function RoutineCheckItem({
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}
       >
         {/* Checkbox circle */}
-        <div className="shrink-0 flex items-center justify-center transition-all duration-200"
+        <div className={`shrink-0 flex items-center justify-center transition-all duration-200 ${done && justCompleted ? "animate-circle-fill" : ""}`}
           style={{
             width: 32, height: 32, borderRadius: "50%",
             background: done ? "var(--accent-green)" : "transparent",
             border: done ? "none" : "2px solid var(--text-faint)",
-            transform: justCompleted ? "scale(1.15)" : "scale(1)",
+            transform: justCompleted && done ? "scale(1.15)" : "scale(1)",
           }}>
-          {done && <Check size={18} strokeWidth={3} style={{ color: "var(--text-inverse)" }} />}
+          {done && (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              className={justCompleted ? "animate-check-draw" : ""}>
+              <path d="M4 12.5l6 6L20 6" stroke="var(--text-inverse)" strokeWidth="3"
+                strokeLinecap="round" strokeLinejoin="round"
+                strokeDasharray="24" strokeDashoffset="0" />
+            </svg>
+          )}
         </div>
 
         {/* Emoji */}
         {emoji && <span className="text-xl shrink-0 select-none">{emoji}</span>}
 
         {/* Label */}
-        <span className="flex-1 min-w-0 truncate font-medium transition-all duration-200"
+        <span className="flex-1 min-w-0 truncate font-medium"
           style={{
             fontSize: compact ? "1.0625rem" : "1.125rem",
             color: done ? "var(--accent-green-text)" : "var(--text-primary)",
             textDecoration: done ? "line-through" : "none",
             textDecorationColor: done ? "var(--accent-green)" : undefined,
             opacity: done ? 0.8 : 1,
+            transition: "color 0.25s ease, opacity 0.25s ease",
           }}>
           {label}
         </span>

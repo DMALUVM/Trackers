@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 
 const sections = [
@@ -27,11 +27,17 @@ const sections = [
       { href: "/app/settings/backup", label: "Backup", desc: "Export your data", icon: Download },
     ],
   },
+  {
+    title: "Help",
+    items: [
+      { href: "/app/settings/how-it-works", label: "How it works", desc: "Core vs bonus, colors, streaks, and more", icon: HelpCircle },
+    ],
+  },
 ];
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 stagger-sections">
       <header>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Settings</h1>
       </header>
@@ -44,7 +50,7 @@ export default function SettingsPage() {
           <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-primary)" }}>
             {section.items.map(({ href, label, desc, icon: Icon }, idx) => (
               <Link key={href} href={href}
-                className="flex items-center gap-4 px-4 py-3.5 transition-colors"
+                className="flex items-center gap-4 px-4 py-3.5 transition-all active:scale-[0.98] active:opacity-80"
                 style={{
                   background: "var(--bg-card)",
                   borderTop: idx > 0 ? "1px solid var(--border-secondary)" : undefined,

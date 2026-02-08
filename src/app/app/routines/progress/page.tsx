@@ -45,6 +45,8 @@ export default function RoutinesProgressPage() {
   const dateKey = useMemo(() => toDateKey(now), [now]);
 
   const [month, setMonth] = useState<Date>(now);
+  const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
+  const [slideKey, setSlideKey] = useState(0);
   const [routineItems, setRoutineItems] = useState<RoutineItemRow[]>([]);
   const [logs, setLogs] = useState<DailyLogRow[]>([]);
   const [checks, setChecks] = useState<Array<{ date: string; routine_item_id: string; done: boolean }>>([]);
@@ -133,7 +135,7 @@ export default function RoutinesProgressPage() {
   const fmtDec = (n: number) => n.toFixed(1);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 stagger-sections">
       <header>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Progress</h1>
         <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Tap any day to edit.</p>
@@ -143,13 +145,13 @@ export default function RoutinesProgressPage() {
       {/* ── CALENDAR ── */}
       <section className="card p-4">
         <div className="flex items-center justify-between mb-4">
-          <button type="button" className="flex items-center justify-center rounded-full" style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}
-            onClick={() => { hapticLight(); setMonth((m) => prevMonth(m)); }}>
+          <button type="button" className="flex items-center justify-center rounded-full active:scale-90 transition-transform" style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}
+            onClick={() => { hapticLight(); setSlideDir("left"); setSlideKey(k => k + 1); setMonth((m) => prevMonth(m)); }}>
             <ChevronLeft size={18} style={{ color: "var(--text-muted)" }} />
           </button>
           <h2 className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{monthLabel(month)}</h2>
-          <button type="button" className="flex items-center justify-center rounded-full" style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}
-            onClick={() => { hapticLight(); setMonth((m) => nextMonth(m)); }}>
+          <button type="button" className="flex items-center justify-center rounded-full active:scale-90 transition-transform" style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}
+            onClick={() => { hapticLight(); setSlideDir("right"); setSlideKey(k => k + 1); setMonth((m) => nextMonth(m)); }}>
             <ChevronRight size={18} style={{ color: "var(--text-muted)" }} />
           </button>
         </div>
@@ -162,7 +164,7 @@ export default function RoutinesProgressPage() {
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-y-1.5">
+        <div key={slideKey} className={`grid grid-cols-7 gap-y-1.5 ${slideDir === "left" ? "animate-slide-in-left" : slideDir === "right" ? "animate-slide-in-right" : ""}`}>
           {days.map((d) => {
             const dk = format(d, "yyyy-MM-dd");
             const inMonth = isSameMonth(d, month);
@@ -209,7 +211,7 @@ export default function RoutinesProgressPage() {
               <Award size={14} /> Trophies
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 stagger-children">
             <Stat label="Current" value={`${streaks.currentStreak}`} sub="consecutive green days" />
             <Stat label="Best" value={`${streaks.bestStreak}`} sub="all-time record" />
             <Stat label="Core hit-rate" value={streaks.coreHitRateThisWeek === null ? "—" : `${streaks.coreHitRateThisWeek}%`} sub="this week" />

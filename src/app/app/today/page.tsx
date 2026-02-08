@@ -335,7 +335,7 @@ export default function TodayPage() {
   }
 
   return (
-    <div className="space-y-5 pb-2">
+    <div className="space-y-5 pb-2 stagger-sections">
       <ConfettiBurst trigger={confettiTrigger} />
       <Toast state={saveState} queuedCount={syncQueueCount} />
       <MilestoneModal milestone={milestoneToShow} onDismiss={() => setMilestoneToShow(null)} />
@@ -357,14 +357,14 @@ export default function TodayPage() {
           {/* Trophies shortcut (appears after first milestone earned) */}
           {!streaks.loading && (streaks.currentStreak >= 3 || streaks.totalGreenDays >= 1) && (
             <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
-              className="flex items-center justify-center rounded-full transition-colors"
+              className="tap-btn flex items-center justify-center rounded-full"
               style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
               aria-label="Trophies">
               <Trophy size={17} style={{ color: "var(--accent-green-text)" }} />
             </button>
           )}
           <button type="button" onClick={() => setMenuOpen(true)}
-            className="flex items-center justify-center rounded-full transition-colors"
+            className="tap-btn flex items-center justify-center rounded-full"
             style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
             aria-label="More options">
             <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
@@ -441,7 +441,7 @@ export default function TodayPage() {
 
       {/* ─── GREEN DAY CELEBRATION ─── */}
       {allCoreDone && (
-        <section className="rounded-2xl p-5 text-center animate-fade-in-up"
+        <section className="rounded-2xl p-5 text-center animate-celebrate-in"
           style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
           <div className="text-3xl mb-2">🎉</div>
           <p className="text-base font-bold" style={{ color: "var(--accent-green-text)" }}>Green Day!</p>

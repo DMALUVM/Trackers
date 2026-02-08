@@ -77,7 +77,7 @@ export function AppNav() {
           const active = pathname === href || (href !== "/app/today" && pathname?.startsWith(href));
           return (
             <Link key={href} href={href} prefetch
-              className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 transition-all duration-150"
+              className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 transition-all duration-150 active:scale-90"
               style={{ color: active ? "var(--accent-green)" : "var(--text-muted)" }}
               aria-label={label}
               aria-current={active ? "page" : undefined}
