@@ -1,16 +1,42 @@
 "use client";
 
-import { Heart, Footprints, Moon, Flame, Dumbbell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2 } from "lucide-react";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
 import { hapticLight } from "@/lib/haptics";
+
+const LS_KEY = "routines365:healthcard:metrics";
+type MetricId = "steps" | "sleep" | "calories" | "workouts";
+const ALL_METRICS: { id: MetricId; label: string }[] = [
+  { id: "steps", label: "Steps" },
+  { id: "sleep", label: "Sleep" },
+  { id: "calories", label: "Calories" },
+  { id: "workouts", label: "Workouts" },
+];
+const DEFAULT_METRICS: MetricId[] = ["steps", "sleep", "calories", "workouts"];
+
+function getVisibleMetrics(): MetricId[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as MetricId[];
+  } catch {}
+  return DEFAULT_METRICS;
+}
+function saveVisibleMetrics(ids: MetricId[]) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(ids)); } catch {}
+}
 
 /**
  * Compact Apple Health summary card shown on Today page.
  * Only renders when running in native app with HealthKit authorized.
- * Shows: steps, sleep, calories, workouts.
+ * Shows: steps, sleep, calories, workouts — user customizable.
  */
 export function HealthCard() {
   const { available, authorized, requestAuth, steps, sleep, summary, loading } = useHealthKit();
+  const [visible, setVisible] = useState<MetricId[]>(DEFAULT_METRICS);
+  const [showSettings, setShowSettings] = useState(false);
+
+  useEffect(() => { setVisible(getVisibleMetrics()); }, []);
 
   // Don't show anything on web
   if (!available) return null;
@@ -62,84 +88,83 @@ export function HealthCard() {
   const workoutCount = summary?.workouts?.length ?? 0;
   const calories = summary?.activeCalories ?? 0;
 
+  const toggleMetric = (id: MetricId) => {
+    hapticLight();
+    setVisible((prev) => {
+      const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
+      if (next.length === 0) return prev; // must have at least 1
+      saveVisibleMetrics(next);
+      return next;
+    });
+  };
+
+  const metricData = {
+    steps: { icon: Footprints, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: steps >= 1000 ? `${(steps / 1000).toFixed(1)}k` : String(steps), sub: "steps" },
+    sleep: { icon: Moon, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: sleepHours ?? "—", sub: sleepHours ? "hrs sleep" : "no data" },
+    calories: { icon: Flame, color: "#f97316", bg: "rgba(249,115,22,0.1)", value: calories > 0 ? String(calories) : "—", sub: calories > 0 ? "cal burned" : "no data" },
+    workouts: { icon: Dumbbell, color: "#10b981", bg: "rgba(16,185,129,0.1)", value: workoutCount > 0 ? String(workoutCount) : "—", sub: workoutCount === 1 ? "workout" : workoutCount > 1 ? "workouts" : "none today" },
+  };
+
+  const cols = visible.length <= 2 ? "grid-cols-2" : "grid-cols-2";
+
   return (
     <div className="rounded-2xl p-4"
       style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
       {/* Header */}
-      <div className="flex items-center gap-2 mb-3">
-        <Heart size={14} style={{ color: "#ef4444" }} />
-        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-          Apple Health
-        </span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Heart size={14} style={{ color: "#ef4444" }} />
+          <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
+            Apple Health
+          </span>
+        </div>
+        <button type="button" onClick={() => { hapticLight(); setShowSettings(!showSettings); }}
+          className="rounded-full p-1.5" style={{ background: showSettings ? "var(--bg-card-hover)" : "transparent" }}>
+          <Settings2 size={14} style={{ color: "var(--text-faint)" }} />
+        </button>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Steps */}
-        <div className="flex items-center gap-2.5">
-          <div className="shrink-0 flex items-center justify-center rounded-lg"
-            style={{ width: 36, height: 36, background: "rgba(59,130,246,0.1)" }}>
-            <Footprints size={18} style={{ color: "#3b82f6" }} />
-          </div>
-          <div>
-            <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>
-              {steps >= 1000 ? `${(steps / 1000).toFixed(1)}k` : steps}
-            </p>
-            <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>steps</p>
-          </div>
+      {/* Customization toggles */}
+      {showSettings && (
+        <div className="flex flex-wrap gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border-primary)" }}>
+          {ALL_METRICS.map(({ id, label }) => (
+            <button key={id} type="button" onClick={() => toggleMetric(id)}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+              style={{
+                background: visible.includes(id) ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
+                color: visible.includes(id) ? "var(--accent-green-text)" : "var(--text-faint)",
+                border: visible.includes(id) ? "1px solid var(--accent-green)" : "1px solid transparent",
+              }}>
+              {label}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* Sleep */}
-        <div className="flex items-center gap-2.5">
-          <div className="shrink-0 flex items-center justify-center rounded-lg"
-            style={{ width: 36, height: 36, background: "rgba(139,92,246,0.1)" }}>
-            <Moon size={18} style={{ color: "#8b5cf6" }} />
-          </div>
-          <div>
-            <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>
-              {sleepHours ?? "—"}
-            </p>
-            <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>
-              {sleepHours ? "hrs sleep" : "no data"}
-            </p>
-          </div>
-        </div>
-
-        {/* Calories */}
-        <div className="flex items-center gap-2.5">
-          <div className="shrink-0 flex items-center justify-center rounded-lg"
-            style={{ width: 36, height: 36, background: "rgba(249,115,22,0.1)" }}>
-            <Flame size={18} style={{ color: "#f97316" }} />
-          </div>
-          <div>
-            <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>
-              {calories > 0 ? calories : "—"}
-            </p>
-            <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>
-              {calories > 0 ? "cal burned" : "no data"}
-            </p>
-          </div>
-        </div>
-
-        {/* Workouts */}
-        <div className="flex items-center gap-2.5">
-          <div className="shrink-0 flex items-center justify-center rounded-lg"
-            style={{ width: 36, height: 36, background: "rgba(16,185,129,0.1)" }}>
-            <Dumbbell size={18} style={{ color: "#10b981" }} />
-          </div>
-          <div>
-            <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>
-              {workoutCount > 0 ? workoutCount : "—"}
-            </p>
-            <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>
-              {workoutCount === 1 ? "workout" : workoutCount > 1 ? "workouts" : "none today"}
-            </p>
-          </div>
-        </div>
+      {/* Stats grid — only show visible metrics */}
+      <div className={`grid ${cols} gap-3`}>
+        {visible.map((id) => {
+          const m = metricData[id];
+          const Icon = m.icon;
+          return (
+            <div key={id} className="flex items-center gap-2.5">
+              <div className="shrink-0 flex items-center justify-center rounded-lg"
+                style={{ width: 36, height: 36, background: m.bg }}>
+                <Icon size={18} style={{ color: m.color }} />
+              </div>
+              <div>
+                <p className="text-lg font-bold leading-none" style={{ color: "var(--text-primary)" }}>
+                  {m.value}
+                </p>
+                <p className="text-[10px] font-medium" style={{ color: "var(--text-faint)" }}>{m.sub}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Workout details */}
-      {summary?.workouts && summary.workouts.length > 0 && (
+      {visible.includes("workouts") && summary?.workouts && summary.workouts.length > 0 && (
         <div className="mt-3 pt-3 space-y-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
           {summary.workouts.map((w, i) => (
             <div key={i} className="flex items-center justify-between text-xs">
