@@ -59,7 +59,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`${interTight.variable} antialiased`}
-        style={{ fontFamily: "var(--font-inter-tight), system-ui, sans-serif" }}>
+        style={{ fontFamily: "var(--font-inter-tight), system-ui, sans-serif" }}
+        suppressHydrationWarning>
         {/* Inline loading screen — shows INSTANTLY before JS hydrates.
             Removed by client JS once the app mounts. */}
         <div id="startup-loader" style={{

@@ -244,7 +244,7 @@ export default function OnboardingPage() {
       </button>
 
       <p className="text-center text-sm pb-4" style={{ color: "var(--text-faint)" }}>
-        You can change everything anytime in Settings.
+        You can change everything anytime in Settings → Routines. Not sure about something? Check Settings → How it works.
       </p>
     </div>
   );

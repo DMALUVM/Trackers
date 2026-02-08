@@ -8,7 +8,7 @@
 // - Stale-while-revalidate for everything else
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v4";
+const CACHE_NAME = "routines365-v5";
 
 // ---------------------------------------------------------------------------
 // Push Notifications
@@ -105,10 +105,11 @@ self.addEventListener("fetch", (event) => {
   // Skip auth-related requests
   if (url.pathname.includes("/auth/")) return;
 
-  // Static assets (images, fonts, CSS, JS) — cache-first
+  // Immutable static assets (images, fonts, CSS) — cache-first
+  // NOTE: JS is NOT here — JS chunks must be network-first to prevent
+  // hydration crashes when deployments change chunk hashes.
   if (
-    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|css|js)$/) ||
-    url.pathname.startsWith("/_next/static/")
+    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|css)$/)
   ) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -121,6 +122,27 @@ self.addEventListener("fetch", (event) => {
           return response;
         });
       })
+    );
+    return;
+  }
+
+  // JS chunks and _next/static — network-first with cache fallback
+  // This prevents the #1 PWA crash: stale JS chunks from old deployments
+  // trying to manipulate DOM rendered by new HTML.
+  if (
+    url.pathname.match(/\.js$/) ||
+    url.pathname.startsWith("/_next/static/")
+  ) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((c) => c || Response.error()))
     );
     return;
   }
