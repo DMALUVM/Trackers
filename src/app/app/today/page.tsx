@@ -228,14 +228,19 @@ export default function TodayPage() {
       return next;
     });
     hapticHeavy();
-    setConfettiTrigger(true);
+    const celebratedKey = `routines365:celebrated:${dateKey}`;
+    if (!localStorage.getItem(celebratedKey)) {
+      setConfettiTrigger(true);
+      setTimeout(() => setConfettiTrigger(false), 100);
+      try { localStorage.setItem(celebratedKey, "1"); } catch { /* ignore */ }
+    }
     setJustCompletedAll(true);
-    setTimeout(() => setConfettiTrigger(false), 100);
     debouncedPersist(dayMode);
-  }, [dayMode, debouncedPersist, routine.itemsRef]);
+  }, [dayMode, debouncedPersist, routine.itemsRef, dateKey]);
 
   // Confetti on natural all-core completion — only when user completes cores
   // during this session, NOT on page load when they're already done.
+  // Also only celebrate ONCE per calendar day.
   useEffect(() => {
     // First time we see real data: capture initial state, don't celebrate
     if (prevAllCoreDone.current === null) {
@@ -245,13 +250,17 @@ export default function TodayPage() {
     }
     // Only fire when allCoreDone transitions from false → true
     if (allCoreDone && !prevAllCoreDone.current && coreDone > 0 && !justCompletedAll) {
-      hapticHeavy();
-      setConfettiTrigger(true);
-      setTimeout(() => setConfettiTrigger(false), 100);
+      const celebratedKey = `routines365:celebrated:${dateKey}`;
+      if (!localStorage.getItem(celebratedKey)) {
+        hapticHeavy();
+        setConfettiTrigger(true);
+        setTimeout(() => setConfettiTrigger(false), 100);
+        try { localStorage.setItem(celebratedKey, "1"); } catch { /* ignore */ }
+      }
     }
     prevAllCoreDone.current = allCoreDone;
     if (!allCoreDone) setJustCompletedAll(false);
-  }, [allCoreDone, coreDone, justCompletedAll]);
+  }, [allCoreDone, coreDone, justCompletedAll, dateKey]);
 
   const skipItem = useCallback((id: string) => {
     setSnoozedUntil((prev) => ({ ...prev, [id]: Date.now() + SNOOZE_DURATION_MS }));

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarCheck2, Dumbbell, Brain, TrendingUp,
+  Dumbbell, Brain, TrendingUp,
   Footprints, Home, Flame, Heart, Moon, Pill, Droplets, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -25,10 +25,9 @@ const moduleItems = [
   { key: "neuro", href: "/app/neuro", label: "Neuro", Icon: Brain },
 ] as const;
 
-// These 3 are always visible — never removed
+// These 2 are always visible — never removed
 const fixedItems = [
   { key: "today", href: "/app/today", label: "Today", Icon: Home },
-  { key: "routines", href: "/app/routines", label: "Routines", Icon: CalendarCheck2 },
   { key: "progress", href: "/app/routines/progress", label: "Progress", Icon: TrendingUp },
 ] as const;
 
@@ -55,8 +54,8 @@ export function AppNav() {
 
   const items = useMemo(() => {
     const enabledSet = new Set(enabled ?? []);
-    // Pick up to 2 enabled modules to fill remaining slots
-    const userModules = moduleItems.filter((i) => enabledSet.has(i.key)).slice(0, 2);
+    // Pick up to 3 enabled modules to fill remaining slots
+    const userModules = moduleItems.filter((i) => enabledSet.has(i.key)).slice(0, 3);
     return [...fixedItems, ...userModules];
   }, [enabled]);
 
@@ -67,7 +66,8 @@ export function AppNav() {
   const colClass =
     items.length === 5 ? "grid-cols-5" :
     items.length === 4 ? "grid-cols-4" :
-    "grid-cols-3";
+    items.length === 3 ? "grid-cols-3" :
+    "grid-cols-2";
 
   return (
     <nav className="sticky bottom-0 nav-bar safe-bottom">

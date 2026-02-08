@@ -9,6 +9,8 @@ import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
 import { useStreaks } from "@/lib/hooks";
+import { labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
+import type { ActivityKey, ActivityUnit } from "@/lib/activity";
 import { useMultiActivityTotals, type MultiTotalsEntry } from "@/lib/hooks/useActivityTotals";
 import { SkeletonCard } from "@/app/app/_components/ui";
 import { toDateKey } from "@/lib/supabaseData";
@@ -38,13 +40,6 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-// Activity totals config
-const ACTIVITY_ENTRIES: MultiTotalsEntry[] = [
-  { activityKey: "rowing", unit: "meters", label: "Rowing" },
-  { activityKey: "walking", unit: "steps", label: "Walking" },
-  { activityKey: "running", unit: "miles", label: "Running" },
-];
-
 export default function RoutinesProgressPage() {
   const now = useMemo(() => new Date(), []);
   const dateKey = useMemo(() => toDateKey(now), [now]);
@@ -58,7 +53,28 @@ export default function RoutinesProgressPage() {
   const [accountStartKey, setAccountStartKey] = useState<string | null>(null);
 
   const streaks = useStreaks(dateKey);
-  const { data: actTotals, loading: actLoading } = useMultiActivityTotals(ACTIVITY_ENTRIES);
+
+  // Dynamically detect which activities to show totals for based on user's routine items
+  const activityEntries: MultiTotalsEntry[] = useMemo(() => {
+    const seen = new Set<string>();
+    const entries: MultiTotalsEntry[] = [];
+    for (const ri of routineItems) {
+      const metricKey = labelToMetricKey(ri.label);
+      if (!metricKey || seen.has(metricKey)) continue;
+      seen.add(metricKey);
+      const act = METRIC_ACTIVITIES[metricKey];
+      if (!act) continue;
+      const primaryField = act.fields[0];
+      entries.push({
+        activityKey: act.key as ActivityKey,
+        unit: primaryField.unit as ActivityUnit,
+        label: act.title,
+      });
+    }
+    return entries;
+  }, [routineItems]);
+
+  const { data: actTotals, loading: actLoading } = useMultiActivityTotals(activityEntries);
 
   const days = useMemo(() => monthGridDates(month), [month]);
   const fromKey = useMemo(() => format(days[0], "yyyy-MM-dd"), [days]);
@@ -108,9 +124,7 @@ export default function RoutinesProgressPage() {
   }, [checks]);
 
   const fmt = (n: number) => n >= 10000 ? `${(n / 1000).toFixed(1)}k` : Math.round(n).toLocaleString();
-  const rowing = actTotals["rowing:meters"] ?? { wtd: 0, mtd: 0, ytd: 0, all: 0 };
-  const walking = actTotals["walking:steps"] ?? { wtd: 0, mtd: 0, ytd: 0, all: 0 };
-  const running = actTotals["running:miles"] ?? { wtd: 0, mtd: 0, ytd: 0, all: 0 };
+  const fmtDec = (n: number) => n.toFixed(1);
 
   return (
     <div className="space-y-6">
@@ -200,31 +214,39 @@ export default function RoutinesProgressPage() {
       )}
 
       {/* ── ACTIVITY TOTALS ── */}
-      {actLoading ? <SkeletonCard lines={3} /> : (
-        <section>
-          <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-muted)" }}>Activity</p>
-          <div className="space-y-3">
-            {([
-              { emoji: "🚣", name: "Rowing", unit: "meters", data: rowing, fmtFn: fmt },
-              { emoji: "🚶", name: "Walking", unit: "steps", data: walking, fmtFn: fmt },
-              { emoji: "🏃", name: "Running", unit: "miles", data: running, fmtFn: (n: number) => n.toFixed(1) },
-            ] as const).map(({ emoji, name, unit, data: d, fmtFn }) => (
-              <div key={name} className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{emoji} {name} <span style={{ color: "var(--text-faint)" }}>({unit})</span></p>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["WTD", "MTD", "YTD", "All"] as const).map((period, i) => (
-                    <div key={period} className="text-center">
-                      <p className="text-[10px] font-bold tracking-wider" style={{ color: "var(--text-faint)" }}>{period}</p>
-                      <p className="mt-0.5 text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
-                        {fmtFn([d.wtd, d.mtd, d.ytd, d.all][i])}
-                      </p>
+      {activityEntries.length > 0 && (
+        actLoading ? <SkeletonCard lines={3} /> : (
+          <section>
+            <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-muted)" }}>Activity</p>
+            <div className="space-y-3">
+              {activityEntries.map((entry) => {
+                const key = `${entry.activityKey}:${entry.unit}`;
+                const d = actTotals[key] ?? { wtd: 0, mtd: 0, ytd: 0, all: 0 };
+                const act = METRIC_ACTIVITIES[entry.activityKey];
+                const emoji = act?.emoji ?? "📊";
+                const useDec = entry.unit === "miles" || entry.unit === "hours";
+                const fmtFn = useDec ? fmtDec : fmt;
+                return (
+                  <div key={key} className="card p-4">
+                    <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>
+                      {emoji} {entry.label} <span style={{ color: "var(--text-faint)" }}>({entry.unit})</span>
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(["WTD", "MTD", "YTD", "All"] as const).map((period, i) => (
+                        <div key={period} className="text-center">
+                          <p className="text-[10px] font-bold tracking-wider" style={{ color: "var(--text-faint)" }}>{period}</p>
+                          <p className="mt-0.5 text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                            {fmtFn([d.wtd, d.mtd, d.ytd, d.all][i])}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )
       )}
     </div>
   );

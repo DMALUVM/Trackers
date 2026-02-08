@@ -50,10 +50,10 @@ const MODULE_GROUPS: ModuleGroup[] = [
   },
 ];
 
-// Home, Routines, and Progress are always in the nav bar.
+// Home and Progress are always in the nav bar.
 // Settings is accessible via the gear icon in the header.
-// User can pick up to 2 modules for the remaining nav slots.
-const MAX_PICKS = 2;
+// User can pick up to 3 modules for the remaining nav slots.
+const MAX_PICKS = 3;
 
 // These keys are always enabled but don't count toward the user's picks
 const ALWAYS_ON = new Set(["progress", "settings"]);
@@ -104,18 +104,25 @@ export default function ModulesPage() {
   return (
     <div className="space-y-5">
       <Toast state={toast} />
-      <SubPageHeader title="Modules" subtitle="Choose which tabs appear in the nav bar" backHref="/app/settings" />
+      <SubPageHeader title="Modules" subtitle="Add extra tracking features to your app" backHref="/app/settings" />
+
+      <div className="rounded-2xl px-4 py-3" style={{ background: "var(--accent-green-soft)", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+        <p className="text-sm font-bold mb-1" style={{ color: "var(--accent-green-text)" }}>💡 What are modules?</p>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Modules add extra tracking pages to your app — things like Sleep, Fitness, Hydration, and more.
+          Each one you turn on gets its own tab in the bottom navigation bar.
+        </p>
+      </div>
 
       <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Home</span>,{" "}
-          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Routines</span>, and{" "}
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Today</span> and{" "}
           <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Progress</span>{" "}
-          are always in the nav bar. Settings is in the ⚙️ header icon. Pick up to{" "}
+          are always in the nav bar. Settings is in the ⚙️ icon. Pick up to{" "}
           <span className="font-semibold" style={{ color: userPickCount >= MAX_PICKS ? "var(--accent-yellow)" : "var(--accent-green-text)" }}>
             {MAX_PICKS} more
           </span>{" "}
-          modules for the remaining slots.
+          modules for the remaining nav slots.
         </p>
         <div className="mt-1.5 flex items-center gap-1.5">
           {Array.from({ length: MAX_PICKS }).map((_, i) => (
