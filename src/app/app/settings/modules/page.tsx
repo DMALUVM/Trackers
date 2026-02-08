@@ -10,7 +10,6 @@ type Module = {
   label: string;
   desc: string;
   emoji: string;
-  locked?: boolean;
 };
 
 type ModuleGroup = {
@@ -19,12 +18,6 @@ type ModuleGroup = {
 };
 
 const MODULE_GROUPS: ModuleGroup[] = [
-  {
-    title: "Core",
-    items: [
-      { key: "progress", label: "Progress", desc: "Calendar, streaks, and analytics", emoji: "📈" },
-    ],
-  },
   {
     title: "Activity tracking",
     items: [
@@ -55,15 +48,15 @@ const MODULE_GROUPS: ModuleGroup[] = [
       { key: "neuro", label: "Neuro", desc: "Neurofeedback session tracking", emoji: "🧠" },
     ],
   },
-  {
-    title: "System",
-    items: [
-      { key: "settings", label: "Settings", desc: "Always enabled", emoji: "⚙️", locked: true },
-    ],
-  },
 ];
 
-const MAX_TABS = 3;
+// Home, Routines, and Progress are always in the nav bar.
+// Settings is accessible via the gear icon in the header.
+// User can pick up to 2 modules for the remaining nav slots.
+const MAX_PICKS = 2;
+
+// These keys are always enabled but don't count toward the user's picks
+const ALWAYS_ON = new Set(["progress", "settings"]);
 
 export default function ModulesPage() {
   const [enabled, setEnabled] = useState<Set<string>>(new Set(["progress", "settings"]));
@@ -73,26 +66,28 @@ export default function ModulesPage() {
     void (async () => {
       try {
         const s = await getUserSettings();
-        if (s.enabled_modules) setEnabled(new Set([...s.enabled_modules, "settings"]));
+        if (s.enabled_modules) setEnabled(new Set(s.enabled_modules));
       } catch { /* defaults */ }
     })();
   }, []);
 
-  const userChosenCount = [...enabled].filter((k) => k !== "settings").length;
+  // Count only user-chosen modules (not always-on ones)
+  const userPickCount = [...enabled].filter((k) => !ALWAYS_ON.has(k)).length;
 
   const toggle = async (key: string) => {
     hapticLight();
     const next = new Set(enabled);
     const isOn = next.has(key);
 
-    if (!isOn && userChosenCount >= MAX_TABS) {
+    if (!isOn && userPickCount >= MAX_PICKS) {
       setToast("error");
       setTimeout(() => setToast("idle"), 2000);
       return;
     }
 
     if (isOn) next.delete(key); else next.add(key);
-    next.add("settings");
+    // Keep always-on modules
+    for (const k of ALWAYS_ON) next.add(k);
     setEnabled(next);
     setToast("saving");
     try {
@@ -111,12 +106,24 @@ export default function ModulesPage() {
       <Toast state={toast} />
       <SubPageHeader title="Modules" subtitle="Choose which tabs appear in the nav bar" backHref="/app/settings" />
 
-      <p className="text-xs px-1" style={{ color: "var(--text-faint)" }}>
-        Pick up to {MAX_TABS} modules. Today, Routines, and Settings are always shown.{" "}
-        <span className="font-semibold" style={{ color: userChosenCount >= MAX_TABS ? "var(--accent-yellow)" : "var(--text-muted)" }}>
-          {userChosenCount}/{MAX_TABS} selected
-        </span>
-      </p>
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Home</span>,{" "}
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Routines</span>, and{" "}
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>Progress</span>{" "}
+          are always in the nav bar. Settings is in the ⚙️ header icon. Pick up to{" "}
+          <span className="font-semibold" style={{ color: userPickCount >= MAX_PICKS ? "var(--accent-yellow)" : "var(--accent-green-text)" }}>
+            {MAX_PICKS} more
+          </span>{" "}
+          modules for the remaining slots.
+        </p>
+        <div className="mt-1.5 flex items-center gap-1.5">
+          {Array.from({ length: MAX_PICKS }).map((_, i) => (
+            <div key={i} className="h-1.5 flex-1 rounded-full transition-colors"
+              style={{ background: i < userPickCount ? "var(--accent-green)" : "var(--bg-card-hover)" }} />
+          ))}
+        </div>
+      </div>
 
       {MODULE_GROUPS.map((group) => (
         <section key={group.title}>
@@ -126,13 +133,12 @@ export default function ModulesPage() {
           <div className="space-y-1.5">
             {group.items.map((m) => {
               const on = enabled.has(m.key);
-              const locked = !!m.locked;
-              const atLimit = !on && userChosenCount >= MAX_TABS;
+              const atLimit = !on && userPickCount >= MAX_PICKS;
               return (
-                <button key={m.key} type="button" disabled={locked}
-                  className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left disabled:opacity-40"
+                <button key={m.key} type="button"
+                  className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
                   style={{ opacity: atLimit && !on ? 0.45 : undefined }}
-                  onClick={() => { if (!locked) toggle(m.key); }}>
+                  onClick={() => toggle(m.key)}>
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{m.emoji}</span>
                     <div>
@@ -145,7 +151,7 @@ export default function ModulesPage() {
                       background: on ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
                       color: on ? "var(--accent-green-text)" : "var(--text-faint)",
                     }}>
-                    {locked ? "ALWAYS" : on ? "ON" : "OFF"}
+                    {on ? "ON" : "OFF"}
                   </div>
                 </button>
               );
