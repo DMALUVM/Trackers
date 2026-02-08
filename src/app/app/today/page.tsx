@@ -218,7 +218,7 @@ export default function TodayPage() {
       const item = items.find((i) => i.id === id);
       if (item) {
         const metricKey = labelToMetricKey(item.label);
-        if (metricKey && METRIC_ACTIVITIES[metricKey]) {
+        if (metricKey && metricKey !== "hydration" && METRIC_ACTIVITIES[metricKey]) {
           const promptedKey = `routines365:metricPrompted:${dateKey}:${id}`;
           if (!localStorage.getItem(promptedKey)) {
             setTimeout(() => {
@@ -496,7 +496,7 @@ export default function TodayPage() {
               isCore
               done={item.done}
               justCompleted={recentlyDoneId === item.id}
-              hasMetric={!!labelToMetricKey(item.label)}
+              hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
               hasReminder={reminderMap.has(item.id)}
               onToggle={item.done ? toggleItem : markDone}
               onSkip={skipItem}
@@ -529,7 +529,7 @@ export default function TodayPage() {
                 isCore={false}
                 done={item.done}
                 justCompleted={recentlyDoneId === item.id}
-                hasMetric={!!labelToMetricKey(item.label)}
+                hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
                 hasReminder={reminderMap.has(item.id)}
                 onToggle={item.done ? toggleItem : markDone}
                 onSkip={skipItem}

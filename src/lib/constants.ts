@@ -51,6 +51,23 @@ export const METRIC_ACTIVITIES: Record<
     emoji: "❄️",
     fields: [{ name: "sessions", unit: "sessions", inputMode: "numeric", placeholder: "1", required: true }],
   },
+  sleep: {
+    key: "sleep",
+    title: "Sleep",
+    emoji: "😴",
+    fields: [
+      { name: "hours", unit: "hours", inputMode: "decimal", placeholder: "7.5", required: true },
+      { name: "score", unit: "score", inputMode: "numeric", placeholder: "85" },
+    ],
+  },
+  hydration: {
+    key: "hydration",
+    title: "Hydration",
+    emoji: "💧",
+    fields: [
+      { name: "glasses", unit: "glasses", inputMode: "numeric", placeholder: "8", required: true },
+    ],
+  },
 };
 
 /** Map a routine label to a metric activity key (if any). */
@@ -61,6 +78,8 @@ export function labelToMetricKey(label: string): string | null {
   if (l.includes("walk")) return "walking";
   if (l.includes("sauna")) return "sauna";
   if (l.includes("cold")) return "cold";
+  if (l.includes("sleep")) return "sleep";
+  if (l.includes("water") || l.includes("hydrat")) return "hydration";
   return null;
 }
 

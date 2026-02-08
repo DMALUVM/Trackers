@@ -55,9 +55,15 @@ export default function RoutinesProgressPage() {
   const streaks = useStreaks(dateKey);
 
   // Dynamically detect which activities to show totals for based on user's routine items
+  // Always include hydration since the WaterTracker is on the Today page
   const activityEntries: MultiTotalsEntry[] = useMemo(() => {
     const seen = new Set<string>();
     const entries: MultiTotalsEntry[] = [];
+
+    // Always add hydration (WaterTracker is built-in)
+    entries.push({ activityKey: "hydration" as ActivityKey, unit: "glasses" as ActivityUnit, label: "Hydration" });
+    seen.add("hydration");
+
     for (const ri of routineItems) {
       const metricKey = labelToMetricKey(ri.label);
       if (!metricKey || seen.has(metricKey)) continue;

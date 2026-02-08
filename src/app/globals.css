@@ -39,6 +39,10 @@
   --accent-red-soft: rgba(239, 68, 68, 0.15);
   --accent-red-text: #fca5a5;
 
+  --accent-blue: #3b82f6;
+  --accent-blue-soft: rgba(59, 130, 246, 0.15);
+  --accent-blue-text: #93c5fd;
+
   --btn-primary-bg: #ffffff;
   --btn-primary-text: #000000;
   --btn-secondary-bg: rgba(255, 255, 255, 0.05);
@@ -82,6 +86,10 @@
   --accent-red: #dc2626;
   --accent-red-soft: rgba(220, 38, 38, 0.1);
   --accent-red-text: #991b1b;
+
+  --accent-blue: #2563eb;
+  --accent-blue-soft: rgba(37, 99, 235, 0.1);
+  --accent-blue-text: #1d4ed8;
 
   --btn-primary-bg: #0b1220;
   --btn-primary-text: #ffffff;

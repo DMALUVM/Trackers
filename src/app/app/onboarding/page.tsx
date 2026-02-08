@@ -127,8 +127,8 @@ export default function OnboardingPage() {
         </p>
 
         {[
-          { id: "morning-reset-10", emoji: "⚡", title: "Morning Reset", subtitle: "Water, sunlight, movement, plan your day", habits: "10 habits · 5 core", tag: "Recommended" },
-          { id: "fitness-consistency", emoji: "🏋️", title: "Fitness Focus", subtitle: "Workout, walk, protein, hydration", habits: "8 habits · 4 core", tag: null },
+          { id: "morning-reset-10", emoji: "⚡", title: "Morning Reset", subtitle: "Water, sunlight, movement, plan your day", habits: "6 habits · 4 core", tag: "Recommended" },
+          { id: "fitness-consistency", emoji: "🏋️", title: "Fitness Focus", subtitle: "Workout, walk, protein, hydration", habits: "6 habits · 4 core", tag: null },
         ].map(({ id, emoji, title, subtitle, habits, tag }) => (
           <button key={id} type="button" disabled={!!busy}
             className="w-full rounded-2xl p-5 text-left transition-all active:scale-[0.98] disabled:opacity-60"
