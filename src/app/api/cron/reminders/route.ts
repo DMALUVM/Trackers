@@ -42,10 +42,20 @@ export async function GET(request: Request) {
   // Admin client — must explicitly disable auth to bypass RLS with service role key
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${supabaseServiceKey}` } },
   });
 
   console.log(`[CRON] Supabase URL: ${supabaseUrl?.slice(0, 30)}...`);
   console.log(`[CRON] Service key starts with: ${supabaseServiceKey?.slice(0, 10)}...`);
+
+  // RAW DIAGNOSTIC: try to read anything from the reminders table with NO filters
+  const { data: rawAll, error: rawErr, count: rawCount } = await supabase
+    .from("reminders")
+    .select("*", { count: "exact" });
+  console.log(`[CRON] RAW query: count=${rawCount}, rows=${rawAll?.length ?? 0}, error=${rawErr?.message ?? "none"}`);
+  if (rawAll && rawAll.length > 0) {
+    console.log(`[CRON] First row:`, JSON.stringify(rawAll[0]));
+  }
 
   // Current time in HH:MM (24h) and ISO day-of-week
   // Using America/New_York — adjust to your timezone
