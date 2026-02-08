@@ -39,8 +39,13 @@ export async function GET(request: Request) {
   // Configure web-push
   webpush.setVapidDetails(vapidEmail, vapidPublicKey, vapidPrivateKey);
 
-  // Admin client — bypasses RLS
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  // Admin client — must explicitly disable auth to bypass RLS with service role key
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  console.log(`[CRON] Supabase URL: ${supabaseUrl?.slice(0, 30)}...`);
+  console.log(`[CRON] Service key starts with: ${supabaseServiceKey?.slice(0, 10)}...`);
 
   // Current time in HH:MM (24h) and ISO day-of-week
   // Using America/New_York — adjust to your timezone
@@ -64,11 +69,12 @@ export async function GET(request: Request) {
   console.log(`[CRON] Checking reminders for time=${timeStr} day=${isoDay} (UTC=${now.toISOString()})`);
 
   // First, log ALL reminders for debugging
-  const { data: allReminders } = await supabase
+  const { data: allReminders, error: debugErr } = await supabase
     .from("reminders")
     .select("id, time, days_of_week, enabled")
     .eq("enabled", true);
-  console.log(`[CRON] All enabled reminders:`, JSON.stringify(allReminders));
+  console.log(`[CRON] All enabled reminders (${allReminders?.length ?? 0}):`, JSON.stringify(allReminders));
+  if (debugErr) console.error(`[CRON] Debug query error:`, debugErr);
 
   // Find enabled reminders matching this time
   const { data: reminders, error: remErr } = await supabase
