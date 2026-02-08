@@ -114,7 +114,7 @@ export async function subscribeToPush(): Promise<boolean> {
 
     if (!sub) {
       sub = await reg.pushManager.subscribe({
-        userVisibilityOnly: true,
+        userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
     }
