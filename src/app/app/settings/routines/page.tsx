@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Bell } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import { createRoutineItem, listRoutineItems, updateRoutineItem } from "@/lib/supabaseData";
 import type { RoutineItemRow } from "@/lib/types";
-import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, ReminderSheet, type ToastState } from "@/app/app/_components/ui";
+import { listReminders, type Reminder } from "@/lib/reminders";
+import { hapticLight } from "@/lib/haptics";
 
 /** Simple array reorder — replaces @dnd-kit/sortable dependency */
 function arrayMove<T>(arr: T[], from: number, to: number): T[] {
@@ -17,12 +19,14 @@ function arrayMove<T>(arr: T[], from: number, to: number): T[] {
 }
 
 function SortRow({
-  item, index, total, onToggleNon, onArchive, onMove,
+  item, index, total, hasReminder, onToggleNon, onArchive, onMove, onSetReminder,
 }: {
   item: RoutineItemRow; index: number; total: number;
+  hasReminder?: boolean;
   onToggleNon: (item: RoutineItemRow) => void;
   onArchive: (item: RoutineItemRow) => void;
   onMove: (from: number, to: number) => void;
+  onSetReminder: (item: RoutineItemRow) => void;
 }) {
   return (
     <div className="card-interactive p-3">
@@ -54,6 +58,13 @@ function SortRow({
           {item.emoji ?? ""}
         </div>
 
+        {/* Reminder bell */}
+        <button type="button" onClick={() => { hapticLight(); onSetReminder(item); }}
+          className="p-2 rounded-lg" title={hasReminder ? "Edit reminder" : "Set reminder"}>
+          <Bell size={16} strokeWidth={hasReminder ? 2.5 : 1.5}
+            style={{ color: hasReminder ? "var(--accent-green)" : "var(--text-faint)" }} />
+        </button>
+
         {/* Core/Opt toggle */}
         <button type="button" onClick={() => onToggleNon(item)}
           className="rounded-full px-2 py-1.5 text-[11px] font-semibold"
@@ -83,6 +94,15 @@ export default function RoutinesSettingsPage() {
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
 
+  // Reminders
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [reminderTarget, setReminderTarget] = useState<RoutineItemRow | null>(null);
+  const reminderMap = useMemo(() => {
+    const m = new Map<string, Reminder>();
+    for (const r of reminders) m.set(r.routine_item_id, r);
+    return m;
+  }, [reminders]);
+
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
@@ -100,6 +120,7 @@ export default function RoutinesSettingsPage() {
   useEffect(() => {
     let cancelled = false;
     void (async () => { if (!cancelled) await refresh(); })();
+    listReminders().then(setReminders).catch(() => {});
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { if (!cancelled) void refresh(); });
     return () => { cancelled = true; subscription.unsubscribe(); };
   }, []);
@@ -199,10 +220,23 @@ export default function RoutinesSettingsPage() {
         ) : (
           filteredItems.map((i, idx) => (
             <SortRow key={i.id} item={i} index={idx} total={filteredItems.length}
-              onToggleNon={onToggleNon} onArchive={onArchive} onMove={onMove} />
+              hasReminder={reminderMap.has(i.id)}
+              onToggleNon={onToggleNon} onArchive={onArchive} onMove={onMove}
+              onSetReminder={setReminderTarget} />
           ))
         )}
       </div>
+
+      {/* Reminder Sheet */}
+      <ReminderSheet
+        open={!!reminderTarget}
+        onClose={() => setReminderTarget(null)}
+        routineItemId={reminderTarget?.id ?? ""}
+        routineLabel={reminderTarget?.label ?? ""}
+        routineEmoji={reminderTarget?.emoji ?? undefined}
+        existing={reminderTarget ? reminderMap.get(reminderTarget.id) ?? null : null}
+        onSaved={() => { listReminders().then(setReminders).catch(() => {}); }}
+      />
     </div>
   );
 }
