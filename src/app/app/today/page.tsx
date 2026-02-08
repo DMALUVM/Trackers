@@ -23,6 +23,7 @@ import {
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { QuestsCard } from "@/app/app/_components/QuestsCard";
+import { WaterTracker } from "@/app/app/_components/WaterTracker";
 import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
@@ -470,6 +471,9 @@ export default function TodayPage() {
           }}
         />
       )}
+
+      {/* ─── WATER TRACKER ─── */}
+      <WaterTracker dateKey={dateKey} />
 
       {/* ─── CORE HABITS ─── */}
       <section>
