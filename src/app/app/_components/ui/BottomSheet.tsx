@@ -34,26 +34,26 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
   // Drag-to-dismiss handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    // Only drag from the handle area or when sheet is scrolled to top
+    // Don't start drag from interactive elements (buttons, links, inputs)
+    if (target.closest("button, a, input, select, textarea, [role=button]")) return;
     const sheet = sheetRef.current;
     if (sheet && sheet.scrollTop > 0 && !target.closest("[data-drag-handle]")) return;
     dragStartRef.current = { y: e.touches[0].clientY, time: Date.now() };
-    setDragging(true);
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!dragStartRef.current) return;
     const dy = e.touches[0].clientY - dragStartRef.current.y;
-    // Only allow downward drag
-    if (dy > 0) {
+    // Only allow downward drag, with a minimum threshold to avoid accidental drags
+    if (dy > 8) {
+      if (!dragging) setDragging(true);
       setDragY(dy);
-      // Prevent scroll while dragging
       e.preventDefault();
     }
-  }, []);
+  }, [dragging]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!dragStartRef.current) return;
+    if (!dragStartRef.current) { setDragging(false); return; }
     const elapsed = Date.now() - dragStartRef.current.time;
     const velocity = dragY / Math.max(elapsed, 1);
     // Dismiss if dragged >100px or fast flick
