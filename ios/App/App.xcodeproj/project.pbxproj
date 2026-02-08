@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,7 +17,36 @@
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		CA933EAE2F393D6500C71DEC /* HealthKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933EAD2F393D6500C71DEC /* HealthKitPlugin.swift */; };
 		CA933EB02F393E8000C71DEC /* MyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933EAF2F393E8000C71DEC /* MyViewController.swift */; };
+		CA933EB32F39454F00C71DEC /* WidgetDataPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933EB22F39454F00C71DEC /* WidgetDataPlugin.swift */; };
+		CA933EB42F39454F00C71DEC /* LocalNotifyPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933EB12F39454F00C71DEC /* LocalNotifyPlugin.swift */; };
+		CA933EBC2F3945DF00C71DEC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */; };
+		CA933EBE2F3945DF00C71DEC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */; };
+		CA933ECD2F3945E000C71DEC /* Routines365WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CA933ECB2F3945E000C71DEC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CA933EB82F3945DF00C71DEC;
+			remoteInfo = Routines365WidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CA933ED22F3945E000C71DEC /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				CA933ECD2F3945E000C71DEC /* Routines365WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
@@ -33,7 +62,27 @@
 		CA933EAC2F3939AD00C71DEC /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		CA933EAD2F393D6500C71DEC /* HealthKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitPlugin.swift; sourceTree = "<group>"; };
 		CA933EAF2F393E8000C71DEC /* MyViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyViewController.swift; sourceTree = "<group>"; };
+		CA933EB12F39454F00C71DEC /* LocalNotifyPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNotifyPlugin.swift; sourceTree = "<group>"; };
+		CA933EB22F39454F00C71DEC /* WidgetDataPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataPlugin.swift; sourceTree = "<group>"; };
+		CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Routines365WidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		CA933ED72F394B6200C71DEC /* Routines365WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Routines365WidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CA933ECE2F3945E000C71DEC /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CA933EB82F3945DF00C71DEC /* Routines365WidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		CA933EBF2F3945DF00C71DEC /* Routines365Widget */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (CA933ECE2F3945E000C71DEC /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = Routines365Widget; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		504EC3011FED79650016851F /* Frameworks */ = {
@@ -44,14 +93,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CA933EB62F3945DF00C71DEC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA933EBE2F3945DF00C71DEC /* SwiftUI.framework in Frameworks */,
+				CA933EBC2F3945DF00C71DEC /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		504EC2FB1FED79650016851F = {
 			isa = PBXGroup;
 			children = (
+				CA933ED72F394B6200C71DEC /* Routines365WidgetExtension.entitlements */,
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				CA933EBF2F3945DF00C71DEC /* Routines365Widget */,
+				CA933EBA2F3945DF00C71DEC /* Frameworks */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -60,6 +121,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -69,6 +131,8 @@
 			children = (
 				CA933EAD2F393D6500C71DEC /* HealthKitPlugin.swift */,
 				CA933EAC2F3939AD00C71DEC /* App.entitlements */,
+				CA933EB12F39454F00C71DEC /* LocalNotifyPlugin.swift */,
+				CA933EB22F39454F00C71DEC /* WidgetDataPlugin.swift */,
 				CA933EAF2F393E8000C71DEC /* MyViewController.swift */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
@@ -82,6 +146,15 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		CA933EBA2F3945DF00C71DEC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */,
+				CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -92,10 +165,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				CA933ED22F3945E000C71DEC /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CA933ECC2F3945E000C71DEC /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -105,6 +180,28 @@
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CA933EB82F3945DF00C71DEC /* Routines365WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CA933ECF2F3945E000C71DEC /* Build configuration list for PBXNativeTarget "Routines365WidgetExtension" */;
+			buildPhases = (
+				CA933EB52F3945DF00C71DEC /* Sources */,
+				CA933EB62F3945DF00C71DEC /* Frameworks */,
+				CA933EB72F3945DF00C71DEC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				CA933EBF2F3945DF00C71DEC /* Routines365Widget */,
+			);
+			name = Routines365WidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = Routines365WidgetExtension;
+			productReference = CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -112,13 +209,16 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastSwiftUpdateCheck = 0920;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					504EC3031FED79650016851F = {
 						CreatedOnToolsVersion = 9.2;
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
+					};
+					CA933EB82F3945DF00C71DEC = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -139,6 +239,7 @@
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				CA933EB82F3945DF00C71DEC /* Routines365WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -157,6 +258,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CA933EB72F3945DF00C71DEC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -167,10 +275,27 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				CA933EB02F393E8000C71DEC /* MyViewController.swift in Sources */,
 				CA933EAE2F393D6500C71DEC /* HealthKitPlugin.swift in Sources */,
+				CA933EB32F39454F00C71DEC /* WidgetDataPlugin.swift in Sources */,
+				CA933EB42F39454F00C71DEC /* LocalNotifyPlugin.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA933EB52F3945DF00C71DEC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CA933ECC2F3945E000C71DEC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CA933EB82F3945DF00C71DEC /* Routines365WidgetExtension */;
+			targetProxy = CA933ECB2F3945E000C71DEC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		504EC30B1FED79650016851F /* Main.storyboard */ = {
@@ -359,6 +484,82 @@
 			};
 			name = Release;
 		};
+		CA933ED02F3945E000C71DEC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = Routines365WidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routines365Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Routines365Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.routines365.app.Routines365Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CA933ED12F3945E000C71DEC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CODE_SIGN_ENTITLEMENTS = Routines365WidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Routines365Widget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Routines365Widget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.routines365.app.Routines365Widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -376,6 +577,15 @@
 			buildConfigurations = (
 				504EC3171FED79650016851F /* Debug */,
 				504EC3181FED79650016851F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CA933ECF2F3945E000C71DEC /* Build configuration list for PBXNativeTarget "Routines365WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA933ED02F3945E000C71DEC /* Debug */,
+				CA933ED12F3945E000C71DEC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

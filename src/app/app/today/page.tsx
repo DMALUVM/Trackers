@@ -19,6 +19,7 @@ import {
   NextMilestoneTeaser,
   ComebackBanner,
   GettingStartedTips,
+  SetupPrompts,
   ReminderSheet,
 } from "@/app/app/_components/ui";
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
@@ -533,6 +534,9 @@ export default function TodayPage() {
 
       {/* Apple Health summary — only shows in native app */}
       <HealthCard />
+
+      {/* Setup prompts for new users — notifications, health */}
+      <SetupPrompts />
 
       {/* ─── CORE HABITS ─── */}
       <section>

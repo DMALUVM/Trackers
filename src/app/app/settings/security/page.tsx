@@ -15,12 +15,23 @@ export default function SecurityPage() {
   const [toast, setToast] = useState<ToastState>("idle");
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [bioLabel, setBioLabel] = useState("Face ID / Touch ID");
 
   useEffect(() => {
     setEnabled(isPasskeyEnabled());
     void (async () => {
       const { data } = await supabase.auth.getSession();
       setEmail(data.session?.user.email ?? null);
+    })();
+    // Detect biometry type
+    void (async () => {
+      try {
+        const { getBiometryType } = await import("@/lib/passkey");
+        const type = await getBiometryType();
+        if (type === "faceID") setBioLabel("Face ID");
+        else if (type === "touchID") setBioLabel("Touch ID");
+        else if (type === "opticID") setBioLabel("Optic ID");
+      } catch {}
     })();
   }, []);
 
@@ -73,7 +84,7 @@ export default function SecurityPage() {
       <section className="card p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Face ID / Touch ID</p>
+            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{bioLabel}</p>
             <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
               {enabled ? "Enabled — asks for biometrics on open." : "Add a biometric lock to the app."}
             </p>

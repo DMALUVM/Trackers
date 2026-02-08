@@ -190,6 +190,16 @@ export default function RoutinesSettingsPage() {
         }
       />
 
+      {/* Inline help — always visible */}
+      <section className="rounded-2xl p-4" style={{ background: "var(--accent-green-soft)", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+        <p className="text-sm font-bold mb-2" style={{ color: "var(--accent-green-text)" }}>💡 How Core vs. Bonus works</p>
+        <div className="space-y-1.5 text-sm" style={{ color: "var(--text-secondary)" }}>
+          <p>Tap <span className="font-bold rounded-full px-1.5 py-0.5 text-xs" style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>CORE</span> on a habit to make it a must-do. Complete all core habits = a <strong style={{ color: "var(--accent-green-text)" }}>green day</strong>.</p>
+          <p>Habits marked <span className="font-bold rounded-full px-1.5 py-0.5 text-xs" style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>OPT</span> are bonus — they count toward your total but don&apos;t affect your green day streak.</p>
+          <p style={{ color: "var(--text-muted)" }}>Tip: Keep 3–5 core habits. Too many and you&apos;ll burn out!</p>
+        </div>
+      </section>
+
       <section className="card p-4 space-y-3">
         <div>
           <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Search</label>
@@ -199,13 +209,13 @@ export default function RoutinesSettingsPage() {
         </div>
 
         <div className="flex gap-2">
-          <input className="flex-1 rounded-xl px-3 py-3 text-sm"
+          <input className="min-w-0 flex-1 rounded-xl px-3 py-3 text-sm"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Add a routine (e.g. Journaling)" />
-          <input className="w-16 rounded-xl px-3 py-3 text-sm text-center"
+          <input className="w-12 shrink-0 rounded-xl px-2 py-3 text-sm text-center"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} placeholder="📝" />
-          <button type="button" onClick={onAdd} className="btn-primary px-4">
+          <button type="button" onClick={onAdd} className="btn-primary shrink-0 px-3">
             <Plus size={18} />
           </button>
         </div>
@@ -213,7 +223,7 @@ export default function RoutinesSettingsPage() {
 
       <div className="space-y-2">
         <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-          Use the arrows to reorder habits.
+          Tap a habit name to edit it. Use ↑↓ to reorder. Tap CORE/OPT to toggle.
         </p>
         {filteredItems.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matches.</p>

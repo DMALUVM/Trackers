@@ -15,6 +15,26 @@ function randomChallenge(len = 32) {
 const LS_ENABLED = "routines365:passkeyEnabled";
 const LS_UNLOCK_UNTIL = "routines365:passkeyUnlockUntil";
 
+// ── Native biometric bridge ──
+
+function getBiometricPlugin(): Record<string, (...args: unknown[]) => Promise<unknown>> | null {
+  if (typeof window === "undefined") return null;
+  // @ts-expect-error - Capacitor global
+  const cap = window.Capacitor;
+  if (!cap) return null;
+  try {
+    return cap.Plugins?.BiometricPlugin ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isNative(): boolean {
+  if (typeof window === "undefined") return false;
+  // @ts-expect-error - Capacitor global
+  return !!window.Capacitor;
+}
+
 export function isPasskeyEnabled() {
   if (typeof window === "undefined") return false;
   return localStorage.getItem(LS_ENABLED) === "1";
@@ -44,12 +64,46 @@ export function setUnlockValidFor(ms: number) {
 }
 
 /**
- * Registers a device passkey. This triggers Face ID / Touch ID on iPhone.
- *
- * IMPORTANT: This is used as an app-unlock mechanism (like Face ID to open the app),
- * not a replacement for Supabase authentication (which still uses magic link).
+ * Check what biometric type is available.
+ * Returns 'faceID', 'touchID', or null.
+ */
+export async function getBiometryType(): Promise<string | null> {
+  const plugin = getBiometricPlugin();
+  if (plugin) {
+    try {
+      const result = await plugin.isAvailable() as { available: boolean; biometryType: string };
+      return result.available ? result.biometryType : null;
+    } catch {
+      return null;
+    }
+  }
+  // Web fallback: check WebAuthn support
+  if (typeof window !== "undefined" && window.PublicKeyCredential) return "passkey";
+  return null;
+}
+
+/**
+ * Registers biometric lock. On native, uses Face ID/Touch ID directly.
+ * On web, falls back to WebAuthn passkeys.
  */
 export async function registerPasskey(opts: { email: string }) {
+  const plugin = getBiometricPlugin();
+
+  // Native path: just verify biometric works, then enable
+  if (plugin) {
+    const check = await plugin.isAvailable() as { available: boolean };
+    if (!check.available) {
+      throw new Error("Biometric authentication is not available on this device.");
+    }
+    const result = await plugin.authenticate({ reason: "Enable Face ID for Routines365" } as unknown) as { success: boolean; error?: string };
+    if (!result.success) {
+      throw new Error(result.error ?? "Authentication failed.");
+    }
+    setPasskeyEnabled(true);
+    return { credentialId: "native-biometric" };
+  }
+
+  // Web fallback: WebAuthn
   if (!window.PublicKeyCredential) {
     throw new Error("Passkeys are not supported on this device/browser.");
   }
@@ -66,7 +120,7 @@ export async function registerPasskey(opts: { email: string }) {
         name: opts.email,
         displayName: opts.email,
       },
-      pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
       authenticatorSelection: {
         residentKey: "preferred",
         userVerification: "required",
@@ -77,20 +131,28 @@ export async function registerPasskey(opts: { email: string }) {
   })) as PublicKeyCredential | null;
 
   if (!credential) throw new Error("Passkey registration cancelled.");
-
-  // We don't need to store the credential server-side for local unlock.
-  // But we record that the user enabled it so we can show the unlock gate.
   setPasskeyEnabled(true);
-
-  return {
-    credentialId: b64url(credential.rawId),
-  };
+  return { credentialId: b64url(credential.rawId) };
 }
 
 /**
  * Prompts Face ID / Touch ID to unlock the app.
+ * On native, uses LAContext. On web, falls back to WebAuthn.
  */
 export async function unlockWithPasskey() {
+  const plugin = getBiometricPlugin();
+
+  // Native path
+  if (plugin) {
+    const result = await plugin.authenticate({ reason: "Unlock Routines365" } as unknown) as { success: boolean; error?: string };
+    if (!result.success) {
+      throw new Error(result.error ?? "Unlock cancelled.");
+    }
+    setUnlockValidFor(1000 * 60 * 60 * 12);
+    return { ok: true };
+  }
+
+  // Web fallback
   if (!window.PublicKeyCredential) {
     throw new Error("Passkeys are not supported on this device/browser.");
   }
@@ -98,7 +160,6 @@ export async function unlockWithPasskey() {
   const rpId = window.location.hostname;
   const challenge = randomChallenge();
 
-  // For discoverable credentials we can omit allowCredentials.
   const assertion = (await navigator.credentials.get({
     publicKey: {
       challenge,
@@ -109,8 +170,6 @@ export async function unlockWithPasskey() {
   })) as PublicKeyCredential | null;
 
   if (!assertion) throw new Error("Unlock cancelled.");
-
-  // Treat successful WebAuthn UX as "unlocked" for a period.
-  setUnlockValidFor(1000 * 60 * 60 * 12); // 12 hours
+  setUnlockValidFor(1000 * 60 * 60 * 12);
   return { ok: true };
 }

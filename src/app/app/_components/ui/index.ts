@@ -14,4 +14,5 @@ export { PullToRefreshIndicator } from "./PullToRefresh";
 export { SubPageHeader } from "./SubPageHeader";
 export { Spinner } from "./Spinner";
 export { GettingStartedTips } from "./GettingStartedTips";
+export { SetupPrompts } from "./SetupPrompts";
 export { ReminderSheet } from "./ReminderSheet";
