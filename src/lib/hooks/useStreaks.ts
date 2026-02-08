@@ -77,9 +77,9 @@ export function useStreaks(dateKey: string) {
           let accountStartKey: string | null = null;
           try {
             const { supabase } = await import("@/lib/supabaseClient");
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user?.created_at) {
-              accountStartKey = userData.user.created_at.slice(0, 10);
+            const { data: { session: authSession } } = await supabase.auth.getSession();
+            if (authSession?.user?.created_at) {
+              accountStartKey = authSession.user.created_at.slice(0, 10);
             }
           } catch { /* ignore */ }
 

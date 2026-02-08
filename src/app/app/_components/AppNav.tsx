@@ -8,7 +8,7 @@ import {
   Footprints, Home, Flame, Heart, Moon, Pill, Droplets, BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { getUserSettings } from "@/lib/supabaseData";
+import { getUserSettings, getUserSettingsSync } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
 
 const allItems = [
@@ -31,12 +31,17 @@ const allItems = [
 export function AppNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [enabled, setEnabled] = useState<string[] | null>(null);
+
+  // Instant render from localStorage, then async refresh
+  const [enabled, setEnabled] = useState<string[] | null>(() => {
+    const cached = getUserSettingsSync();
+    return cached?.enabled_modules ?? null;
+  });
 
   useEffect(() => {
     const run = async () => {
       try { const s = await getUserSettings(); setEnabled(s.enabled_modules); }
-      catch { setEnabled(["progress", "settings"]); }
+      catch { setEnabled((prev) => prev ?? ["progress", "settings"]); }
     };
     void run();
     const onSettings = () => void run();
@@ -47,7 +52,6 @@ export function AppNav() {
   const items = useMemo(() => {
     const enabledSet = new Set(["today", "routines", ...(enabled ?? [])]);
     const filtered = allItems.filter((i) => enabledSet.has(i.key));
-    // Fixed order: today first, routines second, settings last, everything else in between
     const pinned = ["today", "routines"];
     const ordered = [
       ...pinned.map((k) => filtered.find((i) => i.key === k)).filter(Boolean),

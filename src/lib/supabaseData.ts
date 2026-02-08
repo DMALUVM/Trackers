@@ -1,21 +1,62 @@
 import { supabase } from "@/lib/supabaseClient";
-import { format } from "date-fns";
 import type { DayMode, DailyLogRow, RoutineItemRow } from "@/lib/types";
 import { tzDateKey } from "@/lib/time";
 import { cacheClear, cacheGet, cacheSet } from "@/lib/clientCache";
 
 export function toDateKey(d: Date) {
-  // Normalize to app timezone (auto-detected from browser) so "days" don't drift while traveling.
   return tzDateKey(d);
 }
 
+// ---------------------------------------------------------------------------
+// Auth helper — uses getSession() (instant, in-memory) instead of getUser()
+// (network round-trip). AuthGate already guarantees a valid session before
+// any /app route renders, so this is safe and eliminates ~6-10 network
+// calls per page navigation.
+// ---------------------------------------------------------------------------
+let _cachedUserId: string | null = null;
+
 export async function getUserId() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user) throw new Error("Not signed in");
-  return data.user.id;
+  if (_cachedUserId) return _cachedUserId;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error("Not signed in");
+  _cachedUserId = session.user.id;
+  return _cachedUserId;
 }
 
+// Clear cached userId on sign-out
+if (typeof window !== "undefined") {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      _cachedUserId = null;
+      cacheClear();
+    } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) _cachedUserId = session.user.id;
+      });
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// localStorage helpers for instant reads (settings, modules)
+// ---------------------------------------------------------------------------
+const LS_SETTINGS = "routines365:userSettings";
+const LS_ROUTINE_ITEMS = "routines365:routineItems";
+
+function lsGet<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function lsSet(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------------------
+// User Settings
+// ---------------------------------------------------------------------------
 export type UserSettingsRow = {
   user_id: string;
   enabled_modules: string[];
@@ -23,6 +64,11 @@ export type UserSettingsRow = {
 };
 
 const DEFAULT_ENABLED_MODULES = ["progress", "settings"];
+
+/** Synchronous read from localStorage — for instant UI renders. */
+export function getUserSettingsSync(): UserSettingsRow | null {
+  return lsGet<UserSettingsRow>(LS_SETTINGS);
+}
 
 export async function getUserSettings(): Promise<UserSettingsRow> {
   const userId = await getUserId();
@@ -38,15 +84,16 @@ export async function getUserSettings(): Promise<UserSettingsRow> {
   if (error) throw error;
 
   if (!data) {
-    // Create default settings row
     const insert = { user_id: userId, enabled_modules: DEFAULT_ENABLED_MODULES, theme: "system" as const };
     const { error: insErr } = await supabase.from("user_settings").insert(insert);
     if (insErr) throw insErr;
-    cacheSet(cacheKey, insert, 5 * 60 * 1000);
+    cacheSet(cacheKey, insert, 10 * 60 * 1000);
+    lsSet(LS_SETTINGS, insert);
     return insert;
   }
 
-  cacheSet(cacheKey, data as UserSettingsRow, 5 * 60 * 1000);
+  cacheSet(cacheKey, data as UserSettingsRow, 10 * 60 * 1000);
+  lsSet(LS_SETTINGS, data);
   return data as UserSettingsRow;
 }
 
@@ -58,11 +105,12 @@ export async function setEnabledModules(enabled: string[]) {
   if (error) throw error;
 
   cacheClear(`user_settings:${userId}`);
+  // Update localStorage immediately for instant nav updates
+  const current = lsGet<UserSettingsRow>(LS_SETTINGS);
+  if (current) lsSet(LS_SETTINGS, { ...current, enabled_modules: enabled });
   try {
     if (typeof window !== "undefined") window.dispatchEvent(new Event("routines365:userSettingsChanged"));
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 export async function setThemePref(theme: "system" | "dark" | "light") {
@@ -73,17 +121,23 @@ export async function setThemePref(theme: "system" | "dark" | "light") {
   if (error) throw error;
 
   cacheClear(`user_settings:${userId}`);
+  const current = lsGet<UserSettingsRow>(LS_SETTINGS);
+  if (current) lsSet(LS_SETTINGS, { ...current, theme });
   try {
     if (typeof window !== "undefined") window.dispatchEvent(new Event("routines365:userSettingsChanged"));
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
+}
+
+// ---------------------------------------------------------------------------
+// Routine Items
+// ---------------------------------------------------------------------------
+
+/** Synchronous read from localStorage — for instant skeleton avoidance. */
+export function listRoutineItemsSync(): RoutineItemRow[] | null {
+  return lsGet<RoutineItemRow[]>(LS_ROUTINE_ITEMS);
 }
 
 export async function listRoutineItems(): Promise<RoutineItemRow[]> {
-  // IMPORTANT: On iOS PWAs, auth session hydration can lag slightly after app load.
-  // If we query before the session is ready, RLS will return an empty set (no error),
-  // which can incorrectly trigger onboarding redirects.
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -107,7 +161,8 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   if (error) throw error;
 
   const res = data ?? [];
-  cacheSet(cacheKey, res, 60 * 1000);
+  cacheSet(cacheKey, res, 5 * 60 * 1000); // 5 min (was 60s)
+  lsSet(LS_ROUTINE_ITEMS, res);
   return res;
 }
 
@@ -144,17 +199,13 @@ export async function updateRoutineItem(
     .eq("id", id);
   if (error) throw error;
 
-  // Notify any screens that cache routine_items (e.g., Home/Routines dashboard)
-  // to refresh after edits.
   try {
     if (typeof window !== "undefined") {
       const userId = await getUserId();
       cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 export async function createRoutineItem(opts: {
@@ -182,9 +233,7 @@ export async function createRoutineItem(opts: {
       cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 export async function createRoutineItemsBulk(opts: {
@@ -216,9 +265,7 @@ export async function createRoutineItemsBulk(opts: {
       cacheClear(`routine_items:${userId}`);
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     }
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
 }
 
 export async function upsertDailyLog(opts: {
@@ -264,9 +311,9 @@ export async function upsertDailyChecks(opts: {
 
 export type DaySnoozeRow = {
   user_id: string;
-  date: string; // yyyy-mm-dd
+  date: string;
   routine_item_id: string;
-  snoozed_until: string; // ISO timestamp
+  snoozed_until: string;
 };
 
 export async function upsertDaySnooze(opts: {
@@ -287,60 +334,68 @@ export async function upsertDaySnooze(opts: {
   if (error) throw error;
 }
 
+// ---------------------------------------------------------------------------
+// Day State — parallelized queries (was 3 sequential round-trips)
+// ---------------------------------------------------------------------------
 export async function loadDayState(dateKey: string) {
   const userId = await getUserId();
 
-  const { data: log, error: logErr } = await supabase
-    .from("daily_logs")
-    .select("date,day_mode,sex,did_rowing,did_weights")
-    .eq("user_id", userId)
-    .eq("date", dateKey)
-    .maybeSingle();
-  if (logErr) throw logErr;
+  // Fire all 3 queries in parallel instead of sequentially
+  const [logResult, checksResult, snoozesResult] = await Promise.all([
+    supabase
+      .from("daily_logs")
+      .select("date,day_mode,sex,did_rowing,did_weights")
+      .eq("user_id", userId)
+      .eq("date", dateKey)
+      .maybeSingle(),
+    supabase
+      .from("daily_checks")
+      .select("routine_item_id,done")
+      .eq("user_id", userId)
+      .eq("date", dateKey),
+    supabase
+      .from("day_snoozes")
+      .select("routine_item_id,snoozed_until")
+      .eq("user_id", userId)
+      .eq("date", dateKey),
+  ]);
 
-  const { data: checks, error: checksErr } = await supabase
-    .from("daily_checks")
-    .select("routine_item_id,done")
-    .eq("user_id", userId)
-    .eq("date", dateKey);
-  if (checksErr) throw checksErr;
-
-  const { data: snoozes, error: snoozesErr } = await supabase
-    .from("day_snoozes")
-    .select("routine_item_id,snoozed_until")
-    .eq("user_id", userId)
-    .eq("date", dateKey);
-  if (snoozesErr) throw snoozesErr;
+  if (logResult.error) throw logResult.error;
+  if (checksResult.error) throw checksResult.error;
+  if (snoozesResult.error) throw snoozesResult.error;
 
   return {
-    log: (log as DailyLogRow | null) ?? null,
-    checks: (checks ?? []) as Array<{ routine_item_id: string; done: boolean }>,
-    snoozes: (snoozes ?? []) as Array<Pick<DaySnoozeRow, "routine_item_id" | "snoozed_until">>,
+    log: (logResult.data as DailyLogRow | null) ?? null,
+    checks: (checksResult.data ?? []) as Array<{ routine_item_id: string; done: boolean }>,
+    snoozes: (snoozesResult.data ?? []) as Array<Pick<DaySnoozeRow, "routine_item_id" | "snoozed_until">>,
   };
 }
 
 export async function loadRangeStates(opts: { from: string; to: string }) {
   const userId = await getUserId();
 
-  const { data: logs, error: logsErr } = await supabase
-    .from("daily_logs")
-    .select("date,day_mode,sex,did_rowing,did_weights")
-    .eq("user_id", userId)
-    .gte("date", opts.from)
-    .lte("date", opts.to);
-  if (logsErr) throw logsErr;
+  // Fire both queries in parallel
+  const [logsResult, checksResult] = await Promise.all([
+    supabase
+      .from("daily_logs")
+      .select("date,day_mode,sex,did_rowing,did_weights")
+      .eq("user_id", userId)
+      .gte("date", opts.from)
+      .lte("date", opts.to),
+    supabase
+      .from("daily_checks")
+      .select("date,routine_item_id,done")
+      .eq("user_id", userId)
+      .gte("date", opts.from)
+      .lte("date", opts.to),
+  ]);
 
-  const { data: checks, error: checksErr } = await supabase
-    .from("daily_checks")
-    .select("date,routine_item_id,done")
-    .eq("user_id", userId)
-    .gte("date", opts.from)
-    .lte("date", opts.to);
-  if (checksErr) throw checksErr;
+  if (logsResult.error) throw logsResult.error;
+  if (checksResult.error) throw checksResult.error;
 
   return {
-    logs: (logs ?? []) as DailyLogRow[],
-    checks: (checks ?? []) as Array<{
+    logs: (logsResult.data ?? []) as DailyLogRow[],
+    checks: (checksResult.data ?? []) as Array<{
       date: string;
       routine_item_id: string;
       done: boolean;

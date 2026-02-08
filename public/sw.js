@@ -8,7 +8,7 @@
 // - Stale-while-revalidate for everything else
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v2";
+const CACHE_NAME = "routines365-v3";
 const SHELL_ASSETS = [
   "/app/today",
   "/brand/pwa/icon-192.png",
