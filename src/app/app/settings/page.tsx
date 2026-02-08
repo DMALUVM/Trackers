@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 import { usePremium } from "@/lib/premium";
 
@@ -14,6 +14,7 @@ const sections = [
       { href: "/app/trophies", label: "Trophies", desc: "Milestones and achievements", icon: Award },
       { href: "/app/settings/quests", label: "Quests", desc: "Weekly goals and streaks", icon: Trophy },
       { href: "/app/settings/rest-days", label: "Rest Days", desc: "Planned days off that protect your streak", icon: Moon },
+      { href: "/app/settings/health", label: "Apple Health", desc: "Auto-track steps, sleep, and workouts", icon: Heart },
     ],
   },
   {

@@ -29,6 +29,7 @@ import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
 import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
+import { HealthCard } from "@/app/app/_components/HealthCard";
 import { usePremium } from "@/lib/premium";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
@@ -517,6 +518,9 @@ export default function TodayPage() {
 
       {/* ─── WATER TRACKER ─── */}
       <WaterTracker dateKey={dateKey} />
+
+      {/* Apple Health summary — only shows in native app */}
+      <HealthCard />
 
       {/* ─── CORE HABITS ─── */}
       <section>
