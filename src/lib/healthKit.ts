@@ -45,17 +45,36 @@ export interface HealthKitDaySummary {
 
 // ── Bridge ──
 
+let pluginInstance: Record<string, (...args: unknown[]) => Promise<unknown>> | null | undefined;
+
 function getPlugin(): Record<string, (...args: unknown[]) => Promise<unknown>> | null {
   if (typeof window === "undefined") return null;
   // @ts-expect-error - Capacitor global
   const cap = window.Capacitor;
-  if (!cap?.Plugins?.HealthKitPlugin) return null;
-  return cap.Plugins.HealthKitPlugin;
+  if (!cap) return null;
+
+  // Cache lookup
+  if (pluginInstance !== undefined) return pluginInstance;
+
+  try {
+    // Capacitor registers native plugins on Plugins object
+    // Try multiple access patterns for different Capacitor versions
+    const p = cap.Plugins?.HealthKitPlugin
+      ?? cap.registerPlugin?.("HealthKitPlugin")
+      ?? null;
+    pluginInstance = p;
+    return p;
+  } catch {
+    pluginInstance = null;
+    return null;
+  }
 }
 
-/** Returns true if HealthKit is available (native app on iPhone) */
+/** Returns true if running in native app (HealthKit may be available) */
 export function isHealthKitAvailable(): boolean {
-  return !!getPlugin();
+  if (typeof window === "undefined") return false;
+  // @ts-expect-error - Capacitor global
+  return !!window.Capacitor;
 }
 
 /**

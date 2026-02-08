@@ -73,9 +73,13 @@ export function useHealthKit(): UseHealthKitReturn {
       setAvailable(avail);
       if (!avail) { setLoading(false); return; }
 
-      const auth = await isHealthKitAuthorized();
-      setAuthorized(auth);
-      if (auth) await refresh();
+      try {
+        const auth = await isHealthKitAuthorized();
+        setAuthorized(auth);
+        if (auth) await refresh();
+      } catch {
+        // Plugin may not be fully registered yet — that's OK
+      }
       setLoading(false);
     };
     void init();
