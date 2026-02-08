@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart, Bell } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 import { usePremium } from "@/lib/premium";
 
@@ -21,6 +21,7 @@ const sections = [
     title: "Preferences",
     items: [
       { href: "/app/settings/appearance", label: "Appearance", desc: "Theme and display", icon: Palette },
+      { href: "/app/settings/notifications", label: "Notifications", desc: "Daily reminders and streak alerts", icon: Bell },
       { href: "/app/settings/security", label: "Security", desc: "Sign out, Face ID / Touch ID", icon: Lock },
     ],
   },

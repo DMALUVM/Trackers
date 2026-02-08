@@ -30,6 +30,7 @@ import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
 import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
 import { HealthCard } from "@/app/app/_components/HealthCard";
+import { updateWidgetData } from "@/lib/widgetData";
 import { usePremium } from "@/lib/premium";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
@@ -191,6 +192,17 @@ export default function TodayPage() {
     greenThisWeek: streaks.greenDaysThisWeek,
     greenLastWeek: streaks.greenDaysLastWeek,
   }), [streaks, coreDone, coreTotal, allCoreDone]);
+
+  // ── Push data to home screen widget ──
+  useEffect(() => {
+    void updateWidgetData({
+      streak: streaks.currentStreak,
+      bestStreak: streaks.bestStreak,
+      todayDone: coreDone,
+      todayTotal: coreTotal,
+      greenToday: allCoreDone,
+    });
+  }, [streaks.currentStreak, streaks.bestStreak, coreDone, coreTotal, allCoreDone]);
 
   // ── Milestone check on green day completion ──
   useEffect(() => {
