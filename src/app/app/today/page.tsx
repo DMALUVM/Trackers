@@ -197,13 +197,13 @@ export default function TodayPage() {
   // ── Push data to home screen widget ──
   useEffect(() => {
     void updateWidgetData({
-      streak: streaks.currentStreak,
+      streak: streaks.activeStreak,
       bestStreak: streaks.bestStreak,
       todayDone: coreDone,
       todayTotal: coreTotal,
       greenToday: allCoreDone,
     });
-  }, [streaks.currentStreak, streaks.bestStreak, coreDone, coreTotal, allCoreDone]);
+  }, [streaks.activeStreak, streaks.bestStreak, coreDone, coreTotal, allCoreDone]);
 
   // ── Milestone check on green day completion ──
   useEffect(() => {
@@ -384,7 +384,7 @@ export default function TodayPage() {
         </div>
         <div className="flex items-center gap-2">
           {/* Trophies shortcut (appears after first milestone earned) */}
-          {!streaks.loading && (streaks.currentStreak >= 3 || streaks.totalGreenDays >= 1) && (
+          {!streaks.loading && (streaks.activeStreak >= 3 || streaks.totalGreenDays >= 1) && (
             <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
               className="tap-btn flex items-center justify-center rounded-full"
               style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
@@ -465,17 +465,17 @@ export default function TodayPage() {
             </div>
 
             {/* Streak display with identity reinforcement */}
-            {!streaks.loading && streaks.currentStreak > 0 && (
+            {!streaks.loading && streaks.activeStreak > 0 && (
               <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
                 className="flex items-center gap-1.5 -ml-0.5"
-                aria-label={`${streaks.currentStreak} day streak - view trophies`}>
-                <span className={streaks.currentStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "18px" }}>🔥</span>
+                aria-label={`${streaks.activeStreak} day streak - view trophies`}>
+                <span className={streaks.activeStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "18px" }}>🔥</span>
                 <span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
-                  {streaks.currentStreak}
+                  {streaks.activeStreak}
                 </span>
                 <span className="text-sm" style={{ color: "var(--text-faint)" }}>
                   day streak
-                  {streaks.bestStreak > streaks.currentStreak ? ` · best ${streaks.bestStreak}` : ""}
+                  {streaks.bestStreak > streaks.activeStreak ? ` · best ${streaks.bestStreak}` : ""}
                 </span>
               </button>
             )}
@@ -488,9 +488,9 @@ export default function TodayPage() {
         </div>
 
         {/* Next milestone progress bar */}
-        {!streaks.loading && streaks.currentStreak >= 1 && (
+        {!streaks.loading && streaks.activeStreak >= 1 && (
           <NextMilestoneTeaser
-            currentStreak={streaks.currentStreak}
+            currentStreak={streaks.activeStreak}
             totalGreenDays={streaks.totalGreenDays}
           />
         )}

@@ -107,6 +107,7 @@ struct SmallWidgetView: View {
             }
         }
         .padding(14)
+        .widgetURL(URL(string: "https://routines365.com/app/today"))
         .containerBackground(for: .widget) {
             Color.black
         }
@@ -192,6 +193,7 @@ struct MediumWidgetView: View {
             }
         }
         .padding(14)
+        .widgetURL(URL(string: "https://routines365.com/app/today"))
         .containerBackground(for: .widget) {
             Color.black
         }

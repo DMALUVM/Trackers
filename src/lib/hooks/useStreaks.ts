@@ -16,6 +16,8 @@ function shouldShow(item: RoutineItemRow, date: Date): boolean {
 
 export interface StreakData {
   currentStreak: number;
+  /** Streak "at risk" — shows yesterday's streak when today isn't green yet */
+  activeStreak: number;
   bestStreak: number;
   last7Days: Array<{ dateKey: string; color: DayColor }>;
   categoryStreaks: { movement: number; mind: number; sleep: number };
@@ -43,6 +45,7 @@ export interface StreakData {
 export function useStreaks(dateKey: string) {
   const [data, setData] = useState<StreakData>({
     currentStreak: 0,
+    activeStreak: 0,
     bestStreak: 0,
     last7Days: [],
     categoryStreaks: { movement: 0, mind: 0, sleep: 0 },
@@ -119,6 +122,16 @@ export function useStreaks(dateKey: string) {
           for (let i = histDays.length - 1; i >= 0; i--) {
             if (histDays[i].color !== "green") break;
             currentStreak++;
+          }
+
+          // Active streak = streak "at risk" (from yesterday backward)
+          // Shows the streak even when today isn't done yet
+          let activeStreak = currentStreak;
+          if (currentStreak === 0 && histDays.length >= 2) {
+            for (let i = histDays.length - 2; i >= 0; i--) {
+              if (histDays[i].color !== "green") break;
+              activeStreak++;
+            }
           }
 
           // Best streak and previous-best tracking
@@ -219,6 +232,7 @@ export function useStreaks(dateKey: string) {
 
           setData({
             currentStreak,
+            activeStreak,
             bestStreak,
             last7Days: histDays.slice(-7),
             categoryStreaks: {

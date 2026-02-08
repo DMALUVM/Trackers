@@ -22,6 +22,7 @@
 		CA933EBC2F3945DF00C71DEC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */; };
 		CA933EBE2F3945DF00C71DEC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */; };
 		CA933ECD2F3945E000C71DEC /* Routines365WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CA933ED92F39523700C71DEC /* BiometricPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933ED82F39523700C71DEC /* BiometricPlugin.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 		CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		CA933ED72F394B6200C71DEC /* Routines365WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Routines365WidgetExtension.entitlements; sourceTree = "<group>"; };
+		CA933ED82F39523700C71DEC /* BiometricPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricPlugin.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -129,6 +131,7 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				CA933ED82F39523700C71DEC /* BiometricPlugin.swift */,
 				CA933EAD2F393D6500C71DEC /* HealthKitPlugin.swift */,
 				CA933EAC2F3939AD00C71DEC /* App.entitlements */,
 				CA933EB12F39454F00C71DEC /* LocalNotifyPlugin.swift */,
@@ -275,6 +278,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				CA933EB02F393E8000C71DEC /* MyViewController.swift in Sources */,
 				CA933EAE2F393D6500C71DEC /* HealthKitPlugin.swift in Sources */,
+				CA933ED92F39523700C71DEC /* BiometricPlugin.swift in Sources */,
 				CA933EB32F39454F00C71DEC /* WidgetDataPlugin.swift in Sources */,
 				CA933EB42F39454F00C71DEC /* LocalNotifyPlugin.swift in Sources */,
 			);

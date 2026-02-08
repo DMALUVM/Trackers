@@ -6,5 +6,6 @@ class MyViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(HealthKitPlugin())
         bridge?.registerPluginInstance(LocalNotifyPlugin())
         bridge?.registerPluginInstance(WidgetDataPlugin())
+        bridge?.registerPluginInstance(BiometricPlugin())
     }
 }
