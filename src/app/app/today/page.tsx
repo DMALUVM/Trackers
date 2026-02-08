@@ -92,17 +92,9 @@ export default function TodayPage() {
   const [halfwayShown, setHalfwayShown] = useState(false);
 
   // Guard: don't fire haptics / confetti on initial data load — only on
-  // user-initiated state changes. We track the initial snapshot of allCoreDone
-  // so confetti only fires on transitions, not on page load with cores already done.
+  // user-initiated state changes.
   const initialLoadDone = useRef(false);
-  const prevAllCoreDone = useRef(false);
-  useEffect(() => {
-    if (!routine.loading && items.length > 0 && !initialLoadDone.current) {
-      // Capture the initial state — if cores are already done on load, don't celebrate
-      initialLoadDone.current = true;
-      prevAllCoreDone.current = allCoreDone;
-    }
-  }, [routine.loading, items.length, allCoreDone]);
+  const prevAllCoreDone = useRef<boolean | null>(null);
 
   // Sync hook state → local
   useEffect(() => {
@@ -236,7 +228,12 @@ export default function TodayPage() {
   // Confetti on natural all-core completion — only when user completes cores
   // during this session, NOT on page load when they're already done.
   useEffect(() => {
-    if (!initialLoadDone.current) return;
+    // First time we see real data: capture initial state, don't celebrate
+    if (prevAllCoreDone.current === null) {
+      prevAllCoreDone.current = allCoreDone;
+      initialLoadDone.current = true;
+      return;
+    }
     // Only fire when allCoreDone transitions from false → true
     if (allCoreDone && !prevAllCoreDone.current && coreDone > 0 && !justCompletedAll) {
       hapticHeavy();
