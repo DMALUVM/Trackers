@@ -378,7 +378,7 @@ export default function TodayPage() {
               <Trophy size={17} style={{ color: "var(--accent-green-text)" }} />
             </button>
           )}
-          <button type="button" onClick={() => setMenuOpen(true)}
+          <button type="button" onClick={() => { hapticLight(); setMenuOpen(true); }}
             className="tap-btn flex items-center justify-center rounded-full"
             style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
             aria-label="More options">
@@ -400,12 +400,12 @@ export default function TodayPage() {
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
-              <button type="button" onClick={() => setTodayIsRest(false)}
+              <button type="button" onClick={() => { hapticLight(); setTodayIsRest(false); }}
                 className="text-xs font-semibold px-2.5 py-1.5 rounded-lg"
                 style={{ color: "var(--text-muted)", background: "var(--bg-card-hover)" }}>
                 Skip
               </button>
-              <button type="button" onClick={() => { changeDayMode("travel"); setTodayIsRest(false); }}
+              <button type="button" onClick={() => { hapticMedium(); changeDayMode("travel"); setTodayIsRest(false); }}
                 className="text-xs font-bold px-3 py-1.5 rounded-lg"
                 style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
                 Rest today
@@ -602,7 +602,7 @@ export default function TodayPage() {
               {(["normal", "travel", "sick"] as const).map((mode) => (
                 <button key={mode} type="button"
                   className={dayMode === mode ? "btn-primary text-sm py-2.5 capitalize" : "btn-secondary text-sm py-2.5 capitalize"}
-                  onClick={() => changeDayMode(mode)}>
+                  onClick={() => { hapticLight(); changeDayMode(mode); }}>
                   {mode}
                 </button>
               ))}
@@ -613,12 +613,13 @@ export default function TodayPage() {
             <div>
               <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Quick actions</p>
               <div className="space-y-2">
-                <button type="button" onClick={() => { markAllCoreDone(); setMenuOpen(false); }}
+                <button type="button" onClick={() => { hapticHeavy(); markAllCoreDone(); setMenuOpen(false); }}
                   className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
                   <Zap size={14} /> Mark all core done
                 </button>
                 {streaks.currentStreak > 0 && canUseFreeze(isPremium) && (
                   <button type="button" onClick={() => {
+                    hapticMedium();
                     const ok = useStreakFreeze(isPremium);
                     if (ok) { changeDayMode("travel"); setMenuOpen(false); }
                   }}
@@ -637,15 +638,15 @@ export default function TodayPage() {
           <div>
             <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Navigate</p>
             <div className="space-y-2">
-              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/trophies"); }}
+              <button type="button" onClick={() => { hapticLight(); setMenuOpen(false); router.push("/app/trophies"); }}
                 className="btn-secondary w-full flex items-center justify-center gap-2 text-sm">
                 <Trophy size={14} /> Trophies & milestones
               </button>
-              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/settings/routines"); }}
+              <button type="button" onClick={() => { hapticLight(); setMenuOpen(false); router.push("/app/settings/routines"); }}
                 className="btn-secondary w-full text-sm">
                 Edit routines
               </button>
-              <button type="button" onClick={() => { setMenuOpen(false); router.push("/app/settings"); }}
+              <button type="button" onClick={() => { hapticLight(); setMenuOpen(false); router.push("/app/settings"); }}
                 className="btn-secondary w-full text-sm">
                 ⚙️ Settings
               </button>

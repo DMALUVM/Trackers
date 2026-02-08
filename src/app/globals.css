@@ -142,6 +142,15 @@ html { -webkit-text-size-adjust: 100%; }
 /* Prevent elastic overscroll revealing white bg */
 html, body { overscroll-behavior-y: none; }
 
+/* ── Native app feel ── */
+/* Prevent text selection on non-input elements (feels native) */
+body { -webkit-user-select: none; user-select: none; }
+input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+/* Prevent long-press context menu on links and images */
+a, img, button { -webkit-touch-callout: none; }
+/* Smoother momentum scrolling */
+* { -webkit-overflow-scrolling: touch; }
+
 /* Selection color */
 ::selection { background: var(--accent-green-soft); color: var(--accent-green-text); }
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { listRoutineItems, createRoutineItemsBulk, setEnabledModules } from "@/lib/supabaseData";
 import { templatePacks } from "@/lib/templates";
-import { hapticMedium, hapticHeavy } from "@/lib/haptics";
+import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 export default function OnboardingPage() {
@@ -136,7 +136,7 @@ export default function OnboardingPage() {
               background: tag ? "var(--accent-green-soft)" : "var(--bg-card)",
               border: `2px solid ${tag ? "var(--accent-green)" : "var(--border-primary)"}`,
             }}
-            onClick={() => void quickStart(id)}>
+            onClick={() => { hapticMedium(); void quickStart(id); }}>
             <div className="flex items-center gap-4">
               <div className="shrink-0 flex items-center justify-center rounded-xl"
                 style={{
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
       </section>
 
       {/* Back button */}
-      <button type="button" onClick={() => setStep(0)}
+      <button type="button" onClick={() => { hapticLight(); setStep(0); }}
         className="w-full text-center text-sm py-3"
         style={{ color: "var(--text-faint)" }}>
         ← Back

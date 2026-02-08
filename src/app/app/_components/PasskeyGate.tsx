@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isPasskeyEnabled, isUnlockValid, unlockWithPasskey, clearPasskey } from "@/lib/passkey";
+import { hapticMedium, hapticLight } from "@/lib/haptics";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 /**
@@ -27,6 +28,7 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
 
   const handleUnlock = useCallback(async () => {
     if (busy) return;
+    hapticMedium();
     setBusy(true);
     setStatus("");
     try {
@@ -102,7 +104,7 @@ export function PasskeyGate({ children }: { children: React.ReactNode }) {
 
         {/* Escape hatch — disable Face ID if stuck */}
         <button type="button"
-          onClick={() => { clearPasskey(); setUnlocked(true); }}
+          onClick={() => { hapticLight(); clearPasskey(); setUnlocked(true); }}
           style={{
             marginTop: 24, fontSize: 12, color: "#6b7280",
             background: "none", border: "none", cursor: "pointer",
