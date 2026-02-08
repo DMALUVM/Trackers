@@ -61,6 +61,15 @@ export async function GET(request: Request) {
   const jsDay = etNow.getDay(); // 0=Sun
   const isoDay = jsDay === 0 ? 7 : jsDay; // ISO: 1=Mon … 7=Sun
 
+  console.log(`[CRON] Checking reminders for time=${timeStr} day=${isoDay} (UTC=${now.toISOString()})`);
+
+  // First, log ALL reminders for debugging
+  const { data: allReminders } = await supabase
+    .from("reminders")
+    .select("id, time, days_of_week, enabled")
+    .eq("enabled", true);
+  console.log(`[CRON] All enabled reminders:`, JSON.stringify(allReminders));
+
   // Find enabled reminders matching this time
   const { data: reminders, error: remErr } = await supabase
     .from("reminders")
@@ -69,13 +78,15 @@ export async function GET(request: Request) {
     .eq("time", timeStr)
     .contains("days_of_week", [isoDay]);
 
+  console.log(`[CRON] Matched reminders: ${reminders?.length ?? 0}`);
+
   if (remErr) {
     console.error("Failed to query reminders:", remErr);
     return NextResponse.json({ error: remErr.message }, { status: 500 });
   }
 
   if (!reminders || reminders.length === 0) {
-    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay });
+    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay, allReminders: allReminders?.map(r => ({ time: r.time, days: r.days_of_week })) });
   }
 
   // Get routine item labels for notification text
@@ -110,6 +121,8 @@ export async function GET(request: Request) {
     subsByUser.set(s.user_id, arr);
   }
 
+  console.log(`[CRON] Found ${subs?.length ?? 0} push subscriptions for ${userIds.length} users`);
+
   // Send notifications
   let sent = 0;
   let failed = 0;
@@ -140,8 +153,10 @@ export async function GET(request: Request) {
           payload
         );
         sent++;
+        console.log(`[CRON] ✅ Sent to ${sub.endpoint.slice(0, 60)}...`);
       } catch (err: any) {
         failed++;
+        console.error(`[CRON] ❌ Failed: ${err.statusCode} ${err.body ?? err.message}`);
         errors.push(`${err.statusCode ?? "?"}: ${err.body ?? err.message ?? "unknown"}`);
         // Remove expired/invalid subscriptions
         if (err.statusCode === 410 || err.statusCode === 404) {
