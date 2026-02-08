@@ -29,7 +29,10 @@ function isStandalone() {
   // @ts-expect-error - nonstandard
   const navStandalone = typeof navigator !== "undefined" && navigator.standalone;
   const mm = window.matchMedia?.("(display-mode: standalone)")?.matches;
-  return Boolean(navStandalone || mm);
+  // Running inside Capacitor native shell
+  // @ts-expect-error - Capacitor global
+  const isCapacitor = typeof window !== "undefined" && !!window.Capacitor;
+  return Boolean(navStandalone || mm || isCapacitor);
 }
 
 export function IosInstallPrompt() {
