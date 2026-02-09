@@ -67,6 +67,15 @@ export default function Home() {
     void check();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
+      // Clear stale localStorage if a different user logs in
+      if (session?.user.id) {
+        const prevUserId = localStorage.getItem("routines365:userId");
+        if (prevUserId && prevUserId !== session.user.id) {
+          const keys = Object.keys(localStorage).filter((k) => k.startsWith("routines365:") && k !== "routines365:userId");
+          keys.forEach((k) => localStorage.removeItem(k));
+        }
+        localStorage.setItem("routines365:userId", session.user.id);
+      }
       setSignedInEmail(session?.user.email ?? null);
       setAuthState(session ? "signed-in" : "signed-out");
     });
@@ -75,12 +84,9 @@ export default function Home() {
 
   useEffect(() => {
     if (authState !== "signed-in") return;
-    let target = "/app/today";
-    if (typeof window !== "undefined") {
-      const next = new URLSearchParams(window.location.search).get("next");
-      if (next?.startsWith("/")) target = next;
-    }
-    router.replace(target);
+    // Always go to /app/today first — it handles onboarding redirect for new users
+    // and is the correct landing page for returning users
+    router.replace("/app/today");
   }, [authState, router]);
 
   const getSiteUrl = () =>
