@@ -36,17 +36,46 @@ export function MilestoneModal({
     setTimeout(() => { setVisible(false); onDismiss(); }, 300);
   };
 
+  // Lock body scroll when modal is visible
+  useEffect(() => {
+    if (!visible) return;
+    const scrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      window.scrollTo(0, scrollY);
+    };
+  }, [visible]);
+
   if (!visible || !milestone) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-6"
+      role="dialog"
+      aria-modal="true"
+      onClick={dismiss}
       style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100dvh",
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
         background: phase === "show" ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0)",
         backdropFilter: phase === "show" ? "blur(12px)" : "blur(0)",
+        WebkitBackdropFilter: phase === "show" ? "blur(12px)" : "blur(0)",
         transition: "all 0.4s ease",
       }}
-      onClick={dismiss}
     >
       <div
         className="w-full max-w-sm text-center"

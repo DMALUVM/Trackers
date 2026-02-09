@@ -108,10 +108,11 @@ export function ReminderSheet({
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
         onClick={onClose} />
 
-      {/* Sheet */}
-      <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-md animate-slide-up">
-        <div className="rounded-t-2xl p-5 pb-8 safe-bottom"
-          style={{ background: "var(--bg-sheet)", borderTop: "1px solid var(--border-primary)" }}>
+      {/* Modal — centered */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="w-full max-w-sm rounded-2xl p-5 animate-fade-in-up"
+          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}
+          onClick={(e) => e.stopPropagation()}>
 
           {/* Handle + close */}
           <div className="flex items-center justify-between mb-4">

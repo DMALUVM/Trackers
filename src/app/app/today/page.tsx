@@ -422,7 +422,7 @@ export default function TodayPage() {
       <MilestoneModal milestone={milestoneToShow} onDismiss={() => setMilestoneToShow(null)} />
 
       {/* ─── HEADER ─── */}
-      <header className="flex items-center justify-between pt-1">
+      <header className="flex items-center justify-between">
         <div>
           <p className="text-base font-medium" style={{ color: "var(--text-muted)" }}>
             {greeting()} 👋

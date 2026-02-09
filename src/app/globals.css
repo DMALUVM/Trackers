@@ -162,7 +162,7 @@ a, img, button { -webkit-touch-callout: none; }
 /* Safe area for PWA bottom nav */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* Safe area for top notch/dynamic island */
-.pt-safe { padding-top: max(env(safe-area-inset-top, 0px), 1rem); }
+.pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }
 
 /* ============================================================
    ANIMATION KEYFRAMES
