@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, Play, Pause, SkipForward, RotateCcw, Lock, Crown, Check } from "lucide-react";
+import { ChevronLeft, Play, Pause, SkipForward, RotateCcw, Lock } from "lucide-react";
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";

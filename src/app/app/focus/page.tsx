@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, Play, Pause, RotateCcw, Coffee, Brain, Zap } from "lucide-react";
+import { ChevronLeft, Play, Pause, RotateCcw, Coffee, Brain } from "lucide-react";
 import Link from "next/link";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 

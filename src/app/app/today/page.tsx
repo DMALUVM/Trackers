@@ -105,8 +105,8 @@ export default function TodayPage() {
   useEffect(() => {
     try { setHealthHidden(localStorage.getItem("routines365:healthCard:hidden") === "1"); } catch {}
     try { setQuestsHidden(localStorage.getItem("routines365:quests:hidden") === "1"); } catch {}
-    try { setWaterHidden(localStorage.getItem("routines365:water:hidden") === "1"); } catch {}
-    try { setWisdomHidden(localStorage.getItem("routines365:wisdom:hidden") === "1"); } catch {}
+    try { setWaterHidden(localStorage.getItem("routines365:waterTracker:hidden") === "1"); } catch {}
+    try { setWisdomHidden(localStorage.getItem("routines365:dailyWisdom:hidden") === "1"); } catch {}
     try { setQuickActionsHidden(localStorage.getItem("routines365:quickActions:hidden") === "1"); } catch {}
     try { setSmartTipsHidden(localStorage.getItem("routines365:smartTips:hidden") === "1"); } catch {}
   }, []);

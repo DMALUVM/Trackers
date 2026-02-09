@@ -5,160 +5,6 @@ import { getUserSettings, setEnabledModules } from "@/lib/supabaseData";
 import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 import { hapticLight } from "@/lib/haptics";
 
-const LS_WATER_HIDDEN = "routines365:waterTracker:hidden";
-const LS_WISDOM_HIDDEN = "routines365:dailyWisdom:hidden";
-const LS_HEALTH_HIDDEN = "routines365:healthCard:hidden";
-const LS_QUESTS_HIDDEN = "routines365:quests:hidden";
-
-function WaterTrackerToggle() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    try { setHidden(localStorage.getItem(LS_WATER_HIDDEN) === "1"); } catch {}
-  }, []);
-
-  const toggle = () => {
-    const next = !hidden;
-    setHidden(next);
-    localStorage.setItem(LS_WATER_HIDDEN, next ? "1" : "0");
-    hapticLight();
-  };
-
-  return (
-    <section>
-      <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
-        Today page widgets
-      </p>
-      <button type="button"
-        className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
-        onClick={toggle}>
-        <div className="flex items-center gap-3">
-          <span className="text-lg">💧</span>
-          <div>
-            <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Water Tracker</p>
-            <p className="text-xs" style={{ color: "var(--text-faint)" }}>Track daily water intake on Today page</p>
-          </div>
-        </div>
-        <div className="rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0"
-          style={{
-            background: !hidden ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
-            color: !hidden ? "var(--accent-green-text)" : "var(--text-faint)",
-          }}>
-          {!hidden ? "ON" : "OFF"}
-        </div>
-      </button>
-    </section>
-  );
-}
-
-function DailyWisdomToggle() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    try { setHidden(localStorage.getItem(LS_WISDOM_HIDDEN) === "1"); } catch {}
-  }, []);
-
-  const toggle = () => {
-    const next = !hidden;
-    setHidden(next);
-    localStorage.setItem(LS_WISDOM_HIDDEN, next ? "1" : "0");
-    hapticLight();
-  };
-
-  return (
-    <button type="button"
-      className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
-      onClick={toggle}>
-      <div className="flex items-center gap-3">
-        <span className="text-lg">🏛️</span>
-        <div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Daily Wisdom</p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Stoic philosophy quote each day</p>
-        </div>
-      </div>
-      <div className="rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0"
-        style={{
-          background: !hidden ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
-          color: !hidden ? "var(--accent-green-text)" : "var(--text-faint)",
-        }}>
-        {!hidden ? "ON" : "OFF"}
-      </div>
-    </button>
-  );
-}
-
-function HealthCardToggle() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    try { setHidden(localStorage.getItem(LS_HEALTH_HIDDEN) === "1"); } catch {}
-  }, []);
-
-  const toggle = () => {
-    const next = !hidden;
-    setHidden(next);
-    localStorage.setItem(LS_HEALTH_HIDDEN, next ? "1" : "0");
-    hapticLight();
-  };
-
-  return (
-    <button type="button"
-      className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
-      onClick={toggle}>
-      <div className="flex items-center gap-3">
-        <span className="text-lg">❤️</span>
-        <div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Apple Health Card</p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Steps, sleep, calories, workouts summary</p>
-        </div>
-      </div>
-      <div className="rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0"
-        style={{
-          background: !hidden ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
-          color: !hidden ? "var(--accent-green-text)" : "var(--text-faint)",
-        }}>
-        {!hidden ? "ON" : "OFF"}
-      </div>
-    </button>
-  );
-}
-
-function QuestsToggle() {
-  const [hidden, setHidden] = useState(false);
-
-  useEffect(() => {
-    try { setHidden(localStorage.getItem(LS_QUESTS_HIDDEN) === "1"); } catch {}
-  }, []);
-
-  const toggle = () => {
-    const next = !hidden;
-    setHidden(next);
-    localStorage.setItem(LS_QUESTS_HIDDEN, next ? "1" : "0");
-    hapticLight();
-  };
-
-  return (
-    <button type="button"
-      className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
-      onClick={toggle}>
-      <div className="flex items-center gap-3">
-        <span className="text-lg">⚔️</span>
-        <div>
-          <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Quests</p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Weekly challenges and bonus goals</p>
-        </div>
-      </div>
-      <div className="rounded-full px-2.5 py-1 text-[10px] font-semibold shrink-0"
-        style={{
-          background: !hidden ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
-          color: !hidden ? "var(--accent-green-text)" : "var(--text-faint)",
-        }}>
-        {!hidden ? "ON" : "OFF"}
-      </div>
-    </button>
-  );
-}
-
 type Module = {
   key: string;
   label: string;
@@ -321,10 +167,23 @@ export default function ModulesPage() {
       ))}
 
       {/* ── TODAY PAGE WIDGETS ── */}
-      <WaterTrackerToggle />
-      <DailyWisdomToggle />
-      <HealthCardToggle />
-      <QuestsToggle />
+      <section>
+        <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
+          Today page widgets
+        </p>
+        <a href="/app/settings/customize"
+          className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
+          style={{ textDecoration: "none" }}>
+          <div className="flex items-center gap-3">
+            <span className="text-lg">🎨</span>
+            <div>
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Customize Today Page</p>
+              <p className="text-xs" style={{ color: "var(--text-faint)" }}>Toggle water, wisdom, health, quests, and more</p>
+            </div>
+          </div>
+          <span className="text-xs" style={{ color: "var(--text-faint)" }}>→</span>
+        </a>
+      </section>
     </div>
   );
 }

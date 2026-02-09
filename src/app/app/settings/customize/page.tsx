@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, Droplets, BookOpen, Wind, Lightbulb, Heart, Trophy, GripVertical } from "lucide-react";
+import { ChevronLeft, Droplets, BookOpen, Wind, Lightbulb, Heart, Trophy } from "lucide-react";
 import Link from "next/link";
 import { hapticLight } from "@/lib/haptics";
 
@@ -16,8 +16,8 @@ interface TodaySection {
 
 const SECTIONS: TodaySection[] = [
   { id: "quests", label: "Quests", description: "Daily & weekly challenges", icon: Trophy, color: "#f59e0b", lsKey: "routines365:quests:hidden" },
-  { id: "water", label: "Water Tracker", description: "Daily hydration tracking", icon: Droplets, color: "#3b82f6", lsKey: "routines365:water:hidden" },
-  { id: "wisdom", label: "Daily Wisdom", description: "Stoic quotes & reflections", icon: BookOpen, color: "#8b5cf6", lsKey: "routines365:wisdom:hidden" },
+  { id: "water", label: "Water Tracker", description: "Daily hydration tracking", icon: Droplets, color: "#3b82f6", lsKey: "routines365:waterTracker:hidden" },
+  { id: "wisdom", label: "Daily Wisdom", description: "Stoic quotes & reflections", icon: BookOpen, color: "#8b5cf6", lsKey: "routines365:dailyWisdom:hidden" },
   { id: "health", label: "Apple Health", description: "Steps, sleep, biometrics", icon: Heart, color: "#ef4444", lsKey: "routines365:healthCard:hidden" },
   { id: "quickActions", label: "Quick Actions", description: "Breathwork, movement, focus shortcuts", icon: Wind, color: "#6366f1", lsKey: "routines365:quickActions:hidden" },
   { id: "smartTips", label: "Smart Tips", description: "Personalized recommendations", icon: Lightbulb, color: "#f59e0b", lsKey: "routines365:smartTips:hidden" },
