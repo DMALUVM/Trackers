@@ -529,9 +529,9 @@ export default function TodayPage() {
 
             {/* Streak display with identity reinforcement */}
             {!streaks.loading && streaks.activeStreak > 0 && (
-              <button type="button" onClick={() => { hapticLight(); router.push("/app/trophies"); }}
+              <button type="button" onClick={() => { hapticLight(); router.push("/app/streaks"); }}
                 className="flex items-center gap-1.5 -ml-0.5"
-                aria-label={`${streaks.activeStreak} day streak - view trophies`}>
+                aria-label={`${streaks.activeStreak} day streak - view my streaks`}>
                 <span className={streaks.activeStreak >= 3 ? "animate-streak-glow" : ""} style={{ fontSize: "18px" }}>🔥</span>
                 <span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
                   {streaks.activeStreak}

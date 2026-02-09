@@ -214,10 +214,16 @@ export default function RoutinesProgressPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-muted)" }}>Streaks</p>
-            <Link href="/app/trophies" className="flex items-center gap-1.5 text-xs font-semibold"
-              style={{ color: "var(--accent-green)" }} onClick={() => hapticLight()}>
-              <Award size={14} /> Trophies
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/app/streaks" className="flex items-center gap-1.5 text-xs font-semibold"
+                style={{ color: "var(--accent-green)" }} onClick={() => hapticLight()}>
+                <Activity size={14} /> My Streaks
+              </Link>
+              <Link href="/app/trophies" className="flex items-center gap-1.5 text-xs font-semibold"
+                style={{ color: "var(--accent-green)" }} onClick={() => hapticLight()}>
+                <Award size={14} /> Trophies
+              </Link>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3 stagger-children">
             <Stat label="Current" value={`${streaks.activeStreak || streaks.currentStreak}`} sub="consecutive green days" />

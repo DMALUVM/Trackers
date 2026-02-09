@@ -7,3 +7,4 @@ export { usePullToRefresh } from "./usePullToRefresh";
 export { useInsights, type Insight } from "./useInsights";
 export { useHealthKit } from "./useHealthKit";
 export { useBiometrics, type BiometricTrend, type BiometricData } from "./useBiometrics";
+export { useHabitStreaks, type HabitStreak, getPinnedHabits, togglePinHabit } from "./useHabitStreaks";
