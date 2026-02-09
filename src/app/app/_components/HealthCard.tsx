@@ -1,17 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2 } from "lucide-react";
+import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2, Activity, Wind, Droplets, Lock } from "lucide-react";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
+import { usePremium } from "@/lib/premium";
 import { hapticLight } from "@/lib/haptics";
+import { getDaySummary } from "@/lib/healthKit";
 
 const LS_KEY = "routines365:healthcard:metrics";
-type MetricId = "steps" | "sleep" | "calories" | "workouts";
-const ALL_METRICS: { id: MetricId; label: string }[] = [
+type MetricId = "steps" | "sleep" | "calories" | "workouts" | "hrv" | "rhr" | "spo2" | "respiratory";
+const ALL_METRICS: { id: MetricId; label: string; premium?: boolean }[] = [
   { id: "steps", label: "Steps" },
   { id: "sleep", label: "Sleep" },
   { id: "calories", label: "Calories" },
   { id: "workouts", label: "Workouts" },
+  { id: "hrv", label: "HRV", premium: true },
+  { id: "rhr", label: "Heart Rate", premium: true },
+  { id: "spo2", label: "SpO2", premium: true },
+  { id: "respiratory", label: "Breathing", premium: true },
 ];
 const DEFAULT_METRICS: MetricId[] = ["steps", "sleep", "calories", "workouts"];
 
@@ -29,14 +35,29 @@ function saveVisibleMetrics(ids: MetricId[]) {
 /**
  * Compact Apple Health summary card shown on Today page.
  * Only renders when running in native app with HealthKit authorized.
- * Shows: steps, sleep, calories, workouts — user customizable.
+ * Shows: steps, sleep, calories, workouts + premium biometrics.
  */
 export function HealthCard() {
   const { available, authorized, requestAuth, steps, sleep, summary, loading } = useHealthKit();
+  const { isPremium } = usePremium();
   const [visible, setVisible] = useState<MetricId[]>(DEFAULT_METRICS);
   const [showSettings, setShowSettings] = useState(false);
+  const [bio, setBio] = useState<{ hrv?: number; restingHeartRate?: number } | null>(null);
 
   useEffect(() => { setVisible(getVisibleMetrics()); }, []);
+
+  // Fetch biometric data from today's summary if any bio metrics are visible
+  useEffect(() => {
+    if (!available || !authorized || !isPremium) return;
+    const hasBioMetric = visible.some(id => ["hrv", "rhr", "spo2", "respiratory"].includes(id));
+    if (!hasBioMetric) return;
+    void (async () => {
+      try {
+        const s = await getDaySummary();
+        if (s) setBio({ hrv: s.hrv, restingHeartRate: s.restingHeartRate });
+      } catch { /* ignore */ }
+    })();
+  }, [available, authorized, isPremium, visible]);
 
   // Don't show anything on web
   if (!available) return null;
@@ -89,6 +110,12 @@ export function HealthCard() {
   const calories = summary?.activeCalories ?? 0;
 
   const toggleMetric = (id: MetricId) => {
+    const metric = ALL_METRICS.find(m => m.id === id);
+    if (metric?.premium && !isPremium) {
+      hapticLight();
+      window.location.href = "/app/settings/premium";
+      return;
+    }
     hapticLight();
     setVisible((prev) => {
       const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
@@ -98,14 +125,19 @@ export function HealthCard() {
     });
   };
 
-  const metricData = {
+  const hrvValue = bio?.hrv;
+  const rhrValue = bio?.restingHeartRate;
+
+  const metricData: Record<MetricId, { icon: typeof Heart; color: string; bg: string; value: string; sub: string }> = {
     steps: { icon: Footprints, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: steps >= 1000 ? `${(steps / 1000).toFixed(1)}k` : String(steps), sub: "steps" },
     sleep: { icon: Moon, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: sleepHours ?? "—", sub: sleepHours ? "hrs sleep" : "no data" },
     calories: { icon: Flame, color: "#f97316", bg: "rgba(249,115,22,0.1)", value: calories > 0 ? String(calories) : "—", sub: calories > 0 ? "cal burned" : "no data" },
     workouts: { icon: Dumbbell, color: "#10b981", bg: "rgba(16,185,129,0.1)", value: workoutCount > 0 ? String(workoutCount) : "—", sub: workoutCount === 1 ? "workout" : workoutCount > 1 ? "workouts" : "none today" },
+    hrv: { icon: Activity, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: hrvValue ? String(Math.round(hrvValue)) : "—", sub: hrvValue ? "ms HRV" : "no data" },
+    rhr: { icon: Heart, color: "#ef4444", bg: "rgba(239,68,68,0.1)", value: rhrValue ? String(Math.round(rhrValue)) : "—", sub: rhrValue ? "bpm resting" : "no data" },
+    spo2: { icon: Droplets, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: "—", sub: "blood oxygen" },
+    respiratory: { icon: Wind, color: "#06b6d4", bg: "rgba(6,182,212,0.1)", value: "—", sub: "br/min" },
   };
-
-  const cols = visible.length <= 2 ? "grid-cols-2" : "grid-cols-2";
 
   return (
     <div className="rounded-2xl p-4"
@@ -127,24 +159,26 @@ export function HealthCard() {
       {/* Customization toggles */}
       {showSettings && (
         <div className="flex flex-wrap gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-          {ALL_METRICS.map(({ id, label }) => (
+          {ALL_METRICS.map(({ id, label, premium }) => (
             <button key={id} type="button" onClick={() => toggleMetric(id)}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
+              className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1"
               style={{
                 background: visible.includes(id) ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
                 color: visible.includes(id) ? "var(--accent-green-text)" : "var(--text-faint)",
                 border: visible.includes(id) ? "1px solid var(--accent-green)" : "1px solid transparent",
               }}>
               {label}
+              {premium && !isPremium && <Lock size={10} />}
             </button>
           ))}
         </div>
       )}
 
       {/* Stats grid — only show visible metrics */}
-      <div className={`grid ${cols} gap-3`}>
+      <div className="grid grid-cols-2 gap-3">
         {visible.map((id) => {
           const m = metricData[id];
+          if (!m) return null;
           const Icon = m.icon;
           return (
             <div key={id} className="flex items-center gap-2.5">
