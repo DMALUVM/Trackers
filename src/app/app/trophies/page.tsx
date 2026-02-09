@@ -91,7 +91,7 @@ export default function TrophiesPage() {
       <section className="grid grid-cols-2 gap-3">
         <div className="card p-4 text-center">
           <p className="text-2xl font-black tabular-nums" style={{ color: "var(--text-primary)" }}>
-            {streaks.loading ? "–" : streaks.currentStreak}
+            {streaks.loading ? "–" : (streaks.activeStreak || streaks.currentStreak)}
           </p>
           <p className="text-xs mt-1 font-semibold" style={{ color: "var(--text-muted)" }}>Current streak</p>
         </div>

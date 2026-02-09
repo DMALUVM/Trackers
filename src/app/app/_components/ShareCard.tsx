@@ -70,7 +70,7 @@ export function ShareCard({ streaks, greenPct, greenDays, totalDays, last7 }: Sh
 
     // Stats row
     const stats = [
-      { val: `${streaks.currentStreak}`, label: "day streak" },
+      { val: `${streaks.activeStreak || streaks.currentStreak}`, label: "day streak" },
       { val: `${streaks.bestStreak}`, label: "best streak" },
       { val: `${greenDays}`, label: "green days" },
     ];
@@ -128,7 +128,7 @@ export function ShareCard({ streaks, greenPct, greenDays, totalDays, last7 }: Sh
         try {
           await navigator.share({
             title: "My Routines365 Progress",
-            text: `${greenPct}% consistency · ${streaks.currentStreak} day streak 🔥`,
+            text: `${greenPct}% consistency · ${streaks.activeStreak || streaks.currentStreak} day streak 🔥`,
             files: [file],
           });
           return;

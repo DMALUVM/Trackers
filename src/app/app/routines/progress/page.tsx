@@ -15,6 +15,8 @@ import { useMultiActivityTotals, type MultiTotalsEntry } from "@/lib/hooks/useAc
 import { SkeletonCard } from "@/app/app/_components/ui";
 import { toDateKey } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
+import { SleepStageBreakdown } from "@/app/app/_components/SleepStageBreakdown";
+import { BiometricCorrelations } from "@/app/app/_components/BiometricCorrelations";
 import { InsightsCard } from "@/app/app/_components/InsightsCard";
 import { WeeklyTrend } from "@/app/app/_components/WeeklyTrend";
 import { ShareCard } from "@/app/app/_components/ShareCard";
@@ -218,7 +220,7 @@ export default function RoutinesProgressPage() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-3 stagger-children">
-            <Stat label="Current" value={`${streaks.currentStreak}`} sub="consecutive green days" />
+            <Stat label="Current" value={`${streaks.activeStreak || streaks.currentStreak}`} sub="consecutive green days" />
             <Stat label="Best" value={`${streaks.bestStreak}`} sub="all-time record" />
             <Stat label="Core hit-rate" value={streaks.coreHitRateThisWeek === null ? "—" : `${streaks.coreHitRateThisWeek}%`} sub="this week" />
             <Stat label="Green days" value={String(streaks.greenDaysThisMonth)} sub="this month" />
@@ -265,6 +267,12 @@ export default function RoutinesProgressPage() {
             style={{ background: "rgba(139,92,246,0.1)", color: "#8b5cf6" }}>PRO</span>
         )}
       </Link>
+
+      {/* Sleep Stage Breakdown */}
+      <SleepStageBreakdown />
+
+      {/* Habit × Body Correlations */}
+      <BiometricCorrelations />
 
       {/* ── ACTIVITY TOTALS ── */}
       {activityEntries.length > 0 && (

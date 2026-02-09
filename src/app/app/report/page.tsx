@@ -194,7 +194,7 @@ export default function ReportPage() {
               <p className="text-xs" style={{ color: "var(--text-faint)" }}>Green day rate</p>
             </div>
             <div>
-              <p className="text-3xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{streaks.currentStreak}</p>
+              <p className="text-3xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{streaks.activeStreak || streaks.currentStreak}</p>
               <p className="text-xs" style={{ color: "var(--text-faint)" }}>Current streak</p>
             </div>
             <div>

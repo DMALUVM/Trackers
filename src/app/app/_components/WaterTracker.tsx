@@ -154,8 +154,12 @@ export function WaterTracker({ dateKey }: WaterTrackerProps) {
 
       {/* Inline settings popover */}
       {showSettings && (
-        <div className="absolute left-0 right-0 mt-2 z-30 rounded-2xl p-4 animate-fade-in-up"
-          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-20" style={{ background: "rgba(0,0,0,0.3)" }}
+            onClick={() => setShowSettings(false)} />
+          <div className="absolute left-0 right-0 mt-2 z-30 rounded-2xl p-4 animate-fade-in-up"
+            style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Settings size={14} style={{ color: "var(--text-muted)" }} />
@@ -203,9 +207,10 @@ export function WaterTracker({ dateKey }: WaterTrackerProps) {
             Hide water tracker
           </button>
           <p className="text-[10px] text-center mt-1.5" style={{ color: "var(--text-faint)" }}>
-            Re-enable in Settings → Modules
+            Re-enable in Settings → Customize Today
           </p>
         </div>
+        </>
       )}
     </div>
   );
