@@ -6,57 +6,19 @@ import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
-// ── WAV Audio Engine ──
-// iOS WKWebView (Capacitor) does NOT reliably support Web Audio API oscillators.
-// Instead we generate actual WAV audio buffers, convert to blob URLs, and play
-// them via HTMLAudioElement — the most reliable audio path on all platforms.
+// ── Singing Bowl Audio Engine ──
+// Generates Tibetan singing bowl tones using inharmonic partials with slow decay.
+// Real bowls have overtone ratios of ~1:2.71:4.53 (not integer harmonics).
+// Rendered as WAV blobs, played via HTMLAudioElement for iOS reliability.
 
-function writeString(view: DataView, offset: number, str: string) {
-  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+function writeString(v: DataView, off: number, s: string) {
+  for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i));
 }
 
-/** Generate a mono 16-bit PCM WAV as a blob URL */
-function makeToneUrl(freq: number, duration: number, volume: number, fadeRate = 4): string {
-  const sr = 44100;
-  const n = Math.floor(sr * duration);
+function samplesToWav(samples: Float64Array, sampleRate: number): string {
+  const n = samples.length;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
-
-  // RIFF header
-  writeString(v, 0, "RIFF");
-  v.setUint32(4, 36 + n * 2, true);
-  writeString(v, 8, "WAVE");
-  writeString(v, 12, "fmt ");
-  v.setUint32(16, 16, true);
-  v.setUint16(20, 1, true);      // PCM
-  v.setUint16(22, 1, true);      // mono
-  v.setUint32(24, sr, true);     // sample rate
-  v.setUint32(28, sr * 2, true); // byte rate
-  v.setUint16(32, 2, true);      // block align
-  v.setUint16(34, 16, true);     // bits per sample
-  writeString(v, 36, "data");
-  v.setUint32(40, n * 2, true);
-
-  // PCM samples with exponential fade
-  for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    const env = Math.exp(-t * fadeRate);
-    const sample = Math.sin(2 * Math.PI * freq * t) * volume * env;
-    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
-  }
-
-  const blob = new Blob([buf], { type: "audio/wav" });
-  return URL.createObjectURL(blob);
-}
-
-/** Generate a 3-note chord WAV (C5 + E5 + G5 cascade) */
-function makeChordUrl(): string {
-  const sr = 44100;
-  const dur = 1.2;
-  const n = Math.floor(sr * dur);
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v = new DataView(buf);
-
   writeString(v, 0, "RIFF");
   v.setUint32(4, 36 + n * 2, true);
   writeString(v, 8, "WAVE");
@@ -64,69 +26,157 @@ function makeChordUrl(): string {
   v.setUint32(16, 16, true);
   v.setUint16(20, 1, true);
   v.setUint16(22, 1, true);
-  v.setUint32(24, sr, true);
-  v.setUint32(28, sr * 2, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
   v.setUint16(32, 2, true);
   v.setUint16(34, 16, true);
   writeString(v, 36, "data");
   v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, samples[i] * 32767)), true);
+  }
+  return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+}
 
-  const notes = [
-    { freq: 523, delay: 0, vol: 0.2 },    // C5
-    { freq: 659, delay: 0.15, vol: 0.18 }, // E5
-    { freq: 784, delay: 0.3, vol: 0.16 },  // G5
+/** Tibetan singing bowl with inharmonic overtones and slow natural decay */
+function makeBowlTone(
+  fundamental: number,
+  duration: number,
+  volume: number,
+  partials: Array<{ ratio: number; amp: number; decay: number }>,
+): string {
+  const sr = 44100;
+  const n = Math.floor(sr * duration);
+  const raw = new Float64Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    // Soft 8ms attack to avoid click
+    const attack = Math.min(t / 0.008, 1);
+    let val = 0;
+    for (const p of partials) {
+      const freq = fundamental * p.ratio;
+      const env = Math.exp(-t * p.decay);
+      // Subtle vibrato (beating) like a real bowl being struck
+      const beat = 1 + Math.sin(2 * Math.PI * 4.2 * t) * 0.003;
+      val += Math.sin(2 * Math.PI * freq * beat * t) * p.amp * env;
+    }
+    raw[i] = val * attack;
+  }
+
+  // Normalize to target volume
+  let peak = 0;
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
+  const norm = peak > 0 ? volume / peak : 1;
+  for (let i = 0; i < n; i++) raw[i] *= norm;
+
+  return samplesToWav(raw, sr);
+}
+
+/** Two-note rising bowl strike for inhale */
+function makeInhaleUrl(): string {
+  // Middle C bowl (256 Hz) — warm, grounding
+  return makeBowlTone(256, 2.0, 0.45, [
+    { ratio: 1.0,  amp: 1.0,  decay: 1.8 },
+    { ratio: 2.71, amp: 0.4,  decay: 2.2 },
+    { ratio: 4.53, amp: 0.2,  decay: 2.8 },
+    { ratio: 5.63, amp: 0.08, decay: 3.2 },
+  ]);
+}
+
+/** Lower bowl for exhale — calming, descending energy */
+function makeExhaleUrl(): string {
+  // G3 bowl (196 Hz) — deeper, more soothing
+  return makeBowlTone(196, 2.5, 0.4, [
+    { ratio: 1.0,  amp: 1.0,  decay: 1.5 },
+    { ratio: 2.71, amp: 0.35, decay: 1.8 },
+    { ratio: 4.53, amp: 0.15, decay: 2.2 },
+    { ratio: 7.0,  amp: 0.05, decay: 2.8 },
+  ]);
+}
+
+/** Soft high bell tap for hold — minimal, just a gentle reminder */
+function makeHoldUrl(): string {
+  // E5 bell (659 Hz) — light, airy
+  return makeBowlTone(659, 0.8, 0.25, [
+    { ratio: 1.0,  amp: 1.0,  decay: 4.0 },
+    { ratio: 2.0,  amp: 0.3,  decay: 5.0 },
+    { ratio: 3.5,  amp: 0.1,  decay: 6.0 },
+  ]);
+}
+
+/** Completion: three bowls in cascade (C4 → E4 → G4 major triad) */
+function makeCompleteUrl(): string {
+  const sr = 44100;
+  const dur = 4.0;
+  const n = Math.floor(sr * dur);
+  const raw = new Float64Array(n);
+
+  const bowls = [
+    { fund: 256, delay: 0,    vol: 0.35 }, // C4
+    { fund: 323, delay: 0.6,  vol: 0.30 }, // E4 (slightly sharp, bowl-like)
+    { fund: 384, delay: 1.2,  vol: 0.28 }, // G4
+  ];
+
+  const partials = [
+    { ratio: 1.0,  amp: 1.0,  decay: 1.2 },
+    { ratio: 2.71, amp: 0.35, decay: 1.5 },
+    { ratio: 4.53, amp: 0.15, decay: 2.0 },
   ];
 
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-    let sample = 0;
-    for (const note of notes) {
-      if (t >= note.delay) {
-        const nt = t - note.delay;
-        const env = Math.exp(-nt * 3);
-        sample += Math.sin(2 * Math.PI * note.freq * nt) * note.vol * env;
+    let val = 0;
+    for (const bowl of bowls) {
+      if (t < bowl.delay) continue;
+      const bt = t - bowl.delay;
+      const attack = Math.min(bt / 0.008, 1);
+      for (const p of partials) {
+        const freq = bowl.fund * p.ratio;
+        const env = Math.exp(-bt * p.decay);
+        const beat = 1 + Math.sin(2 * Math.PI * 3.8 * bt) * 0.003;
+        val += Math.sin(2 * Math.PI * freq * beat * bt) * p.amp * env * bowl.vol * attack;
       }
     }
-    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
+    raw[i] = val;
   }
 
-  const blob = new Blob([buf], { type: "audio/wav" });
-  return URL.createObjectURL(blob);
+  // Normalize
+  let peak = 0;
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
+  const norm = peak > 0 ? 0.5 / peak : 1;
+  for (let i = 0; i < n; i++) raw[i] *= norm;
+
+  return samplesToWav(raw, sr);
 }
 
 class BreathAudio {
   private urls: Record<string, string> | null = null;
 
-  /** Generate all sound URLs (lazy, called once) */
   private ensureSounds() {
     if (this.urls) return;
     this.urls = {
-      inhale:   makeToneUrl(523, 0.6, 0.35, 3),    // C5, gentle rising chime
-      exhale:   makeToneUrl(392, 0.8, 0.3, 2.5),    // G4, warm descending tone
-      hold:     makeToneUrl(440, 0.3, 0.2, 5),      // A4, soft short tick
-      complete: makeChordUrl(),                       // C-E-G bright chord
+      inhale:   makeInhaleUrl(),
+      exhale:   makeExhaleUrl(),
+      hold:     makeHoldUrl(),
+      complete: makeCompleteUrl(),
     };
   }
 
-  private playUrl(key: string) {
+  private play(key: string) {
     if (!this.urls?.[key]) return;
     try {
-      const audio = new Audio(this.urls[key]);
-      audio.volume = 1.0;
-      // play() returns a promise; we catch any autoplay errors silently
-      const p = audio.play();
+      const a = new Audio(this.urls[key]);
+      a.volume = 1.0;
+      const p = a.play();
       if (p) p.catch(() => {});
-    } catch {
-      // Fallback: do nothing if audio creation fails
-    }
+    } catch { /* silent fail */ }
   }
 
-  /** Call from user tap handler — generates sounds + plays first tone.
-   *  This "unlocks" iOS audio session because .play() happens in gesture context. */
-  inhale()   { this.ensureSounds(); this.playUrl("inhale"); }
-  exhale()   { this.ensureSounds(); this.playUrl("exhale"); }
-  hold()     { this.ensureSounds(); this.playUrl("hold"); }
-  complete() { this.ensureSounds(); this.playUrl("complete"); }
+  inhale()   { this.ensureSounds(); this.play("inhale"); }
+  exhale()   { this.ensureSounds(); this.play("exhale"); }
+  hold()     { this.ensureSounds(); this.play("hold"); }
+  complete() { this.ensureSounds(); this.play("complete"); }
 }
 
 const breathAudio = new BreathAudio();
@@ -262,7 +312,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
   const phase = technique.phases[currentPhaseIdx];
   const totalPhaseTime = phase.seconds;
 
-  // Play audio cue on each phase change
+  // Play singing bowl on each phase change
   useEffect(() => {
     if (!isRunning || !soundOn) return;
     const key = `${currentRound}-${currentPhaseIdx}`;
@@ -310,9 +360,6 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning, tick]);
 
-  // CRITICAL: start() is fully synchronous. breathAudio.inhale() generates
-  // WAV blob URLs + calls new Audio().play() all within the tap gesture.
-  // This unlocks the iOS audio session so timer-triggered sounds also work.
   const start = () => {
     hapticMedium();
     if (soundOn) {
@@ -356,7 +403,6 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
 
   return (
     <div className="flex flex-col items-center min-h-[80vh]">
-      {/* Session header — z-50 above SettingsGear (z-40) */}
       <div className="w-full flex items-center justify-between mb-2 px-1"
         style={{ position: "relative", zIndex: 50 }}>
         <button type="button" onClick={onClose}
@@ -445,7 +491,7 @@ export default function BreathworkPage() {
                   <div className="flex items-center gap-3 mt-2.5">
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>~{minutes} min</span>
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
-                      <Volume2 size={10} /> Audio cues
+                      🔔 Singing bowls
                     </span>
                   </div>
                   <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>{t.benefits}</p>
@@ -460,7 +506,7 @@ export default function BreathworkPage() {
         <Link href="/app/settings/premium" className="block rounded-2xl p-5 text-center"
           style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)", textDecoration: "none" }}>
           <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>🔓 Unlock All Techniques</p>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>4 premium methods with guided audio</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>4 premium methods with singing bowl audio</p>
         </Link>
       )}
     </div>
