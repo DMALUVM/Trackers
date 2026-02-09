@@ -128,34 +128,68 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            var nightMap: [String: (totalMinutes: Double, bedTime: Date?, wakeTime: Date?)] = [:]
+            var nightMap: [String: (asleepMinutes: Double, inBedMinutes: Double, deepMinutes: Double, coreMinutes: Double, remMinutes: Double, bedTime: Date?, wakeTime: Date?)] = [:]
+
             for sample in samples {
                 let value = HKCategoryValueSleepAnalysis(rawValue: sample.value)
-                let isAsleep: Bool
-                if #available(iOS 16.0, *) {
-                    isAsleep = value == .asleepCore || value == .asleepDeep || value == .asleepREM || value == .asleepUnspecified
-                } else {
-                    isAsleep = value == .asleep
-                }
-                guard isAsleep else { continue }
-
-                let dateKey = self.dateFormatter.string(from: sample.endDate)
                 let duration = sample.endDate.timeIntervalSince(sample.startDate) / 60.0
-                var entry = nightMap[dateKey] ?? (totalMinutes: 0, bedTime: nil, wakeTime: nil)
-                entry.totalMinutes += duration
+                let dateKey = self.dateFormatter.string(from: sample.endDate)
+
+                var entry = nightMap[dateKey] ?? (asleepMinutes: 0, inBedMinutes: 0, deepMinutes: 0, coreMinutes: 0, remMinutes: 0, bedTime: nil, wakeTime: nil)
+
+                if #available(iOS 16.0, *) {
+                    switch value {
+                    case .asleepDeep:
+                        entry.asleepMinutes += duration
+                        entry.deepMinutes += duration
+                    case .asleepCore:
+                        entry.asleepMinutes += duration
+                        entry.coreMinutes += duration
+                    case .asleepREM:
+                        entry.asleepMinutes += duration
+                        entry.remMinutes += duration
+                    case .asleepUnspecified:
+                        entry.asleepMinutes += duration
+                    case .inBed:
+                        entry.inBedMinutes += duration
+                    default:
+                        continue // skip awake
+                    }
+                } else {
+                    if value == .asleep {
+                        entry.asleepMinutes += duration
+                    } else if value == .inBed {
+                        entry.inBedMinutes += duration
+                    } else {
+                        continue
+                    }
+                }
+
                 if entry.bedTime == nil || sample.startDate < entry.bedTime! { entry.bedTime = sample.startDate }
                 if entry.wakeTime == nil || sample.endDate > entry.wakeTime! { entry.wakeTime = sample.endDate }
                 nightMap[dateKey] = entry
             }
 
             let data: [[String: Any]] = nightMap.map { key, value in
-                var dict: [String: Any] = ["date": key, "totalMinutes": Int(value.totalMinutes)]
+                // Use asleep time if available, otherwise fall back to inBed
+                let totalMinutes = value.asleepMinutes > 0 ? value.asleepMinutes : value.inBedMinutes
+                var dict: [String: Any] = [
+                    "date": key,
+                    "totalMinutes": Int(totalMinutes),
+                    "asleepMinutes": Int(value.asleepMinutes),
+                    "inBedMinutes": Int(value.inBedMinutes > 0 ? value.inBedMinutes : value.asleepMinutes),
+                ]
+                if value.deepMinutes > 0 { dict["deepMinutes"] = Int(value.deepMinutes) }
+                if value.coreMinutes > 0 { dict["coreMinutes"] = Int(value.coreMinutes) }
+                if value.remMinutes > 0 { dict["remMinutes"] = Int(value.remMinutes) }
                 if let bed = value.bedTime { dict["bedTime"] = self.isoFormatter.string(from: bed) }
                 if let wake = value.wakeTime { dict["wakeTime"] = self.isoFormatter.string(from: wake) }
                 return dict
             }.sorted { ($0["date"] as? String ?? "") > ($1["date"] as? String ?? "") }
 
             call.resolve(["data": data])
+        }
+        store.execute(query)
         }
         store.execute(query)
     }
@@ -314,18 +348,28 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
             let pred = HKQuery.predicateForSamples(withStart: sleepStart, end: endOfDay, options: .strictStartDate)
             let q = HKSampleQuery(sampleType: sleepType, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]) { [weak self] _, samples, _ in
                 guard let self = self, let samples = samples as? [HKCategorySample] else { group.leave(); return }
-                var total = 0.0; var earliest: Date?; var latest: Date?
+                var asleepTotal = 0.0; var inBedTotal = 0.0; var earliest: Date?; var latest: Date?
                 for s in samples {
                     let v = HKCategoryValueSleepAnalysis(rawValue: s.value)
-                    let asleep: Bool
-                    if #available(iOS 16.0, *) { asleep = v == .asleepCore || v == .asleepDeep || v == .asleepREM || v == .asleepUnspecified }
-                    else { asleep = v == .asleep }
-                    guard asleep else { continue }
-                    total += s.endDate.timeIntervalSince(s.startDate) / 60.0
+                    let dur = s.endDate.timeIntervalSince(s.startDate) / 60.0
+                    if #available(iOS 16.0, *) {
+                        switch v {
+                        case .asleepCore, .asleepDeep, .asleepREM, .asleepUnspecified:
+                            asleepTotal += dur
+                        case .inBed:
+                            inBedTotal += dur
+                        default: continue
+                        }
+                    } else {
+                        if v == .asleep { asleepTotal += dur }
+                        else if v == .inBed { inBedTotal += dur }
+                        else { continue }
+                    }
                     if earliest == nil || s.startDate < earliest! { earliest = s.startDate }
                     if latest == nil || s.endDate > latest! { latest = s.endDate }
                 }
-                sleepMins = Int(total)
+                // Use asleep time if available, otherwise inBed
+                sleepMins = Int(asleepTotal > 0 ? asleepTotal : inBedTotal)
                 if let b = earliest { bedTime = self.isoFormatter.string(from: b) }
                 if let w = latest { wakeTime = self.isoFormatter.string(from: w) }
                 group.leave()

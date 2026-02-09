@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { MoreHorizontal, Zap, Trophy } from "lucide-react";
+import { MoreHorizontal, Zap, Trophy, Wind, Dumbbell, Brain } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
 import {
@@ -32,6 +32,8 @@ import { isRestDay } from "@/lib/restDays";
 import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
 import { HealthCard } from "@/app/app/_components/HealthCard";
 import { DailyWisdom } from "@/app/app/_components/DailyWisdom";
+import { SmartRecommendations } from "@/app/app/_components/SmartRecommendations";
+import Link from "next/link";
 import { updateWidgetData } from "@/lib/widgetData";
 import { checkAutoComplete } from "@/lib/healthAutoComplete";
 import { usePremium } from "@/lib/premium";
@@ -589,6 +591,31 @@ export default function TodayPage() {
 
       {/* Apple Health summary — only shows in native app */}
       {!healthHidden && <HealthCard />}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-3 gap-2">
+        <Link href="/app/breathwork" onClick={() => hapticLight()}
+          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+          <Wind size={20} className="mx-auto mb-1" style={{ color: "#6366f1" }} />
+          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Breathwork</p>
+        </Link>
+        <Link href="/app/movement" onClick={() => hapticLight()}
+          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+          <Dumbbell size={20} className="mx-auto mb-1" style={{ color: "#10b981" }} />
+          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Movement</p>
+        </Link>
+        <Link href="/app/focus" onClick={() => hapticLight()}
+          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+          <Brain size={20} className="mx-auto mb-1" style={{ color: "#3b82f6" }} />
+          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Focus</p>
+        </Link>
+      </div>
+
+      {/* Smart Recommendations */}
+      <SmartRecommendations streaks={streaks} />
 
       {/* Setup prompts for new users — notifications, health */}
       <SetupPrompts />
