@@ -6,19 +6,44 @@ import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
-// ── Audio Engine ──
+// ── Audio Engine (iOS-compatible) ──
+// iOS WebView requires AudioContext creation + resume during a user gesture.
+// Call init() from the play button's onClick handler before any playback.
 
 class BreathAudio {
   private ctx: AudioContext | null = null;
+  private ready = false;
 
-  private getCtx(): AudioContext {
-    if (!this.ctx) this.ctx = new AudioContext();
+  /** Must be called from a direct user tap handler (onClick) */
+  async init() {
+    if (this.ready && this.ctx) return;
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      this.ctx = new AC();
+      // iOS unlock: play a silent buffer during user gesture
+      if (this.ctx.state === "suspended") {
+        await this.ctx.resume();
+      }
+      const buf = this.ctx.createBuffer(1, 1, this.ctx.sampleRate);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(this.ctx.destination);
+      src.start();
+      this.ready = true;
+    } catch (e) {
+      console.warn("AudioContext init failed:", e);
+    }
+  }
+
+  private getCtx(): AudioContext | null {
+    if (!this.ctx || !this.ready) return null;
     if (this.ctx.state === "suspended") this.ctx.resume();
     return this.ctx;
   }
 
   inhale() {
     const ctx = this.getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -33,6 +58,7 @@ class BreathAudio {
 
   exhale() {
     const ctx = this.getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -47,6 +73,7 @@ class BreathAudio {
 
   hold() {
     const ctx = this.getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
@@ -60,6 +87,7 @@ class BreathAudio {
 
   complete() {
     const ctx = this.getCtx();
+    if (!ctx) return;
     [523, 659, 784].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -254,7 +282,10 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning, tick]);
 
-  const start = () => { hapticMedium(); if (soundOn) { breathAudio.inhale(); lastPhaseRef.current = "0-0"; } setIsRunning(true); };
+  const start = async () => { hapticMedium(); if (soundOn) { await breathAudio.init(); breathAudio.inhale(); lastPhaseRef.current = "0-0"; } setIsRunning(true); };
+  const resume = async () => { hapticMedium(); if (soundOn) { await breathAudio.init(); } setIsRunning(true); };
+  const pause = () => { hapticMedium(); setIsRunning(false); };
+  const hasStarted = currentRound > 0 || currentPhaseIdx > 0 || timeInPhase > 0;
   const reset = () => { hapticLight(); setIsRunning(false); setCurrentRound(0); setCurrentPhaseIdx(0); setPhaseProgress(0); setTimeInPhase(0); setCompleted(false); lastPhaseRef.current = ""; };
 
   if (completed) {
@@ -279,7 +310,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     <div className="flex flex-col items-center min-h-[80vh]">
       <div className="w-full flex items-center justify-between mb-2 px-1">
         <button type="button" onClick={onClose} className="text-base font-medium tap-btn p-2" style={{ color: "var(--text-muted)" }}>✕</button>
-        <button type="button" onClick={() => { hapticLight(); setSoundOn(!soundOn); }} className="rounded-full p-2.5" style={{ background: "var(--bg-card)" }}>
+        <button type="button" onClick={async () => { hapticLight(); const next = !soundOn; setSoundOn(next); if (next) await breathAudio.init(); }} className="rounded-full p-2.5" style={{ background: "var(--bg-card)" }}>
           {soundOn ? <Volume2 size={18} style={{ color: "var(--text-muted)" }} /> : <VolumeX size={18} style={{ color: "var(--text-faint)" }} />}
         </button>
       </div>
@@ -301,7 +332,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
         <button type="button" onClick={reset} className="rounded-full p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           <RotateCcw size={22} style={{ color: "var(--text-muted)" }} />
         </button>
-        <button type="button" onClick={isRunning ? () => { hapticMedium(); setIsRunning(false); } : start}
+        <button type="button" onClick={isRunning ? pause : (hasStarted ? () => void resume() : () => void start())}
           className="rounded-full p-6" style={{
             background: isRunning ? "rgba(239,68,68,0.15)" : "var(--accent-green)",
             boxShadow: isRunning ? "none" : "0 4px 30px rgba(16,185,129,0.35)",

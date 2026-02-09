@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Settings } from "lucide-react";
 import { addActivityLog, deleteActivityLogsForDate, sumActivity } from "@/lib/activity";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 
@@ -152,64 +151,64 @@ export function WaterTracker({ dateKey }: WaterTrackerProps) {
         </span>
       </div>
 
-      {/* Inline settings popover */}
+      {/* Settings modal */}
       {showSettings && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-20" style={{ background: "rgba(0,0,0,0.3)" }}
-            onClick={() => setShowSettings(false)} />
-          <div className="absolute left-0 right-0 mt-2 z-30 rounded-2xl p-4 animate-fade-in-up"
-            style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Settings size={14} style={{ color: "var(--text-muted)" }} />
-              <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Water Goal</span>
+          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setShowSettings(false)} />
+          {/* Modal */}
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 mx-auto max-w-sm rounded-2xl p-5 animate-fade-in-up"
+            style={{ background: "var(--bg-sheet)", boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💧</span>
+                <span className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Water Goal</span>
+              </div>
+              <button type="button" onClick={() => setShowSettings(false)}
+                className="text-sm font-semibold px-3 py-1.5 rounded-lg"
+                style={{ color: "var(--accent-green-text)", background: "var(--accent-green-soft)" }}>
+                Done
+              </button>
             </div>
-            <button type="button" onClick={() => setShowSettings(false)}
-              className="text-xs font-semibold px-2 py-1 rounded-lg"
-              style={{ color: "var(--accent-green-text)", background: "var(--accent-green-soft)" }}>
-              Done
-            </button>
-          </div>
 
-          {/* Goal stepper */}
-          <div className="flex items-center justify-center gap-4 mb-3">
-            <button type="button" onClick={() => updateGoal(goal - 1)}
-              disabled={goal <= 4}
-              className="tap-btn flex items-center justify-center rounded-full text-lg font-bold"
-              style={{
-                width: 36, height: 36,
-                background: "var(--bg-card-hover)",
-                color: goal <= 4 ? "var(--text-faint)" : "var(--text-primary)",
-              }}>
-              −
-            </button>
-            <div className="text-center">
-              <span className="text-2xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{goal}</span>
-              <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>glasses/day</p>
+            {/* Goal stepper */}
+            <div className="flex items-center justify-center gap-6 mb-4">
+              <button type="button" onClick={() => updateGoal(goal - 1)}
+                disabled={goal <= 4}
+                className="tap-btn flex items-center justify-center rounded-full text-xl font-bold"
+                style={{
+                  width: 44, height: 44,
+                  background: "var(--bg-card-hover)",
+                  color: goal <= 4 ? "var(--text-faint)" : "var(--text-primary)",
+                }}>
+                −
+              </button>
+              <div className="text-center">
+                <span className="text-3xl font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>{goal}</span>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>glasses/day</p>
+              </div>
+              <button type="button" onClick={() => updateGoal(goal + 1)}
+                disabled={goal >= 12}
+                className="tap-btn flex items-center justify-center rounded-full text-xl font-bold"
+                style={{
+                  width: 44, height: 44,
+                  background: "var(--bg-card-hover)",
+                  color: goal >= 12 ? "var(--text-faint)" : "var(--text-primary)",
+                }}>
+                +
+              </button>
             </div>
-            <button type="button" onClick={() => updateGoal(goal + 1)}
-              disabled={goal >= 12}
-              className="tap-btn flex items-center justify-center rounded-full text-lg font-bold"
-              style={{
-                width: 36, height: 36,
-                background: "var(--bg-card-hover)",
-                color: goal >= 12 ? "var(--text-faint)" : "var(--text-primary)",
-              }}>
-              +
-            </button>
-          </div>
 
-          {/* Hide button */}
-          <button type="button" onClick={toggleHidden}
-            className="w-full text-center text-xs font-medium py-2 rounded-xl transition-colors"
-            style={{ color: "var(--text-faint)", background: "var(--bg-card-hover)" }}>
-            Hide water tracker
-          </button>
-          <p className="text-[10px] text-center mt-1.5" style={{ color: "var(--text-faint)" }}>
-            Re-enable in Settings → Customize Today
-          </p>
-        </div>
+            {/* Hide button */}
+            <button type="button" onClick={toggleHidden}
+              className="w-full text-center text-xs font-medium py-2.5 rounded-xl"
+              style={{ color: "var(--text-faint)", background: "var(--bg-card-hover)" }}>
+              Hide water tracker
+            </button>
+            <p className="text-[10px] text-center mt-1.5" style={{ color: "var(--text-faint)" }}>
+              Re-enable in Settings → Customize Today
+            </p>
+          </div>
         </>
       )}
     </div>
