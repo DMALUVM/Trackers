@@ -1,12 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Crown, Lock, Sparkles, Shield, BarChart3, Zap } from "lucide-react";
+import { Check, Crown, Lock, Sparkles, Shield, BarChart3, Zap, Heart, Activity } from "lucide-react";
 import { usePremium } from "@/lib/premium";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
+import { isStoreKitAvailable, getProducts, purchase, restorePurchases, PRODUCT_IDS, type StoreProduct } from "@/lib/storeKit";
 
 const FEATURES = [
+  {
+    icon: Activity,
+    title: "Biometric Insights",
+    desc: "See how your habits affect your body. HRV, resting heart rate, blood oxygen, and respiratory trends from your Oura Ring, Apple Watch, or Garmin",
+    free: "—",
+    premium: "Full dashboard",
+  },
+  {
+    icon: Heart,
+    title: "Health Auto-Complete",
+    desc: "Habits auto-check when Apple Health data meets your goals. Walk 10k steps? Your step habit checks itself",
+    free: "—",
+    premium: "Smart auto-complete",
+  },
   {
     icon: BarChart3,
     title: "Deep Insights",
@@ -30,9 +45,9 @@ const FEATURES = [
   },
   {
     icon: Zap,
-    title: "Progress Reports & Sharing",
-    desc: "Beautiful downloadable PDF reports and shareable progress cards for accountability partners",
-    free: "—",
+    title: "Reports, Themes & More",
+    desc: "PDF progress reports, custom themes, share cards, and unlimited habits (free limited to 8)",
+    free: "Basic",
     premium: "Full access",
   },
 ];
@@ -42,9 +57,21 @@ export default function PremiumPage() {
   const { isPremium, activate, redeemCode, redeemedCode } = usePremium();
   const [selectedPlan, setSelectedPlan] = useState<"yearly" | "monthly">("yearly");
   const [restoring, setRestoring] = useState(false);
+  const [purchasing, setPurchasing] = useState(false);
   const [codeInput, setCodeInput] = useState("");
   const [codeError, setCodeError] = useState(false);
   const [showCodeField, setShowCodeField] = useState(false);
+  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
+  const hasStoreKit = isStoreKitAvailable();
+
+  // Load real products from App Store
+  useEffect(() => {
+    if (!hasStoreKit) return;
+    void (async () => {
+      const products = await getProducts();
+      if (products.length > 0) setStoreProducts(products);
+    })();
+  }, [hasStoreKit]);
 
   // Already premium
   if (isPremium) {
@@ -69,10 +96,16 @@ export default function PremiumPage() {
     );
   }
 
-  const yearlyPrice = 29.99;
-  const monthlyPrice = 4.99;
+  // Use real App Store prices when available, fallback to hardcoded
+  const yearlyProduct = storeProducts.find(p => p.id === PRODUCT_IDS.yearly);
+  const monthlyProduct = storeProducts.find(p => p.id === PRODUCT_IDS.monthly);
+  const yearlyPrice = yearlyProduct ? Number(yearlyProduct.price) : 29.99;
+  const monthlyPrice = monthlyProduct ? Number(monthlyProduct.price) : 3.99;
+  const yearlyDisplay = yearlyProduct?.displayPrice ?? `$${yearlyPrice.toFixed(2)}`;
+  const monthlyDisplay = monthlyProduct?.displayPrice ?? `$${monthlyPrice.toFixed(2)}`;
   const yearlyMonthly = (yearlyPrice / 12).toFixed(2);
   const savings = Math.round((1 - yearlyPrice / (monthlyPrice * 12)) * 100);
+  const trialDays = yearlyProduct?.freeTrialDays ?? monthlyProduct?.freeTrialDays ?? 7;
 
   return (
     <div className="space-y-6 pb-10">
@@ -146,7 +179,7 @@ export default function PremiumPage() {
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>/ month</span>
           </div>
           <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>
-            ${yearlyPrice}/year · Billed annually
+            {yearlyDisplay}/year · Billed annually
           </p>
         </button>
 
@@ -159,7 +192,7 @@ export default function PremiumPage() {
           }}>
           <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Monthly</p>
           <div className="flex items-baseline gap-1.5 mt-1">
-            <span className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>${monthlyPrice}</span>
+            <span className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{monthlyDisplay}</span>
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>/ month</span>
           </div>
           <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>
@@ -171,27 +204,52 @@ export default function PremiumPage() {
       {/* CTA */}
       <section className="px-4 space-y-3">
         <button type="button"
-          onClick={() => {
+          disabled={purchasing}
+          onClick={async () => {
             hapticHeavy();
-            // TODO: Replace with StoreKit purchase when native
-            // For now, dev activation for testing
-            activate();
+            const productId = selectedPlan === "yearly" ? PRODUCT_IDS.yearly : PRODUCT_IDS.monthly;
+
+            if (hasStoreKit) {
+              // Real StoreKit purchase
+              setPurchasing(true);
+              try {
+                const result = await purchase(productId);
+                if (result.success) {
+                  activate();
+                }
+              } catch { /* ignore */ }
+              finally { setPurchasing(false); }
+            } else {
+              // Web fallback: just activate (for dev/testing)
+              activate();
+            }
           }}
           className="w-full py-4 rounded-2xl text-center font-bold text-base"
           style={{
-            background: "linear-gradient(135deg, var(--accent-green), var(--accent-green-text))",
-            color: "white",
-            boxShadow: "0 4px 24px rgba(16, 185, 129, 0.3)",
+            background: purchasing
+              ? "var(--bg-card-hover)"
+              : "linear-gradient(135deg, var(--accent-green), var(--accent-green-text))",
+            color: purchasing ? "var(--text-faint)" : "white",
+            boxShadow: purchasing ? "none" : "0 4px 24px rgba(16, 185, 129, 0.3)",
           }}>
-          Start Free Trial
+          {purchasing ? "Processing..." : `Start ${trialDays}-Day Free Trial`}
         </button>
 
         <p className="text-center text-[11px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
-          7-day free trial · Cancel anytime · No charge until trial ends
+          {trialDays}-day free trial · Cancel anytime · No charge until trial ends
         </p>
 
         <button type="button"
-          onClick={() => { setRestoring(true); setTimeout(() => setRestoring(false), 1500); }}
+          disabled={restoring}
+          onClick={async () => {
+            setRestoring(true);
+            hapticMedium();
+            if (hasStoreKit) {
+              const result = await restorePurchases();
+              if (result.isPremium) activate();
+            }
+            setTimeout(() => setRestoring(false), 1500);
+          }}
           className="w-full text-center text-xs font-medium py-2"
           style={{ color: "var(--text-muted)" }}>
           {restoring ? "Checking..." : "Restore purchase"}

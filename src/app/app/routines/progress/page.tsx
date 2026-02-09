@@ -3,7 +3,7 @@
 import { format, isSameMonth, isToday as isTodayFn } from "date-fns";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Award, FileText } from "lucide-react";
+import { ChevronLeft, ChevronRight, Award, FileText, Activity } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
@@ -60,7 +60,7 @@ export default function RoutinesProgressPage() {
   const [accountStartKey, setAccountStartKey] = useState<string | null>(null);
 
   const streaks = useStreaks(dateKey);
-  const { hasFeature } = usePremium();
+  const { hasFeature, isPremium } = usePremium();
 
   // Dynamically detect which activities to show totals for based on user's routine items
   // Always include hydration since the WaterTracker is on the Today page
@@ -253,6 +253,18 @@ export default function RoutinesProgressPage() {
       ) : (
         <PremiumGate feature="Reports & Sharing" compact />
       )}
+
+      {/* Biometric Insights */}
+      <Link href="/app/biometrics" onClick={() => hapticLight()}
+        className="card-interactive flex items-center justify-center gap-2 px-4 py-3.5 w-full"
+        style={{ textDecoration: "none" }}>
+        <Activity size={16} style={{ color: "#8b5cf6" }} />
+        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Biometric Insights</span>
+        {!isPremium && (
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full ml-1"
+            style={{ background: "rgba(139,92,246,0.1)", color: "#8b5cf6" }}>PRO</span>
+        )}
+      </Link>
 
       {/* ── ACTIVITY TOTALS ── */}
       {activityEntries.length > 0 && (

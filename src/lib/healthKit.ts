@@ -41,6 +41,27 @@ export interface HealthKitDaySummary {
   bedTime: string | null;
   wakeTime: string | null;
   workouts: HealthKitWorkout[];
+  /** HRV in ms (from Oura, Apple Watch, Garmin, etc.) */
+  hrv?: number;
+  /** Resting heart rate in bpm */
+  restingHeartRate?: number;
+}
+
+/** A single day's biometric reading (HRV, RHR, SpO2, etc.) */
+export interface BiometricReading {
+  date: string;
+  value: number;
+  min: number;
+  max: number;
+  samples: number;
+}
+
+/** Full biometric summary for a date range */
+export interface BiometricSummary {
+  hrv: BiometricReading[];
+  restingHeartRate: BiometricReading[];
+  respiratoryRate: BiometricReading[];
+  bloodOxygen: BiometricReading[];
 }
 
 // ── Bridge ──
@@ -193,4 +214,87 @@ export async function getDaySummary(date?: string): Promise<HealthKitDaySummary 
 export async function getTodayCalories(): Promise<number> {
   const summary = await getDaySummary();
   return summary?.activeCalories ?? 0;
+}
+
+// ── Biometrics (Premium) ──
+
+/**
+ * Get HRV (Heart Rate Variability SDNN) readings.
+ * Sourced from Oura Ring, Apple Watch, Garmin, etc. via HealthKit.
+ * @param days Number of days to look back (default 30)
+ */
+export async function getHRV(days = 30): Promise<BiometricReading[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const result = await plugin.getHRV({ days }) as { data: BiometricReading[] };
+    return result.data ?? [];
+  } catch (e) {
+    console.error("HealthKit getHRV error:", e);
+    return [];
+  }
+}
+
+/**
+ * Get Resting Heart Rate readings.
+ * @param days Number of days to look back (default 30)
+ */
+export async function getRestingHeartRate(days = 30): Promise<BiometricReading[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const result = await plugin.getRestingHeartRate({ days }) as { data: BiometricReading[] };
+    return result.data ?? [];
+  } catch (e) {
+    console.error("HealthKit getRestingHeartRate error:", e);
+    return [];
+  }
+}
+
+/**
+ * Get Respiratory Rate readings.
+ * @param days Number of days to look back (default 30)
+ */
+export async function getRespiratoryRate(days = 30): Promise<BiometricReading[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const result = await plugin.getRespiratoryRate({ days }) as { data: BiometricReading[] };
+    return result.data ?? [];
+  } catch (e) {
+    console.error("HealthKit getRespiratoryRate error:", e);
+    return [];
+  }
+}
+
+/**
+ * Get Blood Oxygen (SpO2) readings.
+ * @param days Number of days to look back (default 30)
+ */
+export async function getBloodOxygen(days = 30): Promise<BiometricReading[]> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const result = await plugin.getBloodOxygen({ days }) as { data: BiometricReading[] };
+    return result.data ?? [];
+  } catch (e) {
+    console.error("HealthKit getBloodOxygen error:", e);
+    return [];
+  }
+}
+
+/**
+ * Get all biometric data in one call (more efficient).
+ * @param days Number of days to look back (default 30)
+ */
+export async function getBiometricSummary(days = 30): Promise<BiometricSummary | null> {
+  const plugin = getPlugin();
+  if (!plugin) return null;
+  try {
+    const result = await plugin.getBiometricSummary({ days }) as { data: BiometricSummary };
+    return result.data ?? null;
+  } catch (e) {
+    console.error("HealthKit getBiometricSummary error:", e);
+    return null;
+  }
 }

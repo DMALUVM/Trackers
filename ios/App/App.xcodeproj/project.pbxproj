@@ -23,6 +23,8 @@
 		CA933EBE2F3945DF00C71DEC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */; };
 		CA933ECD2F3945E000C71DEC /* Routines365WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CA933EB92F3945DF00C71DEC /* Routines365WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CA933ED92F39523700C71DEC /* BiometricPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933ED82F39523700C71DEC /* BiometricPlugin.swift */; };
+		CA933EDB2F3A054E00C71DEC /* StoreKitPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA933EDA2F3A054E00C71DEC /* StoreKitPlugin.swift */; };
+		CA933EDD2F3A067B00C71DEC /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CA933EDC2F3A067B00C71DEC /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +72,8 @@
 		CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		CA933ED72F394B6200C71DEC /* Routines365WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Routines365WidgetExtension.entitlements; sourceTree = "<group>"; };
 		CA933ED82F39523700C71DEC /* BiometricPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricPlugin.swift; sourceTree = "<group>"; };
+		CA933EDA2F3A054E00C71DEC /* StoreKitPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitPlugin.swift; sourceTree = "<group>"; };
+		CA933EDC2F3A067B00C71DEC /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -92,6 +96,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4D22ABE92AF431CB00220026 /* CapApp-SPM in Frameworks */,
+				CA933EDD2F3A067B00C71DEC /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,6 +136,7 @@
 		504EC3061FED79650016851F /* App */ = {
 			isa = PBXGroup;
 			children = (
+				CA933EDA2F3A054E00C71DEC /* StoreKitPlugin.swift */,
 				CA933ED82F39523700C71DEC /* BiometricPlugin.swift */,
 				CA933EAD2F393D6500C71DEC /* HealthKitPlugin.swift */,
 				CA933EAC2F3939AD00C71DEC /* App.entitlements */,
@@ -152,6 +158,7 @@
 		CA933EBA2F3945DF00C71DEC /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				CA933EDC2F3A067B00C71DEC /* StoreKit.framework */,
 				CA933EBB2F3945DF00C71DEC /* WidgetKit.framework */,
 				CA933EBD2F3945DF00C71DEC /* SwiftUI.framework */,
 			);
@@ -280,6 +287,7 @@
 				CA933EAE2F393D6500C71DEC /* HealthKitPlugin.swift in Sources */,
 				CA933ED92F39523700C71DEC /* BiometricPlugin.swift in Sources */,
 				CA933EB32F39454F00C71DEC /* WidgetDataPlugin.swift in Sources */,
+				CA933EDB2F3A054E00C71DEC /* StoreKitPlugin.swift in Sources */,
 				CA933EB42F39454F00C71DEC /* LocalNotifyPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -451,6 +459,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Routines365;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -474,6 +484,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Routines365;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

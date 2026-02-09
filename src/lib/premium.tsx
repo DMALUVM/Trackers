@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { getActiveSubscription, onSubscriptionChange, isStoreKitAvailable } from "@/lib/storeKit";
 
 // ────────────────────────────────────────────────────────────
 // Premium feature flags
@@ -21,6 +22,12 @@ export const PREMIUM_FEATURES = {
   pdfReports: "pdf_reports",
   /** Premium: share cards */
   shareCards: "share_cards",
+  /** Premium: biometric insights (HRV, RHR, SpO2, respiratory rate) */
+  biometricInsights: "biometric_insights",
+  /** Premium: health auto-complete from Apple Health */
+  healthAutoComplete: "health_auto_complete",
+  /** Premium: unlimited habits (free capped at 8) */
+  unlimitedHabits: "unlimited_habits",
 } as const;
 
 export type PremiumFeature = (typeof PREMIUM_FEATURES)[keyof typeof PREMIUM_FEATURES];
@@ -48,20 +55,21 @@ const VALID_CODES = new Set([
 
 interface PremiumState {
   isPremium: boolean;
-  /** ISO date when premium was activated (for trial tracking) */
   activatedAt: string | null;
-  /** For dev/testing — manual override */
   devOverride: boolean;
-  /** Code used to redeem (if any) */
   redeemedCode: string | null;
+  /** Active StoreKit subscription info */
+  storeKitActive: boolean;
+  isTrialPeriod: boolean;
+  subscriptionProductId: string | null;
 }
 
 function loadState(): PremiumState {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { storeKitActive: false, isTrialPeriod: false, subscriptionProductId: null, ...JSON.parse(raw) };
   } catch {}
-  return { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null };
+  return { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null, storeKitActive: false, isTrialPeriod: false, subscriptionProductId: null };
 }
 
 function saveState(state: PremiumState) {
@@ -99,10 +107,53 @@ const PremiumContext = createContext<PremiumContextValue>({
 });
 
 export function PremiumProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PremiumState>({ isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null });
+  const [state, setState] = useState<PremiumState>({ isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null, storeKitActive: false, isTrialPeriod: false, subscriptionProductId: null });
 
   useEffect(() => {
-    setState(loadState());
+    const saved = loadState();
+    setState(saved);
+
+    // Check StoreKit for real subscription status
+    if (isStoreKitAvailable()) {
+      void (async () => {
+        try {
+          const sub = await getActiveSubscription();
+          if (sub.isPremium) {
+            const next: PremiumState = {
+              ...saved,
+              isPremium: true,
+              storeKitActive: true,
+              isTrialPeriod: sub.subscription?.isTrialPeriod ?? false,
+              subscriptionProductId: sub.subscription?.productId ?? null,
+            };
+            saveState(next);
+            setState(next);
+          } else if (saved.storeKitActive && !sub.isPremium) {
+            // Subscription expired/cancelled
+            const next: PremiumState = {
+              ...saved,
+              isPremium: saved.redeemedCode ? true : false, // Keep if promo code
+              storeKitActive: false,
+              isTrialPeriod: false,
+              subscriptionProductId: null,
+            };
+            saveState(next);
+            setState(next);
+          }
+        } catch { /* ignore */ }
+      })();
+    }
+
+    // Listen for subscription changes (renewals, cancellations)
+    const cleanup = onSubscriptionChange((isPremium) => {
+      setState((prev) => {
+        const next = { ...prev, isPremium, storeKitActive: isPremium };
+        saveState(next);
+        return next;
+      });
+    });
+
+    return cleanup;
   }, []);
 
   const isPremium = state.isPremium || state.devOverride;
@@ -125,13 +176,13 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   };
 
   const activate = () => {
-    const next: PremiumState = { isPremium: true, activatedAt: new Date().toISOString(), devOverride: false, redeemedCode: state.redeemedCode };
+    const next: PremiumState = { ...state, isPremium: true, activatedAt: new Date().toISOString(), devOverride: false };
     saveState(next);
     setState(next);
   };
 
   const deactivate = () => {
-    const next: PremiumState = { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null };
+    const next: PremiumState = { isPremium: false, activatedAt: null, devOverride: false, redeemedCode: null, storeKitActive: false, isTrialPeriod: false, subscriptionProductId: null };
     saveState(next);
     setState(next);
   };
@@ -146,6 +197,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     const normalized = code.trim().toUpperCase();
     if (!VALID_CODES.has(normalized)) return false;
     const next: PremiumState = {
+      ...state,
       isPremium: true,
       activatedAt: new Date().toISOString(),
       devOverride: false,
