@@ -6,92 +6,127 @@ import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
-// ── Audio Engine ──
-// CRITICAL: iOS WKWebView requires AudioContext creation AND first sound
-// to happen synchronously within a user gesture (tap). No async/await allowed
-// between the gesture and the first oscillator.start().
+// ── WAV Audio Engine ──
+// iOS WKWebView (Capacitor) does NOT reliably support Web Audio API oscillators.
+// Instead we generate actual WAV audio buffers, convert to blob URLs, and play
+// them via HTMLAudioElement — the most reliable audio path on all platforms.
+
+function writeString(view: DataView, offset: number, str: string) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+/** Generate a mono 16-bit PCM WAV as a blob URL */
+function makeToneUrl(freq: number, duration: number, volume: number, fadeRate = 4): string {
+  const sr = 44100;
+  const n = Math.floor(sr * duration);
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+
+  // RIFF header
+  writeString(v, 0, "RIFF");
+  v.setUint32(4, 36 + n * 2, true);
+  writeString(v, 8, "WAVE");
+  writeString(v, 12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);      // PCM
+  v.setUint16(22, 1, true);      // mono
+  v.setUint32(24, sr, true);     // sample rate
+  v.setUint32(28, sr * 2, true); // byte rate
+  v.setUint16(32, 2, true);      // block align
+  v.setUint16(34, 16, true);     // bits per sample
+  writeString(v, 36, "data");
+  v.setUint32(40, n * 2, true);
+
+  // PCM samples with exponential fade
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const env = Math.exp(-t * fadeRate);
+    const sample = Math.sin(2 * Math.PI * freq * t) * volume * env;
+    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
+  }
+
+  const blob = new Blob([buf], { type: "audio/wav" });
+  return URL.createObjectURL(blob);
+}
+
+/** Generate a 3-note chord WAV (C5 + E5 + G5 cascade) */
+function makeChordUrl(): string {
+  const sr = 44100;
+  const dur = 1.2;
+  const n = Math.floor(sr * dur);
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+
+  writeString(v, 0, "RIFF");
+  v.setUint32(4, 36 + n * 2, true);
+  writeString(v, 8, "WAVE");
+  writeString(v, 12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true);
+  v.setUint32(28, sr * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  writeString(v, 36, "data");
+  v.setUint32(40, n * 2, true);
+
+  const notes = [
+    { freq: 523, delay: 0, vol: 0.2 },    // C5
+    { freq: 659, delay: 0.15, vol: 0.18 }, // E5
+    { freq: 784, delay: 0.3, vol: 0.16 },  // G5
+  ];
+
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    let sample = 0;
+    for (const note of notes) {
+      if (t >= note.delay) {
+        const nt = t - note.delay;
+        const env = Math.exp(-nt * 3);
+        sample += Math.sin(2 * Math.PI * note.freq * nt) * note.vol * env;
+      }
+    }
+    v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, sample * 32767)), true);
+  }
+
+  const blob = new Blob([buf], { type: "audio/wav" });
+  return URL.createObjectURL(blob);
+}
 
 class BreathAudio {
-  private ctx: AudioContext | null = null;
+  private urls: Record<string, string> | null = null;
 
-  /** Get or create AudioContext — fully synchronous, safe to call in onClick */
-  private getCtx(): AudioContext | null {
+  /** Generate all sound URLs (lazy, called once) */
+  private ensureSounds() {
+    if (this.urls) return;
+    this.urls = {
+      inhale:   makeToneUrl(523, 0.6, 0.35, 3),    // C5, gentle rising chime
+      exhale:   makeToneUrl(392, 0.8, 0.3, 2.5),    // G4, warm descending tone
+      hold:     makeToneUrl(440, 0.3, 0.2, 5),      // A4, soft short tick
+      complete: makeChordUrl(),                       // C-E-G bright chord
+    };
+  }
+
+  private playUrl(key: string) {
+    if (!this.urls?.[key]) return;
     try {
-      if (!this.ctx) {
-        const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        if (!AC) return null;
-        this.ctx = new AC();
-      }
-      // resume() returns a promise but we intentionally do NOT await it.
-      // Calling it synchronously within a gesture is enough for iOS to unlock audio.
-      if (this.ctx.state === "suspended") {
-        this.ctx.resume();
-      }
-      return this.ctx;
+      const audio = new Audio(this.urls[key]);
+      audio.volume = 1.0;
+      // play() returns a promise; we catch any autoplay errors silently
+      const p = audio.play();
+      if (p) p.catch(() => {});
     } catch {
-      return null;
+      // Fallback: do nothing if audio creation fails
     }
   }
 
-  inhale() {
-    const ctx = this.getCtx();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(523, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(659, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-  }
-
-  exhale() {
-    const ctx = this.getCtx();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(392, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.2);
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.8);
-  }
-
-  hold() {
-    const ctx = this.getCtx();
-    if (!ctx) return;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-  }
-
-  complete() {
-    const ctx = this.getCtx();
-    if (!ctx) return;
-    [523, 659, 784].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.8);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.8);
-    });
-  }
+  /** Call from user tap handler — generates sounds + plays first tone.
+   *  This "unlocks" iOS audio session because .play() happens in gesture context. */
+  inhale()   { this.ensureSounds(); this.playUrl("inhale"); }
+  exhale()   { this.ensureSounds(); this.playUrl("exhale"); }
+  hold()     { this.ensureSounds(); this.playUrl("hold"); }
+  complete() { this.ensureSounds(); this.playUrl("complete"); }
 }
 
 const breathAudio = new BreathAudio();
@@ -227,7 +262,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
   const phase = technique.phases[currentPhaseIdx];
   const totalPhaseTime = phase.seconds;
 
-  // Play audio cues on phase change
+  // Play audio cue on each phase change
   useEffect(() => {
     if (!isRunning || !soundOn) return;
     const key = `${currentRound}-${currentPhaseIdx}`;
@@ -275,22 +310,19 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning, tick]);
 
-  // CRITICAL: start() is synchronous. breathAudio.inhale() calls getCtx() which
-  // creates AudioContext synchronously within the tap gesture — required for iOS.
+  // CRITICAL: start() is fully synchronous. breathAudio.inhale() generates
+  // WAV blob URLs + calls new Audio().play() all within the tap gesture.
+  // This unlocks the iOS audio session so timer-triggered sounds also work.
   const start = () => {
     hapticMedium();
     if (soundOn) {
-      breathAudio.inhale(); // Creates AudioContext + plays first sound in same gesture
+      breathAudio.inhale();
       lastPhaseRef.current = "0-0";
     }
     setIsRunning(true);
   };
 
-  const resume = () => {
-    hapticMedium();
-    setIsRunning(true);
-  };
-
+  const resume = () => { hapticMedium(); setIsRunning(true); };
   const pause = () => { hapticMedium(); setIsRunning(false); };
   const hasStarted = currentRound > 0 || currentPhaseIdx > 0 || timeInPhase > 0;
   const reset = () => {
@@ -324,7 +356,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
 
   return (
     <div className="flex flex-col items-center min-h-[80vh]">
-      {/* Session header — z-50 to sit above SettingsGear (z-40), safe-area aware */}
+      {/* Session header — z-50 above SettingsGear (z-40) */}
       <div className="w-full flex items-center justify-between mb-2 px-1"
         style={{ position: "relative", zIndex: 50 }}>
         <button type="button" onClick={onClose}
