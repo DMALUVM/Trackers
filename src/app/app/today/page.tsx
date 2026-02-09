@@ -92,6 +92,14 @@ export default function TodayPage() {
   const [justCompletedAll, setJustCompletedAll] = useState(false);
   const [autoCompleted, setAutoCompleted] = useState<Map<string, string>>(new Map());
 
+  // Section visibility (user-configurable in Settings → Modules)
+  const [healthHidden, setHealthHidden] = useState(false);
+  const [questsHidden, setQuestsHidden] = useState(false);
+  useEffect(() => {
+    try { setHealthHidden(localStorage.getItem("routines365:healthCard:hidden") === "1"); } catch {}
+    try { setQuestsHidden(localStorage.getItem("routines365:quests:hidden") === "1"); } catch {}
+  }, []);
+
   // Psychology state
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
   const [comebackDismissed, setComebackDismissed] = useState(false);
@@ -211,17 +219,25 @@ export default function TodayPage() {
   // ── Milestone check on green day completion ──
   useEffect(() => {
     if (!allCoreDone || streaks.loading) return;
+    // totalGreenDays from useStreaks may not include today yet (data loads from
+    // Supabase before today's checks are persisted). When allCoreDone is true,
+    // today IS green, so ensure it's counted. Use activeStreak + 1 as a floor.
+    const todayIsGreen = allCoreDone;
+    const effectiveStreak = todayIsGreen
+      ? Math.max(streaks.currentStreak, streaks.activeStreak + (streaks.currentStreak === 0 ? 1 : 0))
+      : streaks.currentStreak;
+    const effectiveTotal = Math.max(streaks.totalGreenDays, todayIsGreen ? effectiveStreak : 0);
     const result = checkMilestones({
-      currentStreak: streaks.currentStreak,
-      bestStreak: streaks.bestStreak,
-      totalGreenDays: streaks.totalGreenDays,
+      currentStreak: effectiveStreak,
+      bestStreak: Math.max(streaks.bestStreak, effectiveStreak),
+      totalGreenDays: effectiveTotal,
       previousBestStreak: streaks.previousBestStreak,
     });
     if (result) {
       // Delay so confetti plays first, then milestone modal
       setTimeout(() => setMilestoneToShow(result), 1200);
     }
-  }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
+  }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
@@ -552,7 +568,7 @@ export default function TodayPage() {
       )}
 
       {/* ─── QUESTS ─── */}
-      {!streaks.loading && (
+      {!streaks.loading && !questsHidden && (
         <QuestsCard
           greenDaysThisWeek={streaks.greenDaysThisWeek}
           checkedLabels={items.filter((i) => i.done).map((i) => i.label)}
@@ -572,7 +588,7 @@ export default function TodayPage() {
       <DailyWisdom />
 
       {/* Apple Health summary — only shows in native app */}
-      <HealthCard />
+      {!healthHidden && <HealthCard />}
 
       {/* Setup prompts for new users — notifications, health */}
       <SetupPrompts />

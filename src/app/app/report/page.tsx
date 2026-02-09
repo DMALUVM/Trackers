@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
-import { Download, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { SubPageHeader, SkeletonCard } from "@/app/app/_components/ui";
 import { listRoutineItems, loadRangeStates, toDateKey } from "@/lib/supabaseData";
 import { useStreaks } from "@/lib/hooks";
@@ -104,8 +104,21 @@ export default function ReportPage() {
   const trackedDays = days.length;
   const greenPct = trackedDays > 0 ? Math.round((greenDays / trackedDays) * 100) : 0;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     hapticMedium();
+    // On iOS/Capacitor, window.print() doesn't work
+    // Use share sheet with the page URL, or screenshot
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "My Routines365 Progress Report",
+          text: `${greenDays}/${trackedDays} green days (${greenPct}%) · ${streaks.activeStreak} day streak`,
+          url: window.location.href,
+        });
+        return;
+      } catch { /* user cancelled or not supported */ }
+    }
+    // Desktop fallback
     window.print();
   };
 
@@ -115,7 +128,7 @@ export default function ReportPage() {
       try {
         await navigator.share({
           title: "My Routines365 Progress Report",
-          text: `${greenDays}/${trackedDays} green days (${greenPct}%) · ${streaks.currentStreak} day streak`,
+          text: `${greenDays}/${trackedDays} green days (${greenPct}%) · ${streaks.activeStreak} day streak`,
           url: window.location.href,
         });
       } catch {}
@@ -154,21 +167,12 @@ export default function ReportPage() {
             subtitle={`${format(new Date(fromKey + "T12:00:00"), "MMM d")} – ${format(now, "MMM d, yyyy")}`}
             backHref="/app/routines/progress"
             rightAction={
-              <div className="flex gap-2">
-                {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-                  <button type="button" onClick={handleShare}
-                    className="tap-btn flex items-center justify-center rounded-full"
-                    style={{ width: 36, height: 36, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-                    <Share2 size={16} style={{ color: "var(--text-muted)" }} />
-                  </button>
-                )}
-                <button type="button" onClick={handleSave}
-                  className="tap-btn flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold"
-                  style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
-                  <Download size={14} />
-                  Save PDF
-                </button>
-              </div>
+              <button type="button" onClick={handleSave}
+                className="tap-btn flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold"
+                style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
+                <Share2 size={14} />
+                Share Report
+              </button>
             }
           />
         </div>
@@ -288,7 +292,7 @@ export default function ReportPage() {
         {/* Footer */}
         <footer className="text-center py-4 no-print">
           <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-            Tap "Save PDF" to download or share this report
+            Tap "Share Report" to save or send this report
           </p>
         </footer>
       </div>

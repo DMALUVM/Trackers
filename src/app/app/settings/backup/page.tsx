@@ -8,6 +8,16 @@ import { Toast, SubPageHeader, Spinner, type ToastState } from "@/app/app/_compo
 
 function download(filename: string, text: string, mimeType: string) {
   const blob = new Blob([text], { type: mimeType });
+  const file = new File([blob], filename, { type: mimeType });
+
+  // In Capacitor/iOS, createElement('a').download doesn't work
+  // Use Web Share API with file if available
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    void navigator.share({ files: [file] }).catch(() => {});
+    return;
+  }
+
+  // Fallback for desktop web
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename; a.click();
@@ -50,10 +60,21 @@ export default function BackupPage() {
     setBusy("csv"); setToast("saving");
     try {
       const data = await fetchAll();
-      download("routine_items.csv", toCsv(data.routine_items), "text/csv");
-      download("routine_checks.csv", toCsv(data.routine_checks), "text/csv");
-      download("daily_logs.csv", toCsv(data.daily_logs), "text/csv");
-      download("activity_logs.csv", toCsv(data.activity_logs), "text/csv");
+      const files = [
+        { name: "routine_items.csv", content: toCsv(data.routine_items) },
+        { name: "routine_checks.csv", content: toCsv(data.routine_checks) },
+        { name: "daily_logs.csv", content: toCsv(data.daily_logs) },
+        { name: "activity_logs.csv", content: toCsv(data.activity_logs) },
+      ];
+
+      // On iOS, share all files at once
+      const fileObjs = files.map(f => new File([f.content], f.name, { type: "text/csv" }));
+      if (navigator.share && navigator.canShare?.({ files: fileObjs })) {
+        await navigator.share({ files: fileObjs }).catch(() => {});
+      } else {
+        // Desktop fallback: download one by one
+        for (const f of files) download(f.name, f.content, "text/csv");
+      }
       setToast("saved"); setTimeout(() => setToast("idle"), 1500);
     } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
     finally { setBusy(null); }
