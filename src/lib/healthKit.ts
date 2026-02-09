@@ -15,8 +15,18 @@ export interface HealthKitSteps {
 
 export interface HealthKitSleep {
   date: string; // YYYY-MM-DD
-  /** Total sleep in minutes */
+  /** Total sleep in minutes (asleep time if available, otherwise in-bed) */
   totalMinutes: number;
+  /** Actual asleep time in minutes (core + deep + REM) */
+  asleepMinutes?: number;
+  /** Total in-bed time in minutes */
+  inBedMinutes?: number;
+  /** Deep sleep minutes (premium) */
+  deepMinutes?: number;
+  /** Core/light sleep minutes (premium) */
+  coreMinutes?: number;
+  /** REM sleep minutes (premium) */
+  remMinutes?: number;
   /** Bed time as ISO string */
   bedTime: string | null;
   /** Wake time as ISO string */
