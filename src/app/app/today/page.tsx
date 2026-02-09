@@ -33,6 +33,7 @@ import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
 import { HealthCard } from "@/app/app/_components/HealthCard";
 import { DailyWisdom } from "@/app/app/_components/DailyWisdom";
 import { SmartRecommendations } from "@/app/app/_components/SmartRecommendations";
+import { StreakInsurance } from "@/app/app/_components/StreakInsurance";
 import Link from "next/link";
 import { updateWidgetData } from "@/lib/widgetData";
 import { checkAutoComplete } from "@/lib/healthAutoComplete";
@@ -94,12 +95,20 @@ export default function TodayPage() {
   const [justCompletedAll, setJustCompletedAll] = useState(false);
   const [autoCompleted, setAutoCompleted] = useState<Map<string, string>>(new Map());
 
-  // Section visibility (user-configurable in Settings → Modules)
+  // Section visibility (user-configurable)
   const [healthHidden, setHealthHidden] = useState(false);
   const [questsHidden, setQuestsHidden] = useState(false);
+  const [waterHidden, setWaterHidden] = useState(false);
+  const [wisdomHidden, setWisdomHidden] = useState(false);
+  const [quickActionsHidden, setQuickActionsHidden] = useState(false);
+  const [smartTipsHidden, setSmartTipsHidden] = useState(false);
   useEffect(() => {
     try { setHealthHidden(localStorage.getItem("routines365:healthCard:hidden") === "1"); } catch {}
     try { setQuestsHidden(localStorage.getItem("routines365:quests:hidden") === "1"); } catch {}
+    try { setWaterHidden(localStorage.getItem("routines365:water:hidden") === "1"); } catch {}
+    try { setWisdomHidden(localStorage.getItem("routines365:wisdom:hidden") === "1"); } catch {}
+    try { setQuickActionsHidden(localStorage.getItem("routines365:quickActions:hidden") === "1"); } catch {}
+    try { setSmartTipsHidden(localStorage.getItem("routines365:smartTips:hidden") === "1"); } catch {}
   }, []);
 
   // Psychology state
@@ -584,38 +593,43 @@ export default function TodayPage() {
       )}
 
       {/* ─── WATER TRACKER ─── */}
-      <WaterTracker dateKey={dateKey} />
+      {!waterHidden && <WaterTracker dateKey={dateKey} />}
 
       {/* Daily stoic wisdom */}
-      <DailyWisdom />
+      {!wisdomHidden && <DailyWisdom />}
+
+      {/* Streak Insurance — shows after 8pm if streak at risk */}
+      <StreakInsurance streaks={streaks} allCoreDone={allCoreDone} dateKey={dateKey} />
 
       {/* Apple Health summary — only shows in native app */}
       {!healthHidden && <HealthCard />}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-2">
-        <Link href="/app/breathwork" onClick={() => hapticLight()}
-          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-          <Wind size={20} className="mx-auto mb-1" style={{ color: "#6366f1" }} />
-          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Breathwork</p>
-        </Link>
-        <Link href="/app/movement" onClick={() => hapticLight()}
-          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-          <Dumbbell size={20} className="mx-auto mb-1" style={{ color: "#10b981" }} />
-          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Movement</p>
-        </Link>
-        <Link href="/app/focus" onClick={() => hapticLight()}
-          className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-          <Brain size={20} className="mx-auto mb-1" style={{ color: "#3b82f6" }} />
-          <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Focus</p>
-        </Link>
-      </div>
+      {!quickActionsHidden && (
+        <div className="grid grid-cols-3 gap-2">
+          <Link href="/app/breathwork" onClick={() => hapticLight()}
+            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+            <Wind size={20} className="mx-auto mb-1" style={{ color: "#6366f1" }} />
+            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Breathwork</p>
+          </Link>
+          <Link href="/app/movement" onClick={() => hapticLight()}
+            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+            <Dumbbell size={20} className="mx-auto mb-1" style={{ color: "#10b981" }} />
+            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Movement</p>
+          </Link>
+          <Link href="/app/focus" onClick={() => hapticLight()}
+            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+            <Brain size={20} className="mx-auto mb-1" style={{ color: "#3b82f6" }} />
+            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Focus</p>
+          </Link>
+        </div>
+      )}
 
       {/* Smart Recommendations */}
-      <SmartRecommendations streaks={streaks} />
+      {!smartTipsHidden && <SmartRecommendations streaks={streaks} />}
 
       {/* Setup prompts for new users — notifications, health */}
       <SetupPrompts />

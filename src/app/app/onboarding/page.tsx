@@ -86,6 +86,9 @@ export default function OnboardingPage() {
               { emoji: "⭐", title: "Some habits are \"Core\"", desc: "These are your must-dos. Complete all core habits = a green day." },
               { emoji: "📅", title: "Track every day", desc: "Open the app, check off what you did. Takes about 10 seconds." },
               { emoji: "🔥", title: "Build streaks", desc: "Consecutive green days build streaks. Watch consistency compound." },
+              { emoji: "🫁", title: "Guided breathwork & movement", desc: "Box breathing, Wim Hof, mobility flows, and lymphatic drainage routines built in." },
+              { emoji: "🧠", title: "Focus timer", desc: "Pomodoro and deep work sessions to stay productive." },
+              { emoji: "💚", title: "Connect Apple Health", desc: "See steps, sleep, HRV, and heart rate — discover how habits affect your body." },
             ].map(({ emoji, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
                 <span className="text-xl shrink-0 mt-0.5">{emoji}</span>

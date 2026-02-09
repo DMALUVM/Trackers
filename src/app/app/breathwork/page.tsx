@@ -1,17 +1,88 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { ChevronLeft, Play, Pause, RotateCcw, Lock, Crown } from "lucide-react";
+import { ChevronLeft, Play, Pause, RotateCcw, Lock, Crown, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
-// ── Breathing Techniques ──
+// ── Audio Engine ──
+
+class BreathAudio {
+  private ctx: AudioContext | null = null;
+
+  private getCtx(): AudioContext {
+    if (!this.ctx) this.ctx = new AudioContext();
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    return this.ctx;
+  }
+
+  inhale() {
+    const ctx = this.getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(523, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(659, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.6);
+  }
+
+  exhale() {
+    const ctx = this.getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(392, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+  }
+
+  hold() {
+    const ctx = this.getCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  }
+
+  complete() {
+    const ctx = this.getCtx();
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.8);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.8);
+    });
+  }
+}
+
+const breathAudio = new BreathAudio();
+
+// ── Types ──
 
 interface BreathPhase {
   label: string;
   seconds: number;
   color: string;
+  type: "inhale" | "exhale" | "hold";
 }
 
 interface BreathTechnique {
@@ -27,137 +98,92 @@ interface BreathTechnique {
 
 const TECHNIQUES: BreathTechnique[] = [
   {
-    id: "box",
-    name: "Box Breathing",
+    id: "box", name: "Box Breathing",
     description: "Equal inhale, hold, exhale, hold. Used by Navy SEALs for calm focus.",
     emoji: "🟦",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#3b82f6" },
-      { label: "Hold", seconds: 4, color: "#8b5cf6" },
-      { label: "Exhale", seconds: 4, color: "#06b6d4" },
-      { label: "Hold", seconds: 4, color: "#6366f1" },
+      { label: "Breathe In", seconds: 4, color: "#3b82f6", type: "inhale" },
+      { label: "Hold", seconds: 4, color: "#8b5cf6", type: "hold" },
+      { label: "Breathe Out", seconds: 4, color: "#06b6d4", type: "exhale" },
+      { label: "Hold", seconds: 4, color: "#6366f1", type: "hold" },
     ],
-    rounds: 6,
-    premium: false,
-    benefits: "Reduces stress, improves focus",
+    rounds: 6, premium: false, benefits: "Reduces stress, improves focus",
   },
   {
-    id: "478",
-    name: "4-7-8 Relaxation",
+    id: "478", name: "4-7-8 Relaxation",
     description: "Dr. Andrew Weil's natural tranquilizer for the nervous system.",
     emoji: "🌙",
     phases: [
-      { label: "Inhale", seconds: 4, color: "#3b82f6" },
-      { label: "Hold", seconds: 7, color: "#8b5cf6" },
-      { label: "Exhale", seconds: 8, color: "#06b6d4" },
+      { label: "Breathe In", seconds: 4, color: "#3b82f6", type: "inhale" },
+      { label: "Hold", seconds: 7, color: "#8b5cf6", type: "hold" },
+      { label: "Breathe Out", seconds: 8, color: "#06b6d4", type: "exhale" },
     ],
-    rounds: 4,
-    premium: true,
-    benefits: "Promotes deep sleep, reduces anxiety",
+    rounds: 4, premium: true, benefits: "Promotes deep sleep, reduces anxiety",
   },
   {
-    id: "wimhof",
-    name: "Wim Hof Power Breath",
+    id: "wimhof", name: "Wim Hof Power Breath",
     description: "30 rapid breaths followed by a retention hold. Energizing.",
     emoji: "❄️",
     phases: [
-      { label: "Rapid Inhale", seconds: 1.5, color: "#ef4444" },
-      { label: "Rapid Exhale", seconds: 1.5, color: "#f97316" },
+      { label: "In", seconds: 1.5, color: "#ef4444", type: "inhale" },
+      { label: "Out", seconds: 1.5, color: "#f97316", type: "exhale" },
     ],
-    rounds: 30,
-    premium: true,
-    benefits: "Boosts energy, strengthens immune system",
+    rounds: 30, premium: true, benefits: "Boosts energy, strengthens immune system",
   },
   {
-    id: "sigh",
-    name: "Physiological Sigh",
+    id: "sigh", name: "Physiological Sigh",
     description: "Double inhale through nose, long exhale. Fastest way to calm down.",
     emoji: "😮‍💨",
     phases: [
-      { label: "Inhale", seconds: 2, color: "#3b82f6" },
-      { label: "Sip In", seconds: 1, color: "#6366f1" },
-      { label: "Long Exhale", seconds: 6, color: "#06b6d4" },
+      { label: "Breathe In", seconds: 2, color: "#3b82f6", type: "inhale" },
+      { label: "Sip In", seconds: 1, color: "#6366f1", type: "inhale" },
+      { label: "Long Exhale", seconds: 6, color: "#06b6d4", type: "exhale" },
     ],
-    rounds: 5,
-    premium: true,
-    benefits: "Instant calm, reduces CO2",
+    rounds: 5, premium: true, benefits: "Instant calm, reduces CO2",
   },
   {
-    id: "energize",
-    name: "Energizing Breath",
+    id: "energize", name: "Energizing Breath",
     description: "Quick rhythmic breathing to wake up body and mind.",
     emoji: "⚡",
     phases: [
-      { label: "Sharp Inhale", seconds: 1, color: "#f59e0b" },
-      { label: "Sharp Exhale", seconds: 1, color: "#ef4444" },
+      { label: "Sharp In", seconds: 1, color: "#f59e0b", type: "inhale" },
+      { label: "Sharp Out", seconds: 1, color: "#ef4444", type: "exhale" },
     ],
-    rounds: 20,
-    premium: true,
-    benefits: "Increases alertness, boosts energy",
+    rounds: 20, premium: true, benefits: "Increases alertness, boosts energy",
   },
 ];
 
-// ── Breathing Circle Component ──
+// ── Circle ──
 
-function BreathingCircle({
-  phase,
-  progress,
-  label,
-  color,
-  isActive,
-}: {
-  phase: string;
-  progress: number;
-  label: string;
-  color: string;
-  isActive: boolean;
+function BreathingCircle({ progress, label, color, secondsLeft, isActive }: {
+  progress: number; label: string; color: string; secondsLeft: number; isActive: boolean;
 }) {
-  const minScale = 0.5;
+  const isInhale = label.toLowerCase().includes("in") || label.toLowerCase().includes("sip");
+  const isExhale = label.toLowerCase().includes("out") || label.toLowerCase().includes("exhale");
+  const minScale = 0.45;
   const maxScale = 1;
-  const isInhale = label.toLowerCase().includes("inhale") || label.toLowerCase().includes("sip");
-  const isExhale = label.toLowerCase().includes("exhale");
-
-  let scale: number;
-  if (isInhale) {
-    scale = minScale + (maxScale - minScale) * progress;
-  } else if (isExhale) {
-    scale = maxScale - (maxScale - minScale) * progress;
-  } else {
-    scale = maxScale; // hold
-  }
+  const scale = isInhale ? minScale + (maxScale - minScale) * progress
+    : isExhale ? maxScale - (maxScale - minScale) * progress
+    : maxScale;
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 240, height: 240 }}>
-      {/* Outer glow */}
-      <div
-        className="absolute rounded-full transition-transform"
-        style={{
-          width: 240,
-          height: 240,
-          background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
-          transform: `scale(${scale})`,
-          transition: "transform 0.3s ease-in-out",
-        }}
-      />
-      {/* Main circle */}
-      <div
-        className="absolute rounded-full flex items-center justify-center"
-        style={{
-          width: 180,
-          height: 180,
-          background: `radial-gradient(circle at 30% 30%, ${color}40, ${color}15)`,
-          border: `3px solid ${color}60`,
-          transform: `scale(${scale})`,
-          transition: "transform 0.3s ease-in-out",
-          boxShadow: isActive ? `0 0 40px ${color}30` : "none",
-        }}
-      >
+    <div className="relative flex items-center justify-center" style={{ width: 300, height: 300 }}>
+      <div className="absolute rounded-full" style={{
+        width: 300, height: 300,
+        background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
+        transform: `scale(${scale})`, transition: "transform 0.2s ease-out",
+      }} />
+      <div className="absolute rounded-full flex items-center justify-center" style={{
+        width: 240, height: 240,
+        background: `radial-gradient(circle at 30% 30%, ${color}35, ${color}10)`,
+        border: `3px solid ${color}50`,
+        transform: `scale(${scale})`, transition: "transform 0.2s ease-out",
+        boxShadow: isActive ? `0 0 60px ${color}25, inset 0 0 30px ${color}08` : "none",
+      }}>
         <div className="text-center">
-          <p className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-            {label}
-          </p>
-          <p className="text-sm mt-1 tabular-nums" style={{ color: "var(--text-muted)" }}>
-            {phase}
+          <p className="text-3xl font-black tracking-tight" style={{ color }}>{label}</p>
+          <p className="text-5xl font-bold mt-2 tabular-nums" style={{ color: "var(--text-primary)" }}>
+            {Math.ceil(secondsLeft)}
           </p>
         </div>
       </div>
@@ -165,57 +191,59 @@ function BreathingCircle({
   );
 }
 
-// ── Session View ──
+// ── Session ──
 
-function BreathSession({
-  technique,
-  onClose,
-}: {
-  technique: BreathTechnique;
-  onClose: () => void;
-}) {
+function BreathSession({ technique, onClose }: { technique: BreathTechnique; onClose: () => void }) {
   const [isRunning, setIsRunning] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
   const [phaseProgress, setPhaseProgress] = useState(0);
   const [timeInPhase, setTimeInPhase] = useState(0);
   const [completed, setCompleted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastPhaseRef = useRef<string>("");
 
   const phase = technique.phases[currentPhaseIdx];
   const totalPhaseTime = phase.seconds;
 
+  useEffect(() => {
+    if (!isRunning || !soundOn) return;
+    const key = `${currentRound}-${currentPhaseIdx}`;
+    if (lastPhaseRef.current === key) return;
+    lastPhaseRef.current = key;
+    const p = technique.phases[currentPhaseIdx];
+    if (p.type === "inhale") breathAudio.inhale();
+    else if (p.type === "exhale") breathAudio.exhale();
+    else breathAudio.hold();
+  }, [currentPhaseIdx, currentRound, isRunning, soundOn, technique.phases]);
+
   const tick = useCallback(() => {
     setTimeInPhase((prev) => {
       const next = prev + 0.05;
-      const progress = Math.min(next / totalPhaseTime, 1);
-      setPhaseProgress(progress);
-
+      setPhaseProgress(Math.min(next / totalPhaseTime, 1));
       if (next >= totalPhaseTime) {
-        // Phase complete — haptic pulse
         hapticLight();
-
-        const nextPhaseIdx = currentPhaseIdx + 1;
-        if (nextPhaseIdx >= technique.phases.length) {
-          // Round complete
-          const nextRound = currentRound + 1;
-          if (nextRound >= technique.rounds) {
-            // Session complete
+        const nextPI = currentPhaseIdx + 1;
+        if (nextPI >= technique.phases.length) {
+          const nextR = currentRound + 1;
+          if (nextR >= technique.rounds) {
             hapticHeavy();
+            if (soundOn) breathAudio.complete();
             setCompleted(true);
             setIsRunning(false);
             return 0;
           }
-          setCurrentRound(nextRound);
+          setCurrentRound(nextR);
           setCurrentPhaseIdx(0);
         } else {
-          setCurrentPhaseIdx(nextPhaseIdx);
+          setCurrentPhaseIdx(nextPI);
         }
         return 0;
       }
       return next;
     });
-  }, [currentPhaseIdx, currentRound, technique, totalPhaseTime]);
+  }, [currentPhaseIdx, currentRound, technique, totalPhaseTime, soundOn]);
 
   useEffect(() => {
     if (isRunning) {
@@ -223,112 +251,64 @@ function BreathSession({
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning, tick]);
 
-  const toggleRunning = () => {
-    hapticMedium();
-    setIsRunning(!isRunning);
-  };
-
-  const reset = () => {
-    hapticLight();
-    setIsRunning(false);
-    setCurrentRound(0);
-    setCurrentPhaseIdx(0);
-    setPhaseProgress(0);
-    setTimeInPhase(0);
-    setCompleted(false);
-  };
+  const start = () => { hapticMedium(); if (soundOn) { breathAudio.inhale(); lastPhaseRef.current = "0-0"; } setIsRunning(true); };
+  const reset = () => { hapticLight(); setIsRunning(false); setCurrentRound(0); setCurrentPhaseIdx(0); setPhaseProgress(0); setTimeInPhase(0); setCompleted(false); lastPhaseRef.current = ""; };
 
   if (completed) {
+    const totalTime = technique.phases.reduce((s, p) => s + p.seconds, 0) * technique.rounds;
     return (
-      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
-        <div className="text-5xl mb-4">🧘</div>
-        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-          Session Complete
-        </h2>
-        <p className="text-sm mb-1" style={{ color: "var(--text-muted)" }}>
-          {technique.name} · {technique.rounds} rounds
-        </p>
-        <p className="text-xs mb-8" style={{ color: "var(--text-faint)" }}>
-          {technique.benefits}
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6">
+        <div className="text-6xl mb-6">🧘</div>
+        <h2 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>Complete</h2>
+        <p className="text-lg mb-1" style={{ color: "var(--text-muted)" }}>{technique.name}</p>
+        <p className="text-sm mb-8" style={{ color: "var(--text-faint)" }}>{technique.rounds} rounds · {Math.round(totalTime / 60)} min</p>
         <div className="flex gap-3">
-          <button type="button" onClick={reset}
-            className="px-5 py-3 rounded-xl text-sm font-bold"
-            style={{ background: "var(--bg-card)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}>
-            Repeat
-          </button>
-          <button type="button" onClick={onClose}
-            className="px-5 py-3 rounded-xl text-sm font-bold"
-            style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
-            Done
-          </button>
+          <button type="button" onClick={reset} className="px-6 py-3.5 rounded-2xl text-base font-bold"
+            style={{ background: "var(--bg-card)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}>Repeat</button>
+          <button type="button" onClick={onClose} className="px-6 py-3.5 rounded-2xl text-base font-bold"
+            style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>Done</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center min-h-[70vh]">
-      {/* Header */}
-      <div className="w-full flex items-center justify-between mb-6">
-        <button type="button" onClick={onClose} className="text-sm font-medium tap-btn"
-          style={{ color: "var(--text-muted)" }}>
-          ✕ Close
+    <div className="flex flex-col items-center min-h-[80vh]">
+      <div className="w-full flex items-center justify-between mb-2 px-1">
+        <button type="button" onClick={onClose} className="text-base font-medium tap-btn p-2" style={{ color: "var(--text-muted)" }}>✕</button>
+        <button type="button" onClick={() => { hapticLight(); setSoundOn(!soundOn); }} className="rounded-full p-2.5" style={{ background: "var(--bg-card)" }}>
+          {soundOn ? <Volume2 size={18} style={{ color: "var(--text-muted)" }} /> : <VolumeX size={18} style={{ color: "var(--text-faint)" }} />}
         </button>
-        <span className="text-xs font-bold tabular-nums" style={{ color: "var(--text-faint)" }}>
-          Round {currentRound + 1} / {technique.rounds}
-        </span>
       </div>
 
-      {/* Breathing circle */}
       <div className="flex-1 flex items-center justify-center">
-        <BreathingCircle
-          phase={`${Math.ceil(totalPhaseTime - timeInPhase)}s`}
-          progress={phaseProgress}
-          label={phase.label}
-          color={phase.color}
-          isActive={isRunning}
-        />
+        <BreathingCircle secondsLeft={totalPhaseTime - timeInPhase} progress={phaseProgress} label={phase.label} color={phase.color} isActive={isRunning} />
       </div>
 
-      {/* Round progress dots */}
-      <div className="flex gap-1.5 my-6 flex-wrap justify-center max-w-[200px]">
-        {Array.from({ length: technique.rounds }).map((_, i) => (
-          <div key={i} className="rounded-full"
-            style={{
-              width: 8, height: 8,
-              background: i < currentRound ? "var(--accent-green)" : i === currentRound ? phase.color : "var(--bg-card-hover)",
-            }}
-          />
+      <p className="text-lg font-bold tabular-nums mb-4" style={{ color: "var(--text-faint)" }}>{currentRound + 1} / {technique.rounds}</p>
+
+      <div className="flex gap-2 mb-6 flex-wrap justify-center max-w-[240px]">
+        {Array.from({ length: Math.min(technique.rounds, 30) }).map((_, i) => (
+          <div key={i} className="rounded-full" style={{ width: 10, height: 10,
+            background: i < currentRound ? "var(--accent-green)" : i === currentRound ? phase.color : "var(--bg-card-hover)", transition: "background 0.3s" }} />
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4 pb-6">
-        <button type="button" onClick={reset}
-          className="rounded-full p-3"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-          <RotateCcw size={20} style={{ color: "var(--text-muted)" }} />
+      <div className="flex items-center gap-5 pb-8">
+        <button type="button" onClick={reset} className="rounded-full p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+          <RotateCcw size={22} style={{ color: "var(--text-muted)" }} />
         </button>
-        <button type="button" onClick={toggleRunning}
-          className="rounded-full p-5"
-          style={{
-            background: isRunning
-              ? "rgba(239,68,68,0.15)"
-              : "var(--accent-green)",
-            boxShadow: isRunning ? "none" : "0 4px 24px rgba(16,185,129,0.3)",
+        <button type="button" onClick={isRunning ? () => { hapticMedium(); setIsRunning(false); } : start}
+          className="rounded-full p-6" style={{
+            background: isRunning ? "rgba(239,68,68,0.15)" : "var(--accent-green)",
+            boxShadow: isRunning ? "none" : "0 4px 30px rgba(16,185,129,0.35)",
           }}>
-          {isRunning
-            ? <Pause size={28} style={{ color: "#ef4444" }} />
-            : <Play size={28} style={{ color: "var(--text-inverse)", marginLeft: 2 }} />
-          }
+          {isRunning ? <Pause size={34} style={{ color: "#ef4444" }} /> : <Play size={34} style={{ color: "var(--text-inverse)", marginLeft: 3 }} />}
         </button>
-        <div style={{ width: 44 }} />
+        <div style={{ width: 54 }} />
       </div>
     </div>
   );
@@ -340,82 +320,46 @@ export default function BreathworkPage() {
   const { isPremium } = usePremium();
   const [activeTechnique, setActiveTechnique] = useState<BreathTechnique | null>(null);
 
-  if (activeTechnique) {
-    return (
-      <BreathSession
-        technique={activeTechnique}
-        onClose={() => setActiveTechnique(null)}
-      />
-    );
-  }
+  if (activeTechnique) return <BreathSession technique={activeTechnique} onClose={() => setActiveTechnique(null)} />;
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/app/today" className="tap-btn rounded-full p-1.5"
-          style={{ background: "var(--bg-card)" }}>
+        <Link href="/app/today" className="tap-btn rounded-full p-1.5" style={{ background: "var(--bg-card)" }}>
           <ChevronLeft size={20} style={{ color: "var(--text-muted)" }} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-            Breathwork
-          </h1>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-            Guided breathing exercises
-          </p>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Breathwork</h1>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Close your eyes. We'll guide you with sound.</p>
         </div>
       </div>
 
-      {/* Technique cards */}
       <div className="space-y-3">
         {TECHNIQUES.map((t) => {
           const locked = t.premium && !isPremium;
           const totalTime = t.phases.reduce((s, p) => s + p.seconds, 0) * t.rounds;
           const minutes = Math.round(totalTime / 60);
-
           return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => {
-                if (locked) {
-                  hapticLight();
-                  window.location.href = "/app/settings/premium";
-                  return;
-                }
-                hapticMedium();
-                setActiveTechnique(t);
-              }}
-              className="w-full rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
-              style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border-primary)",
-                opacity: locked ? 0.7 : 1,
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">{t.emoji}</span>
+            <button key={t.id} type="button"
+              onClick={() => { if (locked) { hapticLight(); window.location.href = "/app/settings/premium"; return; } hapticMedium(); setActiveTechnique(t); }}
+              className="w-full rounded-2xl p-5 text-left transition-all active:scale-[0.98]"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", opacity: locked ? 0.65 : 1 }}>
+              <div className="flex items-start gap-4">
+                <span className="text-3xl mt-0.5">{t.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-                      {t.name}
-                    </p>
-                    {locked && <Lock size={12} style={{ color: "var(--text-faint)" }} />}
-                    {t.premium && isPremium && <Crown size={12} style={{ color: "#f59e0b" }} />}
+                    <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{t.name}</p>
+                    {locked && <Lock size={13} style={{ color: "var(--text-faint)" }} />}
+                    {t.premium && isPremium && <Crown size={13} style={{ color: "#f59e0b" }} />}
                   </div>
-                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                    {t.description}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
-                      ~{minutes} min
-                    </span>
-                    <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>
-                      {t.benefits}
+                  <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.description}</p>
+                  <div className="flex items-center gap-3 mt-2.5">
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>~{minutes} min</span>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                      <Volume2 size={10} /> Audio cues
                     </span>
                   </div>
+                  <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>{t.benefits}</p>
                 </div>
               </div>
             </button>
@@ -423,21 +367,11 @@ export default function BreathworkPage() {
         })}
       </div>
 
-      {/* Premium upsell */}
       {!isPremium && (
-        <Link href="/app/settings/premium"
-          className="block rounded-2xl p-4 text-center"
-          style={{
-            background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))",
-            border: "1px solid rgba(99,102,241,0.2)",
-            textDecoration: "none",
-          }}>
-          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-            Unlock All Techniques
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            4 premium breathwork methods + guided movement
-          </p>
+        <Link href="/app/settings/premium" className="block rounded-2xl p-5 text-center"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)", textDecoration: "none" }}>
+          <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>🔓 Unlock All Techniques</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>4 premium methods with guided audio</p>
         </Link>
       )}
     </div>

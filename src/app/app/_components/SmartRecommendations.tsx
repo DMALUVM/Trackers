@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Lightbulb, TrendingDown, Calendar, Target, AlertTriangle } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 import type { StreakData } from "@/lib/hooks/useStreaks";
 
 export interface SmartRecommendation {

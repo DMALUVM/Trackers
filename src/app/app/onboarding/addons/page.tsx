@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
-import { createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
+import { createRoutineItemsBulk, listRoutineItems, setEnabledModules } from "@/lib/supabaseData";
 
 const LS_TEMPLATE = "routines365:onboarding:templateId";
 const LS_CORE = "routines365:onboarding:coreIds";
@@ -43,6 +43,14 @@ export default function OnboardingAddonsPage() {
     if (coreIds.length === 0) { router.replace("/app/onboarding/core"); return; }
     setBusy(true); setError("");
     try {
+      const goal = (() => { try { return localStorage.getItem("routines365:onboarding:goal"); } catch { return null; } })();
+      const mods = new Set<string>(["progress", "settings"]);
+      if (goal === "fitness") { mods.add("rowing"); mods.add("cardio"); mods.add("recovery"); }
+      else if (goal === "energy") { mods.add("cardio"); mods.add("recovery"); }
+      else if (goal === "sleep") { mods.add("recovery"); }
+      for (const m of (pack.modules as string[] ?? [])) mods.add(m);
+      await setEnabledModules(Array.from(mods));
+
       const base = pack.routines.map((r) => ({
         label: r.label, emoji: r.emoji ?? null, section: r.section ?? "anytime",
         isNonNegotiable: coreIds.includes(r.id), daysOfWeek: r.daysOfWeek ?? null,
@@ -55,6 +63,7 @@ export default function OnboardingAddonsPage() {
       localStorage.removeItem("routines365:gettingStarted:dismissed");
       localStorage.removeItem(LS_TEMPLATE);
       localStorage.removeItem(LS_CORE);
+      localStorage.removeItem("routines365:onboarding:goal");
       router.replace("/app/today");
     } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)); }
     finally { setBusy(false); }
