@@ -15,7 +15,9 @@ export function SettingsGear() {
     pathname === "/app/today" ||
     pathname === "/app/breathwork" ||
     pathname === "/app/movement" ||
-    pathname === "/app/focus"
+    pathname === "/app/focus" ||
+    pathname === "/app/streaks" ||
+    pathname === "/app/partner"
   ) {
     return null;
   }

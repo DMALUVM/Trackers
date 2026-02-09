@@ -80,6 +80,54 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      {/* My Streaks */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>📌 My Streaks</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Everyone has that <strong style={{ color: "var(--text-primary)" }}>one habit</strong> that matters most — no alcohol, daily walking, meditation, whatever it is for you. My Streaks gives every habit its own dedicated tracker.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Pin your most important habits", desc: "Pin up to 5 habits to see big, bold streak counters front and center. Your \"47 days sober\" moment." },
+            { title: "Per-habit stats", desc: "Every habit shows WTD, MTD, YTD, and all-time completion counts. Tap any habit to expand and see the full picture." },
+            { title: "30-day heatmap", desc: "A visual timeline of the last 30 days for each habit — see your consistency at a glance." },
+            { title: "Per-habit milestones", desc: "Earn milestone badges at 3, 7, 14, 21, 30, 50, 75, 100, 150, 200, and 365 days per habit." },
+            { title: "Share your streaks", desc: "Generate a beautiful image card showing your streak and share it to iMessage, Instagram, or anywhere else." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Access My Streaks by tapping your 🔥 streak on the Today screen, or from the Progress page.
+        </p>
+      </section>
+
+      {/* Accountability Partner */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>🤝 Accountability Partner</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Connect with <strong style={{ color: "var(--text-primary)" }}>one person</strong> who can see your streak and today&apos;s progress. Research shows people with an accountability partner are 65% more likely to reach their goals.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Invite a partner", desc: "Generate a 6-character code and share it via text, email, or any messaging app." },
+            { title: "See their progress", desc: "View your partner's current streak, best streak, and how many habits they've completed today." },
+            { title: "Send cheers", desc: "Tap the ❤️ button to send encouragement when your partner needs a boost." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Find it from My Streaks → tap the 👥 icon in the top right.
+        </p>
+      </section>
+
       {/* How to customize */}
       <section className="card p-5 space-y-3">
         <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>⚙️ Customizing Your Habits</h2>
