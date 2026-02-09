@@ -3,7 +3,7 @@ import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fn
 import { loadRangeStates, listRoutineItems } from "@/lib/supabaseData";
 import type { RoutineItemRow } from "@/lib/types";
 
-const LOOKBACK_DAYS = 400; // ~13 months for YTD
+const LOOKBACK_DAYS = 90; // Fast load; covers MTD and most streaks
 
 export interface HabitStreak {
   id: string;
@@ -42,6 +42,7 @@ export function useHabitStreaks(dateKey: string) {
   useEffect(() => {
     let cancelled = false;
 
+    const timer = setTimeout(() => {
     void (async () => {
       try {
         const today = new Date(dateKey + "T12:00:00");
@@ -185,8 +186,9 @@ export function useHabitStreaks(dateKey: string) {
         if (!cancelled) setLoading(false);
       }
     })();
+    }, 50);
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [dateKey]);
 
   return { habits, loading };

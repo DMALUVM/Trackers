@@ -366,9 +366,10 @@ export default function StreaksPage() {
         title="My Streaks"
         subtitle={loading ? "Loading..." : `${habits.length} habits tracked`}
         rightAction={
-          <Link href="/app/partner" className="tap-btn rounded-full p-2"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-            <Users size={18} style={{ color: "var(--text-muted)" }} />
+          <Link href="/app/partner" className="tap-btn rounded-full flex items-center gap-1.5 px-3 py-2"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
+            <Users size={16} style={{ color: "var(--accent-green)" }} />
+            <span className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Partner</span>
           </Link>
         }
       />
