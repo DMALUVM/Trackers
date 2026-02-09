@@ -6,31 +6,32 @@ import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
-// ── Singing Bowl Audio Engine ──
-// Generates Tibetan singing bowl tones using inharmonic partials with slow decay.
-// Real bowls have overtone ratios of ~1:2.71:4.53 (not integer harmonics).
+// ── Om Drone Audio Engine ──
+// Generates smooth, sustained Om-like drones using layered harmonics.
+// Each tone lasts the full phase duration with a gentle fade-out in the final 25%.
+// No vibrato or pulsing — pure smooth sustained sound.
 // Rendered as WAV blobs, played via HTMLAudioElement for iOS reliability.
 
-function writeString(v: DataView, off: number, s: string) {
-  for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i));
+function writeStr(v: DataView, o: number, s: string) {
+  for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
 }
 
-function samplesToWav(samples: Float64Array, sampleRate: number): string {
+function samplesToWav(samples: Float64Array, sr: number): string {
   const n = samples.length;
   const buf = new ArrayBuffer(44 + n * 2);
   const v = new DataView(buf);
-  writeString(v, 0, "RIFF");
+  writeStr(v, 0, "RIFF");
   v.setUint32(4, 36 + n * 2, true);
-  writeString(v, 8, "WAVE");
-  writeString(v, 12, "fmt ");
+  writeStr(v, 8, "WAVE");
+  writeStr(v, 12, "fmt ");
   v.setUint32(16, 16, true);
   v.setUint16(20, 1, true);
   v.setUint16(22, 1, true);
-  v.setUint32(24, sampleRate, true);
-  v.setUint32(28, sampleRate * 2, true);
+  v.setUint32(24, sr, true);
+  v.setUint32(28, sr * 2, true);
   v.setUint16(32, 2, true);
   v.setUint16(34, 16, true);
-  writeString(v, 36, "data");
+  writeStr(v, 36, "data");
   v.setUint32(40, n * 2, true);
   for (let i = 0; i < n; i++) {
     v.setInt16(44 + i * 2, Math.max(-32768, Math.min(32767, samples[i] * 32767)), true);
@@ -38,12 +39,17 @@ function samplesToWav(samples: Float64Array, sampleRate: number): string {
   return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
 }
 
-/** Tibetan singing bowl with inharmonic overtones and slow natural decay */
-function makeBowlTone(
+/**
+ * Generate a smooth Om drone.
+ * - Fades in over 0.3s
+ * - Sustains at full volume
+ * - Last 25% of duration gently fades to silence
+ */
+function makeOmDrone(
   fundamental: number,
   duration: number,
   volume: number,
-  partials: Array<{ ratio: number; amp: number; decay: number }>,
+  harmonics: Array<{ ratio: number; amp: number }>,
 ): string {
   const sr = 44100;
   const n = Math.floor(sr * duration);
@@ -51,132 +57,171 @@ function makeBowlTone(
 
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-    // Soft 8ms attack to avoid click
-    const attack = Math.min(t / 0.008, 1);
+
+    // Smooth envelope: 0.3s fade-in → sustain → last 25% fades out
+    const fadeIn = Math.min(t / 0.3, 1);
+    const fadeOutStart = duration * 0.75;
+    const fadeOut = t > fadeOutStart
+      ? Math.max(0, 1 - ((t - fadeOutStart) / (duration - fadeOutStart)))
+      : 1;
+    // Smooth the fade-out curve (ease-out)
+    const env = fadeIn * (fadeOut * fadeOut);
+
     let val = 0;
-    for (const p of partials) {
-      const freq = fundamental * p.ratio;
-      const env = Math.exp(-t * p.decay);
-      // Subtle vibrato (beating) like a real bowl being struck
-      const beat = 1 + Math.sin(2 * Math.PI * 4.2 * t) * 0.003;
-      val += Math.sin(2 * Math.PI * freq * beat * t) * p.amp * env;
+    for (const h of harmonics) {
+      val += Math.sin(2 * Math.PI * fundamental * h.ratio * t) * h.amp;
     }
-    raw[i] = val * attack;
+    raw[i] = val * env;
   }
 
   // Normalize to target volume
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
-  const norm = peak > 0 ? volume / peak : 1;
-  for (let i = 0; i < n; i++) raw[i] *= norm;
+  if (peak > 0) {
+    const norm = volume / peak;
+    for (let i = 0; i < n; i++) raw[i] *= norm;
+  }
 
   return samplesToWav(raw, sr);
 }
 
-/** Two-note rising bowl strike for inhale */
-function makeInhaleUrl(): string {
-  // Middle C bowl (256 Hz) — warm, grounding
-  return makeBowlTone(256, 2.0, 0.45, [
-    { ratio: 1.0,  amp: 1.0,  decay: 1.8 },
-    { ratio: 2.71, amp: 0.4,  decay: 2.2 },
-    { ratio: 4.53, amp: 0.2,  decay: 2.8 },
-    { ratio: 5.63, amp: 0.08, decay: 3.2 },
-  ]);
-}
-
-/** Lower bowl for exhale — calming, descending energy */
-function makeExhaleUrl(): string {
-  // G3 bowl (196 Hz) — deeper, more soothing
-  return makeBowlTone(196, 2.5, 0.4, [
-    { ratio: 1.0,  amp: 1.0,  decay: 1.5 },
-    { ratio: 2.71, amp: 0.35, decay: 1.8 },
-    { ratio: 4.53, amp: 0.15, decay: 2.2 },
-    { ratio: 7.0,  amp: 0.05, decay: 2.8 },
-  ]);
-}
-
-/** Soft high bell tap for hold — minimal, just a gentle reminder */
-function makeHoldUrl(): string {
-  // E5 bell (659 Hz) — light, airy
-  return makeBowlTone(659, 0.8, 0.25, [
-    { ratio: 1.0,  amp: 1.0,  decay: 4.0 },
-    { ratio: 2.0,  amp: 0.3,  decay: 5.0 },
-    { ratio: 3.5,  amp: 0.1,  decay: 6.0 },
-  ]);
-}
-
-/** Completion: three bowls in cascade (C4 → E4 → G4 major triad) */
-function makeCompleteUrl(): string {
+/** Completion: three Om tones cascading into a warm chord that slowly fades */
+function makeCompletionUrl(): string {
   const sr = 44100;
-  const dur = 4.0;
+  const dur = 5.0;
   const n = Math.floor(sr * dur);
   const raw = new Float64Array(n);
 
-  const bowls = [
-    { fund: 256, delay: 0,    vol: 0.35 }, // C4
-    { fund: 323, delay: 0.6,  vol: 0.30 }, // E4 (slightly sharp, bowl-like)
-    { fund: 384, delay: 1.2,  vol: 0.28 }, // G4
+  const voices = [
+    { fund: 130, delay: 0,   vol: 0.30 }, // C3
+    { fund: 164, delay: 0.8, vol: 0.25 }, // E3
+    { fund: 196, delay: 1.6, vol: 0.22 }, // G3
   ];
 
-  const partials = [
-    { ratio: 1.0,  amp: 1.0,  decay: 1.2 },
-    { ratio: 2.71, amp: 0.35, decay: 1.5 },
-    { ratio: 4.53, amp: 0.15, decay: 2.0 },
+  const harmonics = [
+    { ratio: 1.0, amp: 1.0 },
+    { ratio: 2.0, amp: 0.4 },
+    { ratio: 3.0, amp: 0.15 },
+    { ratio: 0.5, amp: 0.25 },
   ];
 
   for (let i = 0; i < n; i++) {
     const t = i / sr;
     let val = 0;
-    for (const bowl of bowls) {
-      if (t < bowl.delay) continue;
-      const bt = t - bowl.delay;
-      const attack = Math.min(bt / 0.008, 1);
-      for (const p of partials) {
-        const freq = bowl.fund * p.ratio;
-        const env = Math.exp(-bt * p.decay);
-        const beat = 1 + Math.sin(2 * Math.PI * 3.8 * bt) * 0.003;
-        val += Math.sin(2 * Math.PI * freq * beat * bt) * p.amp * env * bowl.vol * attack;
+    for (const voice of voices) {
+      if (t < voice.delay) continue;
+      const vt = t - voice.delay;
+      const remaining = dur - voice.delay;
+      // Fade in 0.4s, sustain, fade out last 30%
+      const fadeIn = Math.min(vt / 0.4, 1);
+      const fadeOutStart = remaining * 0.7;
+      const fadeOut = vt > fadeOutStart
+        ? Math.max(0, 1 - ((vt - fadeOutStart) / (remaining - fadeOutStart)))
+        : 1;
+      const env = fadeIn * (fadeOut * fadeOut);
+
+      for (const h of harmonics) {
+        val += Math.sin(2 * Math.PI * voice.fund * h.ratio * vt) * h.amp * env * voice.vol;
       }
     }
     raw[i] = val;
   }
 
-  // Normalize
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
-  const norm = peak > 0 ? 0.5 / peak : 1;
-  for (let i = 0; i < n; i++) raw[i] *= norm;
+  if (peak > 0) {
+    const norm = 0.45 / peak;
+    for (let i = 0; i < n; i++) raw[i] *= norm;
+  }
 
   return samplesToWav(raw, sr);
 }
 
-class BreathAudio {
-  private urls: Record<string, string> | null = null;
+// Om harmonic profiles for each phase type
+const INHALE_HARMONICS = [
+  { ratio: 1.0, amp: 1.0 },   // fundamental
+  { ratio: 2.0, amp: 0.45 },  // octave
+  { ratio: 3.0, amp: 0.2 },   // 5th above octave
+  { ratio: 4.0, amp: 0.08 },  // 2nd octave
+  { ratio: 0.5, amp: 0.25 },  // sub-octave for depth
+];
 
-  private ensureSounds() {
-    if (this.urls) return;
-    this.urls = {
-      inhale:   makeInhaleUrl(),
-      exhale:   makeExhaleUrl(),
-      hold:     makeHoldUrl(),
-      complete: makeCompleteUrl(),
-    };
+const EXHALE_HARMONICS = [
+  { ratio: 1.0, amp: 1.0 },
+  { ratio: 2.0, amp: 0.35 },
+  { ratio: 3.0, amp: 0.12 },
+  { ratio: 0.5, amp: 0.4 },   // stronger sub for deeper feel
+  { ratio: 1.5, amp: 0.15 },  // perfect 5th — adds warmth
+];
+
+const HOLD_HARMONICS = [
+  { ratio: 1.0, amp: 1.0 },
+  { ratio: 2.0, amp: 0.3 },
+  { ratio: 3.0, amp: 0.1 },
+  { ratio: 0.5, amp: 0.2 },
+];
+
+interface SoundSet {
+  /** Map of "phase_index" → blob URL, where tone duration matches phase seconds */
+  phases: Map<number, string>;
+  complete: string;
+}
+
+class BreathAudio {
+  private cache = new Map<string, SoundSet>();
+  private completionUrl: string | null = null;
+
+  /** Pre-generate all tones for a technique (each phase gets its exact duration) */
+  prepareTechnique(technique: { id: string; phases: Array<{ seconds: number; type: string }> }) {
+    if (this.cache.has(technique.id)) return;
+
+    const phases = new Map<number, string>();
+    for (let i = 0; i < technique.phases.length; i++) {
+      const p = technique.phases[i];
+      const dur = p.seconds;
+
+      if (p.type === "inhale") {
+        // C3 (130Hz) — bright, uplifting
+        phases.set(i, makeOmDrone(130, dur, 0.35, INHALE_HARMONICS));
+      } else if (p.type === "exhale") {
+        // G2 (98Hz) — deep, calming
+        phases.set(i, makeOmDrone(98, dur, 0.30, EXHALE_HARMONICS));
+      } else {
+        // A2 (110Hz) — neutral, gentle hold
+        phases.set(i, makeOmDrone(110, dur, 0.20, HOLD_HARMONICS));
+      }
+    }
+
+    if (!this.completionUrl) {
+      this.completionUrl = makeCompletionUrl();
+    }
+
+    this.cache.set(technique.id, { phases, complete: this.completionUrl });
   }
 
-  private play(key: string) {
-    if (!this.urls?.[key]) return;
+  playPhase(techniqueId: string, phaseIdx: number) {
+    const set = this.cache.get(techniqueId);
+    const url = set?.phases.get(phaseIdx);
+    if (!url) return;
     try {
-      const a = new Audio(this.urls[key]);
+      const a = new Audio(url);
       a.volume = 1.0;
       const p = a.play();
       if (p) p.catch(() => {});
-    } catch { /* silent fail */ }
+    } catch { /* silent */ }
   }
 
-  inhale()   { this.ensureSounds(); this.play("inhale"); }
-  exhale()   { this.ensureSounds(); this.play("exhale"); }
-  hold()     { this.ensureSounds(); this.play("hold"); }
-  complete() { this.ensureSounds(); this.play("complete"); }
+  playComplete(techniqueId: string) {
+    const set = this.cache.get(techniqueId);
+    const url = set?.complete;
+    if (!url) return;
+    try {
+      const a = new Audio(url);
+      a.volume = 1.0;
+      const p = a.play();
+      if (p) p.catch(() => {});
+    } catch { /* silent */ }
+  }
 }
 
 const breathAudio = new BreathAudio();
@@ -312,17 +357,14 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
   const phase = technique.phases[currentPhaseIdx];
   const totalPhaseTime = phase.seconds;
 
-  // Play singing bowl on each phase change
+  // Play the Om drone for each new phase
   useEffect(() => {
     if (!isRunning || !soundOn) return;
     const key = `${currentRound}-${currentPhaseIdx}`;
     if (lastPhaseRef.current === key) return;
     lastPhaseRef.current = key;
-    const p = technique.phases[currentPhaseIdx];
-    if (p.type === "inhale") breathAudio.inhale();
-    else if (p.type === "exhale") breathAudio.exhale();
-    else breathAudio.hold();
-  }, [currentPhaseIdx, currentRound, isRunning, soundOn, technique.phases]);
+    breathAudio.playPhase(technique.id, currentPhaseIdx);
+  }, [currentPhaseIdx, currentRound, isRunning, soundOn, technique.id]);
 
   const tick = useCallback(() => {
     setTimeInPhase((prev) => {
@@ -335,7 +377,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
           const nextR = currentRound + 1;
           if (nextR >= technique.rounds) {
             hapticHeavy();
-            if (soundOn) breathAudio.complete();
+            if (soundOn) breathAudio.playComplete(technique.id);
             setCompleted(true);
             setIsRunning(false);
             return 0;
@@ -360,10 +402,12 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isRunning, tick]);
 
+  // Start: pre-generate tones (sync, in gesture context) then play first phase
   const start = () => {
     hapticMedium();
+    breathAudio.prepareTechnique(technique);
     if (soundOn) {
-      breathAudio.inhale();
+      breathAudio.playPhase(technique.id, 0);
       lastPhaseRef.current = "0-0";
     }
     setIsRunning(true);
@@ -490,8 +534,8 @@ export default function BreathworkPage() {
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.description}</p>
                   <div className="flex items-center gap-3 mt-2.5">
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>~{minutes} min</span>
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
-                      🔔 Singing bowls
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                      🕉️ Om drones
                     </span>
                   </div>
                   <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>{t.benefits}</p>
@@ -506,7 +550,7 @@ export default function BreathworkPage() {
         <Link href="/app/settings/premium" className="block rounded-2xl p-5 text-center"
           style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)", textDecoration: "none" }}>
           <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>🔓 Unlock All Techniques</p>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>4 premium methods with singing bowl audio</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>4 premium methods with guided Om audio</p>
         </Link>
       )}
     </div>
