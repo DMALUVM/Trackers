@@ -31,7 +31,9 @@ import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
 import { HabitDetailSheet } from "@/app/app/_components/HabitDetailSheet";
 import { HealthCard } from "@/app/app/_components/HealthCard";
+import { DailyWisdom } from "@/app/app/_components/DailyWisdom";
 import { updateWidgetData } from "@/lib/widgetData";
+import { checkAutoComplete } from "@/lib/healthAutoComplete";
 import { usePremium } from "@/lib/premium";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
@@ -88,6 +90,7 @@ export default function TodayPage() {
   const [syncQueueCount, setSyncQueueCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [justCompletedAll, setJustCompletedAll] = useState(false);
+  const [autoCompleted, setAutoCompleted] = useState<Map<string, string>>(new Map());
 
   // Psychology state
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
@@ -289,6 +292,39 @@ export default function TodayPage() {
     setJustCompletedAll(true);
     debouncedPersist(dayMode);
   }, [dayMode, debouncedPersist, routine.itemsRef, dateKey]);
+
+  // ── HealthKit auto-complete ──
+  // On first load, check if any habits match HealthKit data and auto-mark them done
+  const autoCompleteRan = useRef(false);
+  useEffect(() => {
+    if (routine.loading || autoCompleteRan.current || items.length === 0) return;
+    autoCompleteRan.current = true;
+
+    void (async () => {
+      try {
+        const result = await checkAutoComplete(
+          items.map((i) => ({ id: i.id, label: i.label, done: i.done }))
+        );
+        if (result.matches.size === 0) return;
+
+        // Auto-mark matched habits as done
+        const matchIds = new Set(result.matches.keys());
+        setItems((prev) => {
+          const next = prev.map((i) => matchIds.has(i.id) ? { ...i, done: true } : i);
+          routine.itemsRef.current = next;
+          return next;
+        });
+        debouncedPersist(dayMode);
+
+        // Track what was auto-completed for UI badges
+        const acMap = new Map<string, string>();
+        for (const [id, info] of result.matches) {
+          acMap.set(id, info.value);
+        }
+        setAutoCompleted(acMap);
+      } catch { /* HealthKit not authorized or unavailable */ }
+    })();
+  }, [routine.loading, items.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Confetti on natural all-core completion — only when user completes cores
   // during this session, NOT on page load when they're already done.
@@ -532,6 +568,9 @@ export default function TodayPage() {
       {/* ─── WATER TRACKER ─── */}
       <WaterTracker dateKey={dateKey} />
 
+      {/* Daily stoic wisdom */}
+      <DailyWisdom />
+
       {/* Apple Health summary — only shows in native app */}
       <HealthCard />
 
@@ -559,6 +598,7 @@ export default function TodayPage() {
               isCore
               done={item.done}
               justCompleted={recentlyDoneId === item.id}
+              autoCompletedBy={autoCompleted.get(item.id)}
               hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
               hasReminder={reminderMap.has(item.id)}
               onToggle={item.done ? toggleItem : markDone}
@@ -596,6 +636,7 @@ export default function TodayPage() {
                 isCore={false}
                 done={item.done}
                 justCompleted={recentlyDoneId === item.id}
+                autoCompletedBy={autoCompleted.get(item.id)}
                 hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
                 hasReminder={reminderMap.has(item.id)}
                 onToggle={item.done ? toggleItem : markDone}

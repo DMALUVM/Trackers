@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, Footprints, Moon, Flame, Dumbbell, Check, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Footprints, Moon, Flame, Dumbbell, Check, ExternalLink, Zap } from "lucide-react";
 import { SubPageHeader } from "@/app/app/_components/ui/SubPageHeader";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
-import { hapticMedium } from "@/lib/haptics";
+import { hapticMedium, hapticLight } from "@/lib/haptics";
+import { loadThresholds, saveThresholds, type AutoCompleteThresholds } from "@/lib/healthAutoComplete";
 
 export default function HealthKitSettingsPage() {
   const { available, authorized, requestAuth, steps, sleep, summary } = useHealthKit();
   const [connecting, setConnecting] = useState(false);
+  const [thresholds, setThresholds] = useState<AutoCompleteThresholds>(loadThresholds());
+
+  const updateThreshold = (key: keyof AutoCompleteThresholds, value: number | boolean) => {
+    hapticLight();
+    const next = { ...thresholds, [key]: value };
+    setThresholds(next);
+    saveThresholds(next);
+  };
 
   const handleConnect = async () => {
     hapticMedium();
@@ -167,6 +176,77 @@ export default function HealthKitSettingsPage() {
             </span>
             <ExternalLink size={14} style={{ color: "var(--text-faint)" }} />
           </button>
+
+          {/* Smart Auto-Complete */}
+          <div className="rounded-2xl p-4 space-y-4"
+            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Zap size={16} style={{ color: "#f59e0b" }} />
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
+                  Smart auto-complete
+                </span>
+              </div>
+              <button type="button"
+                onClick={() => updateThreshold("enabled", !thresholds.enabled)}
+                className="relative rounded-full transition-all"
+                style={{
+                  width: 44, height: 24,
+                  background: thresholds.enabled ? "var(--accent-green)" : "var(--bg-card-hover)",
+                  border: `1px solid ${thresholds.enabled ? "var(--accent-green)" : "var(--border-primary)"}`,
+                }}>
+                <div className="absolute top-0.5 rounded-full bg-white transition-all"
+                  style={{ width: 20, height: 20, left: thresholds.enabled ? 21 : 2 }} />
+              </button>
+            </div>
+
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Automatically check off habits when Apple Health data meets your goals. Habits are matched by keywords in their names.
+            </p>
+
+            {thresholds.enabled && (
+              <div className="space-y-3 pt-1">
+                {([
+                  { key: "steps" as const, icon: Footprints, color: "#3b82f6", label: "Step goal", value: thresholds.steps, unit: "steps", options: [5000, 6000, 7000, 8000, 10000, 12000, 15000] },
+                  { key: "sleepHours" as const, icon: Moon, color: "#8b5cf6", label: "Sleep goal", value: thresholds.sleepHours, unit: "hours", options: [6, 6.5, 7, 7.5, 8, 8.5, 9] },
+                  { key: "workoutMinutes" as const, icon: Dumbbell, color: "#10b981", label: "Workout min", value: thresholds.workoutMinutes, unit: "min", options: [10, 15, 20, 30, 45, 60] },
+                  { key: "caloriesBurned" as const, icon: Flame, color: "#f97316", label: "Calorie goal", value: thresholds.caloriesBurned, unit: "cal", options: [150, 200, 250, 300, 400, 500, 600] },
+                ]).map(({ key, icon: Icon, color, label, value, unit, options }) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <div className="shrink-0 flex items-center justify-center rounded-lg"
+                      style={{ width: 32, height: 32, background: `${color}15` }}>
+                      <Icon size={15} style={{ color }} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                      {label}
+                    </span>
+                    <select
+                      value={value}
+                      onChange={(e) => updateThreshold(key, Number(e.target.value))}
+                      className="rounded-lg px-2 py-1.5 text-sm font-semibold text-right"
+                      style={{
+                        background: "var(--bg-card-hover)",
+                        color: "var(--text-primary)",
+                        border: "1px solid var(--border-primary)",
+                        appearance: "none",
+                        WebkitAppearance: "none",
+                        paddingRight: "0.75rem",
+                      }}>
+                      {options.map((o) => (
+                        <option key={o} value={o}>
+                          {o.toLocaleString()} {unit}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+
+                <p className="text-[10px] pt-1" style={{ color: "var(--text-faint)" }}>
+                  Matching keywords: &quot;walk&quot;, &quot;steps&quot;, &quot;sleep&quot;, &quot;workout&quot;, &quot;gym&quot;, &quot;exercise&quot;, &quot;calories&quot;, &quot;burn&quot;
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

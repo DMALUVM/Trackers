@@ -14,6 +14,8 @@ export interface RoutineCheckItemProps {
   hasMetric?: boolean;
   hasReminder?: boolean;
   justCompleted?: boolean;
+  /** If auto-completed by HealthKit, shows the source value (e.g. "8,432 steps") */
+  autoCompletedBy?: string;
   onToggle: (id: string) => void;
   onSkip?: (id: string) => void;
   onLogMetric?: (id: string) => void;
@@ -32,6 +34,7 @@ export function RoutineCheckItem({
   hasMetric,
   hasReminder,
   justCompleted,
+  autoCompletedBy,
   onToggle,
   onSkip,
   onLogMetric,
@@ -157,6 +160,14 @@ export function RoutineCheckItem({
           }}>
           {label}
         </span>
+
+        {/* HealthKit auto-completed badge */}
+        {done && autoCompletedBy && (
+          <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold flex items-center gap-1"
+            style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>
+            ❤️ {autoCompletedBy}
+          </span>
+        )}
 
         {/* Core badge (only when undone — when done the green bg already signals importance) */}
         {isCore && !done && (
