@@ -7,6 +7,7 @@
  */
 
 import { format } from "date-fns";
+import { ratingOnModuleComplete } from "@/lib/ratingPrompt";
 
 export type ModuleKey = "breathwork" | "movement" | "focus";
 
@@ -65,6 +66,9 @@ export function logSession(entry: Omit<SessionEntry, "completedAt">): void {
   window.dispatchEvent(
     new CustomEvent("routines365:sessionComplete", { detail: full })
   );
+
+  // Trigger rating prompt on 3rd module completion
+  ratingOnModuleComplete();
 }
 
 /** Get a summary for today: { breathwork: true, movement: false, focus: true } */

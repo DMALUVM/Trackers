@@ -41,6 +41,7 @@ import { usePremium } from "@/lib/premium";
 import { todayModuleStatus, getTodaySessions, type ModuleKey } from "@/lib/sessionLog";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
+import { ratingOnGreenDay, ratingOnStreakMilestone } from "@/lib/ratingPrompt";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
 import type { MotivationContext } from "@/lib/motivation";
@@ -263,7 +264,11 @@ export default function TodayPage() {
     if (result) {
       // Delay briefly so confetti plays, then show milestone
       setTimeout(() => setMilestoneToShow(result), 400);
+      // Trigger rating prompt at key streak milestones
+      if (result.type === "streak") ratingOnStreakMilestone(result.threshold);
     }
+    // Track green day for rating prompt (fires on 7th green day)
+    ratingOnGreenDay();
   }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
 
   // ── Halfway micro-feedback ──
