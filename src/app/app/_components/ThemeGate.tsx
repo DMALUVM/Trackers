@@ -16,22 +16,24 @@ function resolveTheme(t: Theme): "dark" | "light" {
 }
 
 // Solid tinted backgrounds — dark mode only
-// Bold enough to clearly see on OLED. Toggle OFF = pure black.
+// Derived from each screen's accent color in the App Store mockups
+// Toggle OFF = pure black #0a0a0a
 const PAGE_BG: Record<string, string> = {
-  "/app/today":             "#0b3020", // emerald
-  "/app/breathwork":        "#0a3040", // teal-cyan
-  "/app/movement":          "#0b3020", // emerald
-  "/app/focus":             "#352a0a", // warm amber
-  "/app/biometrics":        "#221240", // purple
-  "/app/routines/progress": "#102040", // blue
-  "/app/routines/edit":     "#102040", // blue
-  "/app/streaks":           "#353008", // gold
-  "/app/trophies":          "#353008", // gold
-  "/app/partner":           "#3a1230", // pink
-  "/app/recovery":          "#0a3530", // teal
-  "/app/sleep":             "#161845", // indigo
-  "/app/mindfulness":       "#0a3530", // teal
-  "/app/fitness":           "#351010", // red
+  "/app/today":             "#0a2e1c", // from mockup green (#10b981)
+  "/app/breathwork":        "#082c3a", // from mockup cyan (#06b6d4)
+  "/app/movement":          "#0a2e1c", // from mockup green (#10b981)
+  "/app/focus":             "#2c2208", // from amber (#f59e0b)
+  "/app/biometrics":        "#1a1038", // from mockup purple (#a855f7)
+  "/app/routines/progress": "#0c1a38", // from mockup blue (#3b82f6)
+  "/app/routines/edit":     "#0c1a38", // from mockup blue
+  "/app/streaks":           "#2c2808", // from mockup gold (#eab308)
+  "/app/trophies":          "#2c2808", // from mockup gold
+  "/app/partner":           "#380e2e", // from pink (#f472b6)
+  "/app/recovery":          "#082c28", // from teal (#14b8a6)
+  "/app/sleep":             "#101240", // from indigo (#6366f1)
+  "/app/mindfulness":       "#082c28", // from teal
+  "/app/fitness":           "#2c0e0e", // from red (#ef4444)
+  "/app/settings":          "#0a0a0a", // stays pure black
 };
 
 function getPageBg(pathname: string): string | null {
