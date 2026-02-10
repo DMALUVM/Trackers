@@ -2,12 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Crown, Lock, Sparkles, Shield, BarChart3, Zap, Heart, Activity } from "lucide-react";
+import { Check, Crown, Lock, Shield, BarChart3, Zap, Heart, Activity, Wind, Dumbbell, Brain, Moon } from "lucide-react";
 import { usePremium } from "@/lib/premium";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
 import { isStoreKitAvailable, getProducts, purchase, restorePurchases, PRODUCT_IDS, type StoreProduct } from "@/lib/storeKit";
 
 const FEATURES = [
+  {
+    icon: Wind,
+    title: "Guided Breathwork",
+    desc: "4-7-8, Wim Hof, physiological sigh, and energizing breath with Om audio cues",
+    free: "Box breathing",
+    premium: "All 5 techniques",
+  },
+  {
+    icon: Dumbbell,
+    title: "Movement Routines",
+    desc: "Lymphatic drainage, desk stretches, evening wind-down with step-by-step timers",
+    free: "Morning mobility",
+    premium: "All 4 routines",
+  },
   {
     icon: Activity,
     title: "Biometric Insights",
@@ -37,18 +51,18 @@ const FEATURES = [
     premium: "Unlimited",
   },
   {
-    icon: Sparkles,
-    title: "Per-Habit Analytics",
-    desc: "Tap any habit to see its individual completion rate, best day, trend over time, and personal records",
-    free: "—",
-    premium: "Full analytics",
+    icon: Moon,
+    title: "Sleep Stage Breakdown",
+    desc: "Deep, core, REM sleep charts with 7-day trends and personalized recommendations",
+    free: "Total sleep only",
+    premium: "Full stage analysis",
   },
   {
     icon: Zap,
-    title: "Reports, Themes & More",
-    desc: "PDF progress reports, custom themes, share cards, and unlimited habits (free limited to 8)",
-    free: "Basic",
-    premium: "Full access",
+    title: "Themes, Sharing & More",
+    desc: "Custom themes, share cards, unlimited habits, PDF reports, and per-habit analytics",
+    free: "8 habits, basic",
+    premium: "Unlimited access",
   },
 ];
 
@@ -144,12 +158,12 @@ export default function PremiumPage() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{f.title}</p>
               <p className="text-xs leading-relaxed mt-0.5" style={{ color: "var(--text-secondary)" }}>{f.desc}</p>
-              <div className="flex gap-4 mt-2">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              <div className="flex gap-2 mt-2.5">
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg leading-tight"
                   style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
                   Free: {f.free}
                 </span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-lg leading-tight"
                   style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>
                   Pro: {f.premium}
                 </span>
