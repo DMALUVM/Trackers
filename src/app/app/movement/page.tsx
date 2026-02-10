@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, Play, Pause, SkipForward, RotateCcw, Lock } from "lucide-react";
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
@@ -42,6 +43,45 @@ const ROUTINES: MovementRoutine[] = [
       { name: "Standing Forward Fold", instruction: "Hang loose, let gravity pull you down. Shake your head yes and no.", seconds: 30, emoji: "🙇" },
       { name: "Spinal Twist", instruction: "Seated or standing, rotate torso left and right gently.", seconds: 30, emoji: "🔀" },
       { name: "Deep Breaths", instruction: "Stand tall. 5 deep breaths — inhale through nose, exhale through mouth.", seconds: 30, emoji: "🧘" },
+    ],
+  },
+  {
+    id: "qigong-foundations",
+    name: "Qigong Foundations",
+    description: "Ancient Chinese energy work. Gentle flowing movements to cultivate qi and calm the mind.",
+    emoji: "☯️",
+    duration: "6 min",
+    premium: false,
+    category: "Qigong",
+    steps: [
+      { name: "Wuji Standing", instruction: "Stand with feet shoulder-width apart. Knees slightly bent, arms at sides. Relax your whole body and breathe naturally.", seconds: 40, emoji: "🧍" },
+      { name: "Lifting the Sky", instruction: "Interlace fingers, push palms overhead. Stretch up and slightly back. Lower slowly. Repeat 8 times with deep breaths.", seconds: 45, emoji: "🌤️" },
+      { name: "Pushing Mountains", instruction: "Arms at chest height, palms facing out. Push forward slowly while exhaling. Draw back while inhaling. Slow and deliberate.", seconds: 40, emoji: "⛰️" },
+      { name: "Cloud Hands", instruction: "Shift weight side to side. Arms float across your body like clouds drifting. Left to right, then right to left. Smooth and continuous.", seconds: 50, emoji: "☁️" },
+      { name: "Carrying the Moon", instruction: "Arms sweep up overhead in a circle, palms cradling an imaginary moon. Bend gently side to side. 5 each direction.", seconds: 40, emoji: "🌙" },
+      { name: "Shaking the Tree", instruction: "Bounce gently on your heels. Let arms hang loose and swing naturally. Shake out all tension. Soft knees.", seconds: 35, emoji: "🌳" },
+      { name: "Dan Tian Breathing", instruction: "Hands on lower belly (dan tian). Breathe deep into your palms. Feel warmth gathering. 8 slow breaths.", seconds: 50, emoji: "🔴" },
+      { name: "Closing Form", instruction: "Bring palms together at heart center. Bow slightly. Stand in stillness for a moment, feeling the energy settle.", seconds: 30, emoji: "🙏" },
+    ],
+  },
+  {
+    id: "qigong-eight-brocades",
+    name: "Eight Brocades (Ba Duan Jin)",
+    description: "The most practiced qigong set in the world. Eight movements for vitality, strength, and longevity.",
+    emoji: "🐉",
+    duration: "8 min",
+    premium: true,
+    category: "Qigong",
+    steps: [
+      { name: "Two Hands Hold Up the Sky", instruction: "Interlace fingers, push palms skyward. Stretch tall, heels stay grounded. Hold and breathe. Lower slowly. 6 reps.", seconds: 50, emoji: "🌤️" },
+      { name: "Drawing the Bow", instruction: "Wide horse stance. Extend one arm like drawing a bow, other arm pulls back. Eyes follow the arrow. Alternate sides, 4 each.", seconds: 55, emoji: "🏹" },
+      { name: "Separating Heaven and Earth", instruction: "One palm pushes up, one presses down. Stretch the torso. Switch sides smoothly. 4 each side.", seconds: 50, emoji: "✨" },
+      { name: "Wise Owl Gazes Backward", instruction: "Slowly turn head and upper body to look behind you. Keep hips forward. Alternate sides. 4 each.", seconds: 45, emoji: "🦉" },
+      { name: "Sway Head, Swing Tail", instruction: "Deep horse stance. Lean forward, swing head and tailbone in opposite circles. Releases heart fire.", seconds: 55, emoji: "🐎" },
+      { name: "Two Hands Hold the Feet", instruction: "Reach down toward toes, then arch back with hands on lower back. Strengthens kidneys. 6 reps.", seconds: 50, emoji: "🦶" },
+      { name: "Clench Fists, Glare Fiercely", instruction: "Horse stance. Punch forward with intensity, eyes fierce. Pull back slowly. Alternate fists, 4 each.", seconds: 50, emoji: "👊" },
+      { name: "Bouncing on Toes", instruction: "Rise onto toes, pause at the top, then drop heels to the ground. Feel the vibration through your whole body. 8 bounces.", seconds: 45, emoji: "⬆️" },
+      { name: "Closing Meditation", instruction: "Stand in wuji. Hands over dan tian. Close eyes. Feel the qi circulating. 5 deep breaths.", seconds: 40, emoji: "🧘" },
     ],
   },
   {
@@ -257,6 +297,7 @@ function MovementSession({
 
 export default function MovementPage() {
   const { isPremium } = usePremium();
+  const router = useRouter();
   const [activeRoutine, setActiveRoutine] = useState<MovementRoutine | null>(null);
 
   if (activeRoutine) {
@@ -287,7 +328,7 @@ export default function MovementPage() {
               return (
                 <button key={r.id} type="button"
                   onClick={() => {
-                    if (locked) { hapticLight(); window.location.href = "/app/settings/premium"; return; }
+                    if (locked) { hapticLight(); router.push("/app/settings/premium"); return; }
                     hapticMedium();
                     setActiveRoutine(r);
                   }}

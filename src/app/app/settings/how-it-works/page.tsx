@@ -208,6 +208,7 @@ export default function HowItWorksPage() {
             { title: "4-7-8 Relaxation", desc: "Dr. Andrew Weil's sleep technique. Inhale 4s, hold 7s, exhale 8s." },
             { title: "Physiological Sigh", desc: "Double inhale through the nose, long exhale. Instantly calms the nervous system." },
             { title: "Mobility flows", desc: "Guided movement routines for morning activation, desk breaks, and recovery." },
+            { title: "Qigong (Chi Gong)", desc: "Ancient Chinese energy work — gentle flowing movements to cultivate qi, reduce stress, and improve vitality. Includes Ba Duan Jin (Eight Brocades)." },
           ].map(({ title, desc }) => (
             <div key={title}>
               <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
