@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { getUserSettings, getUserSettingsSync } from "@/lib/supabaseData";
 
 type Theme = "system" | "dark" | "light";
@@ -14,22 +15,46 @@ function resolveTheme(t: Theme): "dark" | "light" {
   return t === "system" ? (prefersDark() ? "dark" : "light") : t;
 }
 
+// ── Page tint gradients (dark mode only) ──
+const TINTS: Record<string, string> = {
+  "/app/today":             "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 65%)",
+  "/app/breathwork":        "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.16) 0%, transparent 65%)",
+  "/app/movement":          "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 65%)",
+  "/app/focus":             "radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.14) 0%, transparent 65%)",
+  "/app/biometrics":        "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.14) 0%, transparent 65%)",
+  "/app/routines/progress": "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 65%)",
+  "/app/routines/edit":     "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.10) 0%, transparent 60%)",
+  "/app/streaks":           "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.14) 0%, transparent 65%)",
+  "/app/trophies":          "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.16) 0%, transparent 65%)",
+  "/app/partner":           "radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.14) 0%, transparent 65%)",
+  "/app/recovery":          "radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.14) 0%, transparent 65%)",
+  "/app/sleep":             "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.16) 0%, transparent 65%)",
+  "/app/mindfulness":       "radial-gradient(ellipse at 50% 0%, rgba(45,212,191,0.14) 0%, transparent 65%)",
+  "/app/fitness":           "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.12) 0%, transparent 65%)",
+};
+
+function getTint(pathname: string): string | null {
+  if (TINTS[pathname]) return TINTS[pathname];
+  for (const [route, tint] of Object.entries(TINTS)) {
+    if (pathname.startsWith(route)) return tint;
+  }
+  return null;
+}
+
 export function ThemeGate({ children }: { children: React.ReactNode }) {
-  // Instant theme from localStorage — no flash, no async wait
+  const pathname = usePathname();
+
   const [resolved, setResolved] = useState<"dark" | "light">(() => {
-    // 1. Check localStorage cache (instant)
     try {
       const local = localStorage.getItem("routines365:theme") as Theme | null;
       if (local) return resolveTheme(local);
     } catch { /* ignore */ }
-
-    // 2. Check cached settings from supabaseData
     const cached = getUserSettingsSync();
     if (cached?.theme) return resolveTheme(cached.theme as Theme);
-
-    // 3. Default
     return "dark";
   });
+
+  const [tintsOn, setTintsOn] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,9 +62,7 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
     const readLocal = (): Theme | null => {
       try {
         return (localStorage.getItem("routines365:theme") as Theme | null) ?? null;
-      } catch {
-        return null;
-      }
+      } catch { return null; }
     };
 
     const apply = async () => {
@@ -48,24 +71,29 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
         if (!cancelled) setResolved(resolveTheme(local));
         return;
       }
-
       try {
         const s = await getUserSettings();
         if (cancelled) return;
         const t = (s.theme as Theme | undefined) ?? "system";
-        try {
-          localStorage.setItem("routines365:theme", t);
-        } catch { /* ignore */ }
+        try { localStorage.setItem("routines365:theme", t); } catch { /* ignore */ }
         setResolved(resolveTheme(t));
       } catch {
         if (!cancelled) setResolved(resolveTheme("system"));
       }
     };
 
+    const checkTints = () => {
+      try { setTintsOn(localStorage.getItem("routines365:pageTints") !== "off"); }
+      catch { setTintsOn(true); }
+    };
+
     void apply();
+    checkTints();
 
     const onTheme = () => void apply();
+    const onTints = () => checkTints();
     window.addEventListener("routines365:theme", onTheme);
+    window.addEventListener("routines365:pageTints", onTints);
 
     const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
     const onSystemChange = () => {
@@ -79,12 +107,19 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
       window.removeEventListener("routines365:theme", onTheme);
+      window.removeEventListener("routines365:pageTints", onTints);
       mq?.removeEventListener?.("change", onSystemChange);
     };
   }, []);
 
+  // Build background: gradient layered over solid color, or just solid
+  const isDark = resolved === "dark";
+  const tint = (isDark && tintsOn) ? getTint(pathname) : null;
+  const bg = tint ? `${tint}, var(--bg-primary)` : "var(--bg-primary)";
+
   return (
-    <div data-theme={resolved} className="theme-shell" style={{ color: "var(--text-primary)" }}>
+    <div data-theme={resolved} className="theme-shell"
+      style={{ background: bg, color: "var(--text-primary)" }}>
       {children}
     </div>
   );

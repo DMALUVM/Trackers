@@ -138,6 +138,7 @@ export default function RoutinesSettingsPage() {
     try {
       const daysPatch = next && Array.isArray(item.days_of_week) && item.days_of_week.length === 0 ? null : undefined;
       await updateRoutineItem(item.id, { is_non_negotiable: next, ...(daysPatch !== undefined ? { days_of_week: daysPatch } : {}) });
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
       showToast("saved");
     } catch { showToast("error", "Save failed"); }
   };
@@ -147,6 +148,7 @@ export default function RoutinesSettingsPage() {
     try {
       await updateRoutineItem(item.id, { is_active: false });
       await refresh();
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
       showToast("saved");
     } catch { showToast("error", "Archive failed"); }
   };
@@ -159,6 +161,7 @@ export default function RoutinesSettingsPage() {
       await createRoutineItem({ label: newLabel.trim(), emoji: newEmoji.trim() || null, sortOrder: maxOrder + 1 });
       setNewLabel(""); setNewEmoji("");
       await refresh();
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
       showToast("saved");
     } catch { showToast("error", "Add failed"); }
   };
@@ -166,6 +169,7 @@ export default function RoutinesSettingsPage() {
   const persistOrder = async (next: RoutineItemRow[]) => {
     try {
       await Promise.all(next.map((it, idx) => updateRoutineItem(it.id, { sort_order: idx })));
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
     } catch { showToast("error", "Reorder failed"); }
   };
 

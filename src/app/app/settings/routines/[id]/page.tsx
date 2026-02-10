@@ -81,6 +81,7 @@ export default function RoutineDetailsPage() {
     setSaving(true); showToast("saving");
     try {
       await updateRoutineItem(id, patch);
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
       showToast("saved");
     } catch { showToast("error"); }
     finally { setSaving(false); }
