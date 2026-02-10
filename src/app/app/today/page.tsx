@@ -111,6 +111,11 @@ export default function TodayPage() {
     try { setSmartTipsHidden(localStorage.getItem("routines365:smartTips:hidden") === "1"); } catch {}
   }, []);
 
+  // Clear notification badge when app opens
+  useEffect(() => {
+    void import("@/lib/nativeNotify").then(({ clearBadge }) => clearBadge()).catch(() => {});
+  }, []);
+
   // Psychology state
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
   const [comebackDismissed, setComebackDismissed] = useState(false);

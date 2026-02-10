@@ -95,6 +95,17 @@ export async function cancelAllReminders(): Promise<void> {
   }
 }
 
+/** Clear the app icon badge and delivered notifications */
+export async function clearBadge(): Promise<void> {
+  const plugin = getPlugin();
+  if (!plugin) return;
+  try {
+    await plugin.clearBadge();
+  } catch {
+    // Silently fail — badge clearing is best-effort
+  }
+}
+
 /**
  * Schedule the main daily check-in reminder.
  * This is the key retention notification.
