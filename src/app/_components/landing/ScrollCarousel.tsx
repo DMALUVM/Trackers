@@ -5,20 +5,28 @@ import { useRef, useState, useEffect, useCallback } from "react";
 export function ScrollCarousel({
   children,
   className = "",
+  itemCount = 5,
 }: {
   children: React.ReactNode;
   className?: string;
+  itemCount?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const check = useCallback(() => {
     const el = ref.current;
     if (!el) return;
     setCanLeft(el.scrollLeft > 4);
     setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
-  }, []);
+
+    // Calculate which item is centered
+    const itemWidth = 264; // 240px phone + 24px gap
+    const idx = Math.round(el.scrollLeft / itemWidth);
+    setActiveIndex(Math.min(idx, itemCount - 1));
+  }, [itemCount]);
 
   useEffect(() => {
     const el = ref.current;
@@ -35,7 +43,13 @@ export function ScrollCarousel({
   const scroll = (dir: "left" | "right") => {
     const el = ref.current;
     if (!el) return;
-    el.scrollBy({ left: dir === "left" ? -280 : 280, behavior: "smooth" });
+    el.scrollBy({ left: dir === "left" ? -264 : 264, behavior: "smooth" });
+  };
+
+  const scrollTo = (index: number) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollTo({ left: index * 264, behavior: "smooth" });
   };
 
   return (
@@ -47,12 +61,31 @@ export function ScrollCarousel({
         {children}
       </div>
 
-      {/* Left arrow — hidden on mobile, visible on desktop when scrollable */}
+      {/* Scroll dots — always visible */}
+      <div className="flex justify-center items-center gap-2 mt-4">
+        {Array.from({ length: itemCount }).map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => scrollTo(i)}
+            aria-label={`Go to screen ${i + 1}`}
+            className="transition-all duration-300"
+            style={{
+              width: activeIndex === i ? 24 : 8,
+              height: 8,
+              borderRadius: 4,
+              background: activeIndex === i ? "#10b981" : "rgba(255,255,255,0.2)",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Left arrow — desktop only */}
       {canLeft && (
         <button
           type="button"
           onClick={() => scroll("left")}
-          className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+          className="hidden lg:flex absolute left-0 top-[calc(50%-20px)] -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full items-center justify-center transition-all opacity-0 group-hover:opacity-100"
           style={{
             background: "rgba(0,0,0,0.8)",
             border: "1px solid rgba(255,255,255,0.15)",
@@ -66,12 +99,12 @@ export function ScrollCarousel({
         </button>
       )}
 
-      {/* Right arrow */}
+      {/* Right arrow — desktop only */}
       {canRight && (
         <button
           type="button"
           onClick={() => scroll("right")}
-          className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+          className="hidden lg:flex absolute right-0 top-[calc(50%-20px)] -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full items-center justify-center transition-all opacity-0 group-hover:opacity-100"
           style={{
             background: "rgba(0,0,0,0.8)",
             border: "1px solid rgba(255,255,255,0.15)",

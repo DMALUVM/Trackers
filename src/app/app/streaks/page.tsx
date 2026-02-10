@@ -107,13 +107,10 @@ async function shareHabit(habit: HabitStreak) {
     if (!blob) return;
     const file = new File([blob], `routines365-${habit.label.toLowerCase().replace(/\s+/g, "-")}.png`, { type: "image/png" });
 
-    if (typeof navigator.share === "function") {
+    if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({
-          title: `My ${habit.label} Streak`,
-          text: `${habit.currentStreak} day streak on ${habit.label}! ${habit.emoji ?? "💪"}`,
-          files: [file],
-        });
+        // Share image ONLY — including text causes iOS to drop the image
+        await navigator.share({ files: [file] });
         return;
       } catch { /* fallback */ }
     }

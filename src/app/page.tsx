@@ -44,7 +44,7 @@ const FEATURES = [
   {
     emoji: "❤️",
     title: "Apple Health integration",
-    desc: "Sleep stages, HRV, resting heart rate, steps, blood oxygen, and respiratory rate — pulled automatically. Works with Apple Watch, Oura, Whoop, or any HealthKit wearable.",
+    desc: "Sleep stages, HRV, resting heart rate, steps, blood oxygen, and respiratory rate — pulled automatically from Apple Health. Compatible with any device that syncs to HealthKit: Apple Watch, Oura Ring, Whoop, and more.",
   },
   {
     emoji: "🔥",
@@ -277,9 +277,6 @@ export default function Home() {
               <div className="snap-center shrink-0"><MockProgress /></div>
               <div className="snap-center shrink-0"><MockSleep /></div>
             </ScrollCarousel>
-            <p className="text-center text-[11px] text-neutral-400 mt-3 lg:hidden">
-              ← Swipe to explore →
-            </p>
           </Reveal>
         </div>
       </section>
@@ -593,8 +590,10 @@ export default function Home() {
             Box Breathing, Morning Mobility, guided journal, streaks, and
             accountability partner. Optional premium for biometric insights,
             sleep stage analysis, health auto-complete, all breathwork
-            techniques, unlimited habits, and themes. Works offline and syncs
-            with Apple Watch, Oura Ring, Whoop, and any HealthKit wearable.
+            techniques, unlimited habits, and themes. Works offline and
+            reads health data from Apple Health, so it&apos;s compatible with
+            any device that syncs to HealthKit — including Apple Watch,
+            Oura Ring, Whoop, and other wearables.
           </p>
         </div>
       </section>

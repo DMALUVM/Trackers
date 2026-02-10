@@ -124,17 +124,12 @@ export function ShareCard({ streaks, greenPct, greenDays, totalDays, last7 }: Sh
 
       const file = new File([blob], "routines365-progress.png", { type: "image/png" });
 
-      if (typeof navigator.share === "function") {
+      if (typeof navigator.share === "function" && navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({
-            title: "My Routines365 Progress",
-            text: `${greenPct}% consistency · ${streaks.activeStreak || streaks.currentStreak} day streak 🔥`,
-            files: [file],
-          });
+          // Share image ONLY — including text causes iOS to drop the image
+          await navigator.share({ files: [file] });
           return;
-        } catch {
-          // Fallback to download
-        }
+        } catch { /* user cancelled or fallback */ }
       }
 
       // Download fallback
