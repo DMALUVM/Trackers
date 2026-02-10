@@ -67,7 +67,7 @@ export default function SecurityPage() {
       await supabase.auth.signOut();
       const keys = Object.keys(localStorage).filter((k) => k.startsWith("routines365:"));
       keys.forEach((k) => localStorage.removeItem(k));
-      router.replace("/");
+      router.replace("/login");
     } catch {
       setSigningOut(false);
       setConfirmSignOut(false);
@@ -105,7 +105,7 @@ export default function SecurityPage() {
       const keys = Object.keys(localStorage).filter((k) => k.startsWith("routines365:"));
       keys.forEach((k) => localStorage.removeItem(k));
       await supabase.auth.signOut();
-      router.replace("/");
+      router.replace("/login");
     } catch {
       setDeleteStep("confirm");
       setConfirmDelete(false);

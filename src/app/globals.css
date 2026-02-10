@@ -171,13 +171,18 @@ a, img, button { -webkit-touch-callout: none; }
 .modal-center {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100dvh;
+  height: 100vh; /* fallback */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   padding-top: calc(20px + env(safe-area-inset-top, 0px));
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  z-index: 50;
+  z-index: 200;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 /* Safe area for top notch/dynamic island */
 .pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }

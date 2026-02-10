@@ -67,7 +67,7 @@ export default function LoginPage() {
       } else if (mode === "create") {
         const { data, error } = await supabase.auth.signUp({
           email, password,
-          options: { emailRedirectTo: `${getSiteUrl()}/` },
+          options: { emailRedirectTo: `${getSiteUrl()}/login` },
         });
         if (error) throw error;
         if (data.session) { router.replace("/app/today"); return; }
@@ -75,7 +75,7 @@ export default function LoginPage() {
       } else if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${getSiteUrl()}/` },
+          options: { emailRedirectTo: `${getSiteUrl()}/login` },
         });
         if (error) throw error;
         setStatus("Check your email for the sign-in link ✓");

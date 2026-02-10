@@ -76,7 +76,7 @@ export function GettingStartedTips() {
 
   return (
     <div className="modal-center"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 150 }}
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={dismiss}>
       <div
         className="w-full max-w-sm rounded-2xl p-6 animate-fade-in-up relative"
