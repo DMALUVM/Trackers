@@ -366,8 +366,20 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>💬 Questions or Feedback?</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          We&apos;d love to hear from you — whether it&apos;s a bug, a feature request, or just to say hi.
+        </p>
+        <a href="mailto:Routines365.app@gmail.com"
+          className="flex items-center justify-center gap-2 w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-[0.98]"
+          style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
+          ✉️ Email us at Routines365.app@gmail.com
+        </a>
+      </section>
+
       <p className="text-center text-sm pb-4" style={{ color: "var(--text-faint)" }}>
-        Questions? Tap the thumbs-down on any screen to send feedback.
+        Built with 💚 by the Routines365 team.
       </p>
     </div>
   );

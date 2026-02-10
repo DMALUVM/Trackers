@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart, Bell, SlidersHorizontal } from "lucide-react";
+import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart, Bell, SlidersHorizontal, MessageCircle } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
 import { usePremium } from "@/lib/premium";
 
@@ -105,6 +105,22 @@ export default function SettingsPage() {
           </div>
         </section>
       ))}
+
+      {/* Feedback */}
+      <a href="mailto:Routines365.app@gmail.com"
+        className="flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] active:opacity-80"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
+        onClick={() => hapticLight()}>
+        <div className="shrink-0 flex items-center justify-center rounded-xl"
+          style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}>
+          <MessageCircle size={18} style={{ color: "var(--text-muted)" }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Send Feedback</p>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Bugs, ideas, or just say hi</p>
+        </div>
+        <ChevronRight size={16} style={{ color: "var(--text-faint)" }} />
+      </a>
 
       <footer className="text-center pt-4 pb-6 space-y-1">
         <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
