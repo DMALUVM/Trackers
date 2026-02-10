@@ -10,16 +10,16 @@
 [data-theme="dark"] {
   --bg-primary: #0a0a0a;
   --bg-secondary: #111111;
-  --bg-card: rgba(255, 255, 255, 0.04);
-  --bg-card-hover: rgba(255, 255, 255, 0.08);
-  --bg-card-active: rgba(255, 255, 255, 0.12);
+  --bg-card: rgba(255, 255, 255, 0.07);
+  --bg-card-hover: rgba(255, 255, 255, 0.11);
+  --bg-card-active: rgba(255, 255, 255, 0.15);
   --bg-overlay: rgba(0, 0, 0, 0.6);
   --bg-sheet: #0c0c0c;
   --bg-input: rgba(0, 0, 0, 0.3);
   --bg-nav: rgba(0, 0, 0, 0.6);
 
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --border-secondary: rgba(255, 255, 255, 0.06);
+  --border-primary: rgba(255, 255, 255, 0.14);
+  --border-secondary: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(255, 255, 255, 0.25);
 
   --text-primary: #ffffff;
@@ -122,6 +122,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 16px; /* Base — ensures nothing renders tiny */
+}
+
+/* Theme shell: layers optional page tint gradient over solid background.
+   PageTint component sets --page-tint via JS; defaults to 'none'. */
+.theme-shell {
+  background: var(--page-tint, none), var(--bg-primary);
 }
 
 /* Accessibility: bump all small text for maximum readability */

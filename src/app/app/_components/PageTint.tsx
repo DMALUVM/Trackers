@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 /**
  * Per-page ambient gradient tint — dark mode only.
- * Injects gradient directly onto the [data-theme] element (ThemeGate div)
- * by layering it on top of the solid background color.
- * background: gradient, solid-color — guaranteed to be visible.
+ * Sets the --page-tint CSS variable on .theme-shell.
+ * CSS handles the layering: background: var(--page-tint, none), var(--bg-primary);
+ * No z-index battles, no inline style conflicts — just a CSS variable swap.
  */
 
 const ROUTE_TINTS: Record<string, string> = {
@@ -75,23 +75,19 @@ export function PageTint() {
     };
   }, []);
 
-  // Apply tint directly onto the ThemeGate [data-theme] element
-  // Uses CSS background layering: gradient ON TOP of solid color
+  // Set --page-tint CSS variable on the .theme-shell element
   useEffect(() => {
-    const el = document.querySelector("[data-theme]") as HTMLElement | null;
+    const el = document.querySelector(".theme-shell") as HTMLElement | null;
     if (!el) return;
 
     const tint = (enabled && isDark) ? getTint(pathname) : null;
     if (tint) {
-      // Layer: gradient on top, solid fallback behind
-      el.style.background = `${tint}, var(--bg-primary)`;
+      el.style.setProperty("--page-tint", tint);
     } else {
-      el.style.background = "var(--bg-primary)";
+      el.style.removeProperty("--page-tint");
     }
 
-    return () => {
-      el.style.background = "var(--bg-primary)";
-    };
+    return () => { el.style.removeProperty("--page-tint"); };
   }, [pathname, isDark, enabled]);
 
   return null;
