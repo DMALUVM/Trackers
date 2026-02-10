@@ -172,7 +172,7 @@ export default function Home() {
               <Reveal delay={0.2}>
                 <div className="mt-8 flex justify-center lg:justify-start gap-8 sm:gap-10">
                   {[
-                    { v: "50+", l: "Built-in habits" },
+                    { v: "75+", l: "Built-in habits" },
                     { v: "10s", l: "Daily check-in" },
                     { v: "365", l: "Day streaks" },
                   ].map(({ v, l }) => (
@@ -225,7 +225,7 @@ export default function Home() {
       </Reveal>
 
       {/* ── THE PROBLEM (psychology hook) ── */}
-      <section className="py-12 sm:py-14 px-4 sm:px-6">
+      <section className="py-8 sm:py-10 px-4 sm:px-6">
         <div className="mx-auto max-w-2xl">
           <Reveal>
             <div
@@ -257,10 +257,10 @@ export default function Home() {
       </section>
 
       {/* ── PHONE SHOWCASE ── */}
-      <section className="py-10 sm:py-14 px-4 sm:px-6">
+      <section className="py-8 sm:py-10 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Reveal>
-            <div className="text-center mb-8 sm:mb-10">
+            <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 See it in action
               </h2>
@@ -285,10 +285,10 @@ export default function Home() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section className="py-12 sm:py-14 px-4 sm:px-6" style={{ background: "rgba(255,255,255,0.01)" }}>
+      <section className="py-8 sm:py-10 px-4 sm:px-6" style={{ background: "rgba(255,255,255,0.01)" }}>
         <div className="mx-auto max-w-5xl">
           <Reveal>
-            <div className="text-center mb-10">
+            <div className="text-center mb-8">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 Everything you need.
                 <br />
@@ -303,10 +303,12 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {FEATURES.map(({ emoji, title, desc }, i) => (
               <Reveal key={title} delay={Math.min(0.05 * i, 0.3)}>
-                <div className="rounded-2xl border border-white/[0.06] p-4 sm:p-5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.02] h-full">
-                  <span className="text-xl sm:text-2xl">{emoji}</span>
-                  <h3 className="mt-2 text-sm sm:text-base font-bold text-neutral-100">{title}</h3>
-                  <p className="mt-1.5 text-xs sm:text-sm text-neutral-400 leading-relaxed">{desc}</p>
+                <div className="rounded-2xl border border-white/[0.06] p-4 sm:p-5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.02] h-full text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-xl sm:text-2xl">{emoji}</span>
+                    <h3 className="text-sm sm:text-base font-bold text-neutral-100">{title}</h3>
+                  </div>
+                  <p className="mt-2 text-xs sm:text-sm text-neutral-400 leading-relaxed">{desc}</p>
                 </div>
               </Reveal>
             ))}
@@ -332,10 +334,10 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="py-12 sm:py-14 px-4 sm:px-6" style={{ background: "rgba(16,185,129,0.03)" }}>
+      <section className="py-8 sm:py-10 px-4 sm:px-6" style={{ background: "rgba(16,185,129,0.03)" }}>
         <div className="mx-auto max-w-3xl">
           <Reveal>
-            <h2 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-10">
+            <h2 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-8">
               How it works
             </h2>
           </Reveal>
@@ -344,7 +346,7 @@ export default function Home() {
               {
                 n: "1",
                 t: "Pick your habits",
-                d: "Choose from 50+ built-in habits across morning routines, fitness, nutrition, recovery, and mindfulness — or create your own. Enable the modules you want: breathwork, movement, focus, journal, water, supplements.",
+                d: "Choose from 75+ built-in habits across morning routines, fitness, nutrition, recovery, and mindfulness — or create your own. Enable the modules you want: breathwork, movement, focus, journal, water, supplements.",
               },
               {
                 n: "2",
@@ -383,7 +385,7 @@ export default function Home() {
 
       {/* ── DAILY WISDOM ── */}
       <Reveal>
-        <section className="py-10 sm:py-12 px-4 sm:px-6">
+        <section className="py-8 sm:py-10 px-4 sm:px-6">
           <div className="mx-auto max-w-xl text-center">
             <div
               className="rounded-2xl border border-white/[0.06] p-6 sm:p-8"
@@ -405,7 +407,7 @@ export default function Home() {
 
       {/* ── SOCIAL PROOF / PSYCHOLOGY ── */}
       <Reveal>
-        <section className="py-10 sm:py-12 px-4 sm:px-6">
+        <section className="py-8 sm:py-10 px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
@@ -437,10 +439,10 @@ export default function Home() {
       </Reveal>
 
       {/* ── PREMIUM ── */}
-      <section className="py-12 sm:py-14 px-4 sm:px-6">
+      <section className="py-8 sm:py-10 px-4 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <Reveal>
-            <div className="text-center mb-8 sm:mb-10">
+            <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 Free is powerful.{" "}
                 <span className="text-emerald-400">Premium is everything.</span>
@@ -539,7 +541,7 @@ export default function Home() {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="py-14 sm:py-16 px-4 sm:px-6 border-t border-white/5" style={{ background: "rgba(16,185,129,0.03)" }}>
+      <section className="py-10 sm:py-12 px-4 sm:px-6 border-t border-white/5" style={{ background: "rgba(16,185,129,0.03)" }}>
         <div className="mx-auto max-w-md text-center">
           <Reveal>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-2">
@@ -562,7 +564,7 @@ export default function Home() {
       </section>
 
       {/* ── SEO CONTENT ── */}
-      <section className="py-10 px-4 sm:px-6 border-t border-white/5">
+      <section className="py-6 px-4 sm:px-6 border-t border-white/5">
         <div className="mx-auto max-w-3xl space-y-3 text-xs text-neutral-500 leading-relaxed">
           <p>
             Routines365 is a daily habit tracker and wellness app for iOS

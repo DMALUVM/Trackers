@@ -73,7 +73,13 @@ const LIBRARY: Array<{ title: string; items: LibraryItem[] }> = [
     items: [
       { label: "Sauna", emoji: "♨️", section: "anytime" },
       { label: "Cold plunge", emoji: "🧊", section: "anytime" },
+      { label: "Red light therapy", emoji: "🔴", section: "anytime" },
+      { label: "PEMF mat session", emoji: "🧲", section: "anytime" },
+      { label: "Compression boots", emoji: "🦵", section: "anytime" },
       { label: "Foam roll / massage", emoji: "🙌", section: "anytime" },
+      { label: "Epsom salt bath", emoji: "🛁", section: "night" },
+      { label: "Dry brushing", emoji: "🪥", section: "morning" },
+      { label: "Grounding / earthing", emoji: "🌿", section: "anytime" },
       { label: "Rest day (no workout)", emoji: "🛌", section: "anytime" },
       { label: "Skincare (PM)", emoji: "✨", section: "night" },
       { label: "Floss", emoji: "🦷", section: "night" },
