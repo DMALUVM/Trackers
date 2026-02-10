@@ -651,7 +651,7 @@ export default function BreathworkPage() {
           const locked = t.premium && !isPremium;
           const totalTime = t.phases.reduce((s, p) => s + p.seconds, 0) * t.rounds
             + (t.postPhases?.reduce((s, p) => s + p.seconds, 0) ?? 0);
-          const minutes = Math.round(totalTime / 60);
+          const timeLabel = totalTime >= 90 ? `~${Math.round(totalTime / 60)} min` : `~${Math.round(totalTime)} sec`;
           return (
             <button key={t.id} type="button"
               onClick={() => { if (locked) { hapticLight(); window.location.href = "/app/settings/premium"; return; } hapticMedium(); setActiveTechnique(t); }}
@@ -666,13 +666,13 @@ export default function BreathworkPage() {
                     {t.premium && isPremium && <Crown size={13} style={{ color: "#f59e0b" }} />}
                   </div>
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.description}</p>
-                  <div className="flex items-center gap-3 mt-2.5">
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>~{minutes} min</span>
-                    <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                  <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>{timeLabel}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
                       🕉️ Om drones
                     </span>
                     {t.postPhases && (
-                      <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}>
                         + retention
                       </span>
                     )}
