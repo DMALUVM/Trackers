@@ -83,6 +83,12 @@ export function labelToMetricKey(label: string): string | null {
   return null;
 }
 
+/** Check if a label is a journal habit. */
+export function isJournalLabel(label: string): boolean {
+  const l = label.toLowerCase();
+  return l.includes("journal") || l.includes("brain dump") || l.includes("diary");
+}
+
 /** Check if a label satisfies the generic "workout" requirement. */
 export function isWorkoutLabel(label: string): boolean {
   const l = label.toLowerCase();

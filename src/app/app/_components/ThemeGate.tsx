@@ -33,6 +33,7 @@ const PAGE_BG: Record<string, string> = {
   "/app/sleep":             "#101240", // from indigo (#6366f1)
   "/app/mindfulness":       "#082c28", // from teal
   "/app/fitness":           "#2c0e0e", // from red (#ef4444)
+  "/app/journal":           "#1e1a08", // warm parchment
   "/app/settings":          "#0a0a0a", // stays pure black
 };
 

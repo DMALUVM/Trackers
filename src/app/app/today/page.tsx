@@ -25,7 +25,7 @@ import {
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { QuestsCard } from "@/app/app/_components/QuestsCard";
 import { WaterTracker } from "@/app/app/_components/WaterTracker";
-import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES } from "@/lib/constants";
+import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES, isJournalLabel } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
@@ -668,6 +668,10 @@ export default function TodayPage() {
               onLogMetric={openMetric}
               onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
               onLabelTap={(id) => {
+                if (isJournalLabel(item.label)) {
+                  router.push("/app/journal");
+                  return;
+                }
                 setHabitDetailItem({ id, label: item.label, emoji: item.emoji ?? null, isCore: true });
                 setHabitDetailOpen(true);
               }}
@@ -706,6 +710,10 @@ export default function TodayPage() {
                 onLogMetric={openMetric}
                 onSetReminder={(id) => setReminderTarget({ id, label: item.label, emoji: item.emoji })}
                 onLabelTap={(id) => {
+                  if (isJournalLabel(item.label)) {
+                    router.push("/app/journal");
+                    return;
+                  }
                   setHabitDetailItem({ id, label: item.label, emoji: item.emoji ?? null, isCore: false });
                   setHabitDetailOpen(true);
                 }}
