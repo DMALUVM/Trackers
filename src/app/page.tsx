@@ -101,7 +101,7 @@ const PREMIUM_FEATURES = [
    ────────────────────────────────────── */
 export default function Home() {
   return (
-    <main className="min-h-dvh bg-black text-white overflow-x-hidden">
+    <main className="min-h-dvh bg-black text-white" style={{ overflowX: "clip" }}>
       {/* Splash overlay: covers page while checking auth, redirects if signed in, vanishes when signed out */}
       <AuthOverlay />
 
@@ -257,7 +257,7 @@ export default function Home() {
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory no-scrollbar justify-start lg:justify-center">
+            <div className="flex gap-6 overflow-x-auto pb-4 px-2 snap-x snap-mandatory no-scrollbar justify-start lg:justify-center">
               <div className="snap-center shrink-0">
                 <MockToday />
               </div>
