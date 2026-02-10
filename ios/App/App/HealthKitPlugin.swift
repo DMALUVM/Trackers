@@ -190,8 +190,6 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["data": data])
         }
         store.execute(query)
-        }
-        store.execute(query)
     }
 
     // MARK: - Workouts

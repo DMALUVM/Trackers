@@ -42,7 +42,7 @@ export function HealthCard() {
   const { isPremium } = usePremium();
   const [visible, setVisible] = useState<MetricId[]>(DEFAULT_METRICS);
   const [showSettings, setShowSettings] = useState(false);
-  const [bio, setBio] = useState<{ hrv?: number; restingHeartRate?: number } | null>(null);
+  const [bio, setBio] = useState<{ hrv?: number; restingHeartRate?: number; spo2?: number; respiratory?: number } | null>(null);
 
   useEffect(() => { setVisible(getVisibleMetrics()); }, []);
 
@@ -53,8 +53,19 @@ export function HealthCard() {
     if (!hasBioMetric) return;
     void (async () => {
       try {
-        const s = await getDaySummary();
-        if (s) setBio({ hrv: s.hrv, restingHeartRate: s.restingHeartRate });
+        const { getBiometricSummary } = await import("@/lib/healthKit");
+        const [s, bio] = await Promise.all([
+          getDaySummary(),
+          getBiometricSummary(1),
+        ]);
+        const spo2Val = bio?.bloodOxygen?.[0]?.value;
+        const rrVal = bio?.respiratoryRate?.[0]?.value;
+        setBio({
+          hrv: s?.hrv,
+          restingHeartRate: s?.restingHeartRate,
+          spo2: spo2Val,
+          respiratory: rrVal,
+        });
       } catch { /* ignore */ }
     })();
   }, [available, authorized, isPremium, visible]);
@@ -127,6 +138,8 @@ export function HealthCard() {
 
   const hrvValue = bio?.hrv;
   const rhrValue = bio?.restingHeartRate;
+  const spo2Value = bio?.spo2;
+  const respiratoryValue = bio?.respiratory;
 
   const metricData: Record<MetricId, { icon: typeof Heart; color: string; bg: string; value: string; sub: string }> = {
     steps: { icon: Footprints, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: steps >= 1000 ? `${(steps / 1000).toFixed(1)}k` : String(steps), sub: "steps" },
@@ -135,8 +148,8 @@ export function HealthCard() {
     workouts: { icon: Dumbbell, color: "#10b981", bg: "rgba(16,185,129,0.1)", value: workoutCount > 0 ? String(workoutCount) : "—", sub: workoutCount === 1 ? "workout" : workoutCount > 1 ? "workouts" : "none today" },
     hrv: { icon: Activity, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: hrvValue ? String(Math.round(hrvValue)) : "—", sub: hrvValue ? "ms HRV" : "no data" },
     rhr: { icon: Heart, color: "#ef4444", bg: "rgba(239,68,68,0.1)", value: rhrValue ? String(Math.round(rhrValue)) : "—", sub: rhrValue ? "bpm resting" : "no data" },
-    spo2: { icon: Droplets, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: "—", sub: "blood oxygen" },
-    respiratory: { icon: Wind, color: "#06b6d4", bg: "rgba(6,182,212,0.1)", value: "—", sub: "br/min" },
+    spo2: { icon: Droplets, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: spo2Value ? `${Math.round(spo2Value)}%` : "—", sub: spo2Value ? "blood oxygen" : "no data" },
+    respiratory: { icon: Wind, color: "#06b6d4", bg: "rgba(6,182,212,0.1)", value: respiratoryValue ? String(Math.round(respiratoryValue)) : "—", sub: respiratoryValue ? "br/min" : "no data" },
   };
 
   return (

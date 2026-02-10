@@ -245,8 +245,8 @@ export default function TodayPage() {
       previousBestStreak: streaks.previousBestStreak,
     });
     if (result) {
-      // Delay so confetti plays first, then milestone modal
-      setTimeout(() => setMilestoneToShow(result), 1200);
+      // Delay briefly so confetti plays, then show milestone
+      setTimeout(() => setMilestoneToShow(result), 400);
     }
   }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
 
@@ -456,10 +456,10 @@ export default function TodayPage() {
             </button>
           )}
           <button type="button" onClick={() => { hapticLight(); setMenuOpen(true); }}
-            className="tap-btn flex items-center justify-center rounded-full"
-            style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
+            className="tap-btn flex items-center justify-center gap-1 rounded-full px-3"
+            style={{ height: 40, background: "var(--bg-card)", border: "1.5px solid var(--border-focus)" }}
             aria-label="More options">
-            <MoreHorizontal size={18} style={{ color: "var(--text-muted)" }} />
+            <MoreHorizontal size={18} style={{ color: "var(--text-secondary)" }} />
           </button>
         </div>
       </header>

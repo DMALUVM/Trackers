@@ -71,10 +71,10 @@ export function MilestoneModal({
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
-        background: phase === "show" ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0)",
-        backdropFilter: phase === "show" ? "blur(12px)" : "blur(0)",
-        WebkitBackdropFilter: phase === "show" ? "blur(12px)" : "blur(0)",
-        transition: "all 0.4s ease",
+        background: phase === "show" ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0)",
+        backdropFilter: phase === "show" ? "blur(8px)" : "blur(0)",
+        WebkitBackdropFilter: phase === "show" ? "blur(8px)" : "blur(0)",
+        transition: "all 0.3s ease",
       }}
     >
       <div
@@ -102,7 +102,7 @@ export function MilestoneModal({
               background: "rgba(255,255,255,0.08)",
               border: "2px solid rgba(255,255,255,0.15)",
               fontSize: 56,
-              animation: phase === "show" ? "milestone-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both" : undefined,
+              animation: phase === "show" ? "milestone-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both" : undefined,
             }}>
             {milestone.emoji}
           </div>
@@ -111,7 +111,7 @@ export function MilestoneModal({
         {/* Title */}
         <h2 className="mt-6 text-2xl font-black tracking-tight text-white"
           style={{
-            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.35s both" : undefined,
+            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.1s both" : undefined,
           }}>
           {milestone.title}
         </h2>
@@ -119,7 +119,7 @@ export function MilestoneModal({
         {/* Message */}
         <p className="mt-3 text-base text-neutral-300 leading-relaxed px-4"
           style={{
-            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.5s both" : undefined,
+            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.15s both" : undefined,
           }}>
           {milestone.message}
         </p>
@@ -129,7 +129,7 @@ export function MilestoneModal({
           style={{
             background: "rgba(255,255,255,0.08)",
             border: "1px solid rgba(255,255,255,0.12)",
-            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.65s both" : undefined,
+            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.2s both" : undefined,
           }}>
           <span className="text-sm font-bold text-white tabular-nums">
             {milestone.type === "streak" ? `${milestone.threshold}-day streak` :
@@ -143,7 +143,7 @@ export function MilestoneModal({
           className="mt-8 w-full rounded-2xl py-4 text-sm font-bold text-black transition-transform active:scale-[0.97]"
           style={{
             background: "white",
-            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.8s both" : undefined,
+            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.25s both" : undefined,
           }}>
           Keep going →
         </button>
