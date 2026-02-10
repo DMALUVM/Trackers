@@ -15,7 +15,6 @@ function resolveTheme(t: Theme): "dark" | "light" {
   return t === "system" ? (prefersDark() ? "dark" : "light") : t;
 }
 
-// ── Page tint gradients (dark mode only) ──
 const TINTS: Record<string, string> = {
   "/app/today":             "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 65%)",
   "/app/breathwork":        "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.16) 0%, transparent 65%)",
@@ -112,14 +111,24 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Build background: gradient layered over solid color, or just solid
   const isDark = resolved === "dark";
   const tint = (isDark && tintsOn) ? getTint(pathname) : null;
   const bg = tint ? `${tint}, var(--bg-primary)` : "var(--bg-primary)";
 
+  // 🔴 TEMPORARY DEBUG BANNER — remove after confirming tints work
+  const debugInfo = `theme:${resolved} | tints:${tintsOn?"on":"off"} | path:${pathname} | tint:${tint?"YES":"NO"} | v13`;
+
   return (
     <div data-theme={resolved} className="theme-shell"
       style={{ background: bg, color: "var(--text-primary)" }}>
+      <div style={{
+        position: "fixed", bottom: 60, left: 8, right: 8, zIndex: 9999,
+        background: "rgba(255,0,0,0.9)", color: "#fff",
+        padding: "6px 10px", borderRadius: 8, fontSize: 10,
+        fontFamily: "monospace", textAlign: "center", pointerEvents: "none",
+      }}>
+        {debugInfo}
+      </div>
       {children}
     </div>
   );
