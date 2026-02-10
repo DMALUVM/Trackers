@@ -13,7 +13,6 @@ export function SettingsGear() {
     pathname?.startsWith("/app/settings") ||
     pathname?.startsWith("/app/onboarding") ||
     pathname === "/app/today" ||
-    pathname === "/app/routines/progress" ||
     pathname === "/app/breathwork" ||
     pathname === "/app/movement" ||
     pathname === "/app/focus" ||

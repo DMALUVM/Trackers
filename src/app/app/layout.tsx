@@ -16,11 +16,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <AuthGate>
         <ThemeGate>
           <PremiumProvider>
-            <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col relative">
-              <PageTint />
+            <PageTint />
+            <div id="app-shell" className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
               <IosInstallPrompt />
               <SettingsGear />
-              <main className="flex-1 px-4 pt-safe pb-2 relative z-10">
+              <main className="flex-1 px-4 pt-safe pb-2">
                 <GlobalPullToRefresh>
                   <ErrorBoundary>{children}</ErrorBoundary>
                 </GlobalPullToRefresh>
