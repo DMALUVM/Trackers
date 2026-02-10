@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Share2 } from "lucide-react";
 import type { Milestone } from "@/lib/milestones";
-import { hapticHeavy } from "@/lib/haptics";
+import { hapticHeavy, hapticMedium } from "@/lib/haptics";
 
 /**
  * Full-screen celebration overlay when a milestone is earned.
@@ -130,15 +131,38 @@ export function MilestoneModal({
           </span>
         </div>
 
-        {/* Dismiss button */}
-        <button type="button" onClick={dismiss}
-          className="mt-8 w-full rounded-2xl py-4 text-sm font-bold text-black transition-transform active:scale-[0.97]"
-          style={{
-            background: "white",
-            animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.25s both" : undefined,
-          }}>
-          Keep going →
-        </button>
+        {/* Action buttons */}
+        <div className="mt-8 flex gap-3 w-full"
+          style={{ animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.25s both" : undefined }}>
+          <button type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              hapticMedium();
+              const text = milestone.type === "streak"
+                ? `🔥 ${milestone.threshold}-day streak on Routines365! ${milestone.message}`
+                : milestone.type === "green_total"
+                  ? `🏆 ${milestone.threshold} green days on Routines365! ${milestone.message}`
+                  : `⭐ New personal best on Routines365! ${milestone.message}`;
+              if (typeof navigator.share === "function") {
+                navigator.share({ title: "Routines365 Milestone", text, url: "https://routines365.com" }).catch(() => {});
+              } else {
+                navigator.clipboard?.writeText(text).catch(() => {});
+              }
+            }}
+            className="flex-1 rounded-2xl py-4 text-sm font-bold transition-transform active:scale-[0.97] flex items-center justify-center gap-2"
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              color: "white",
+            }}>
+            <Share2 size={16} /> Share
+          </button>
+          <button type="button" onClick={dismiss}
+            className="flex-[2] rounded-2xl py-4 text-sm font-bold text-black transition-transform active:scale-[0.97]"
+            style={{ background: "white" }}>
+            Keep going →
+          </button>
+        </div>
       </div>
     </div>
   );

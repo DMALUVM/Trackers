@@ -81,3 +81,30 @@ export function todayModuleStatus(): Record<ModuleKey, boolean> {
 export function todayTotalMinutes(): number {
   return getSessions().reduce((sum, s) => sum + s.minutes, 0);
 }
+
+/** Count sessions for a module this week (Mon-Sun) */
+export function weeklyModuleSessions(module: ModuleKey): number {
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7; // Mon=0
+  let count = 0;
+  for (let i = dow; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dk = format(d, "yyyy-MM-dd");
+    count += getSessions(dk).filter((s) => s.module === module).length;
+  }
+  return count;
+}
+
+/** Count total module sessions this week across all modules */
+export function weeklyTotalSessions(): number {
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7;
+  let count = 0;
+  for (let i = dow; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    count += getSessions(format(d, "yyyy-MM-dd")).length;
+  }
+  return count;
+}

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { BottomSheet, Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 
-type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green";
+type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green"
+  | "q-breathwork" | "q-movement" | "q-focus" | "q-journal";
 
 type CustomQuest = {
   id: string;
@@ -23,11 +24,15 @@ type QuestConfig = {
 const KEY = "routines365:quests:v1";
 
 const BUILTINS: Array<{ id: BuiltinQuestId; title: string; desc: string }> = [
-  { id: "q-rowing", title: "Rowing meters (WTD)", desc: "Track weekly meters rowed" },
+  { id: "q-green", title: "Green days (WTD)", desc: "CORE green days this week" },
+  { id: "q-breathwork", title: "Breathwork sessions (WTD)", desc: "Completed breathwork sessions" },
+  { id: "q-movement", title: "Movement sessions (WTD)", desc: "Completed Qigong / movement routines" },
+  { id: "q-focus", title: "Focus sessions (WTD)", desc: "Completed focus timer sessions" },
+  { id: "q-journal", title: "Journal entries (WTD)", desc: "Days you journaled this week" },
   { id: "q-walk", title: "Walking steps (WTD)", desc: "Track weekly steps" },
   { id: "q-run", title: "Running miles (WTD)", desc: "Track weekly miles" },
+  { id: "q-rowing", title: "Rowing meters (WTD)", desc: "Track weekly meters rowed" },
   { id: "q-recovery", title: "Recovery sessions (WTD)", desc: "Sauna + cold sessions" },
-  { id: "q-green", title: "Green days (WTD)", desc: "CORE green days this week" },
 ];
 
 function loadCfg(): QuestConfig {

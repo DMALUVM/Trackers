@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMultiActivityTotals, type MultiTotalsEntry } from "@/lib/hooks/useActivityTotals";
 import type { ActivityKey, ActivityUnit } from "@/lib/activity";
+import { weeklyModuleSessions } from "@/lib/sessionLog";
 
 /* ── Quest config (matches settings/quests/page.tsx) ── */
 
-type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green";
+type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green"
+  | "q-breathwork" | "q-movement" | "q-focus" | "q-journal";
 
 type CustomQuest = {
   id: string;
@@ -44,13 +46,17 @@ function loadCfg(): QuestConfig {
 
 const BUILTIN_META: Record<
   BuiltinQuestId,
-  { emoji: string; label: string; unit: string; activityKey?: ActivityKey; activityUnit?: ActivityUnit; metricKey?: string }
+  { emoji: string; label: string; unit: string; activityKey?: ActivityKey; activityUnit?: ActivityUnit; metricKey?: string; sessionModule?: "breathwork" | "movement" | "focus"; journalQuest?: boolean }
 > = {
   "q-rowing": { emoji: "🚣", label: "Rowing", unit: "m", activityKey: "rowing", activityUnit: "meters", metricKey: "rowing" },
   "q-walk": { emoji: "🚶", label: "Walking", unit: "steps", activityKey: "walking", activityUnit: "steps", metricKey: "walking" },
   "q-run": { emoji: "🏃", label: "Running", unit: "mi", activityKey: "running", activityUnit: "miles", metricKey: "running" },
   "q-recovery": { emoji: "🔥", label: "Recovery", unit: "sessions", activityKey: "sauna", activityUnit: "sessions", metricKey: "sauna" },
   "q-green": { emoji: "🟢", label: "Green days", unit: "days" },
+  "q-breathwork": { emoji: "🌬️", label: "Breathwork", unit: "sessions", sessionModule: "breathwork" },
+  "q-movement": { emoji: "🧘", label: "Movement", unit: "sessions", sessionModule: "movement" },
+  "q-focus": { emoji: "🎯", label: "Focus", unit: "sessions", sessionModule: "focus" },
+  "q-journal": { emoji: "📓", label: "Journal", unit: "days", journalQuest: true },
 };
 
 /* ── Component ── */
@@ -108,6 +114,24 @@ export function QuestsCard({ greenDaysThisWeek, checkedLabels = [], onLogActivit
       continue;
     }
 
+    // Session-based quests (breathwork, movement, focus)
+    if (meta.sessionModule) {
+      const count = weeklyModuleSessions(meta.sessionModule);
+      rows.push({ id, emoji: meta.emoji, label: meta.label, value: `${count} ${meta.unit} this week` });
+      continue;
+    }
+
+    // Journal quest — check if today's labels include "journal"
+    if (meta.journalQuest) {
+      const journalDone = checkedLabels.some((lbl) => lbl.toLowerCase().includes("journal"));
+      rows.push({
+        id, emoji: meta.emoji, label: meta.label,
+        value: journalDone ? "✓ Done today" : "Not yet today",
+      });
+      continue;
+    }
+
+    // Activity-based quests (rowing, walking, running, recovery)
     if (meta.activityKey && meta.activityUnit) {
       const key = `${meta.activityKey}:${meta.activityUnit}`;
       const totals = actTotals[key];

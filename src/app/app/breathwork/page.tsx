@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, Play, Pause, RotateCcw, Lock, Crown, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
-import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
+import { hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { logSession } from "@/lib/sessionLog";
 
 // ═══════════════════════════════════════════════
@@ -332,6 +332,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastPhaseRef = useRef<string>("");
   const startTimeRef = useRef<number>(0);
+  const holdTickRef = useRef<number>(-1); // tracks last whole second for hold haptics
 
   const isPost = phase === "post";
   const activePhases = isPost ? (technique.postPhases ?? []) : technique.phases;
@@ -361,8 +362,17 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     setTimeInPhase((prev) => {
       const next = prev + 0.05;
       setPhaseProgress(Math.min(next / totalPhaseTime, 1));
+
+      // Gentle haptic tick every second during hold phases
+      const wholeSec = Math.floor(next);
+      if (wholeSec !== holdTickRef.current && currentPhase?.type === "hold") {
+        holdTickRef.current = wholeSec;
+        hapticSelection();
+      }
+
       if (next >= totalPhaseTime) {
         hapticLight();
+        holdTickRef.current = -1;
 
         if (isPost) {
           // Advance post phases
@@ -591,6 +601,18 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
 export default function BreathworkPage() {
   const { isPremium } = usePremium();
   const [activeTechnique, setActiveTechnique] = useState<BreathTechnique | null>(null);
+  const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("routines365:breathwork:introduced")) setShowIntro(true);
+    } catch {}
+  }, []);
+
+  const dismissIntro = () => {
+    setShowIntro(false);
+    try { localStorage.setItem("routines365:breathwork:introduced", "1"); } catch {}
+  };
 
   if (activeTechnique) return <BreathSession technique={activeTechnique} onClose={() => setActiveTechnique(null)} />;
 
@@ -602,9 +624,27 @@ export default function BreathworkPage() {
         </Link>
         <div>
           <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Breathwork</h1>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Close your eyes. We'll guide you with sound.</p>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>Close your eyes. We&apos;ll guide you with sound.</p>
         </div>
       </div>
+
+      {/* First-visit intro */}
+      {showIntro && (
+        <div className="rounded-2xl p-5 relative animate-fade-in-up"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(6,182,212,0.08))", border: "1px solid rgba(99,102,241,0.2)" }}>
+          <button type="button" onClick={dismissIntro}
+            className="absolute top-3 right-3 text-xs font-semibold px-2 py-1 rounded-lg"
+            style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+            Got it
+          </button>
+          <p className="text-base font-bold mb-2" style={{ color: "var(--text-primary)" }}>🧘 How it works</p>
+          <div className="space-y-1.5 text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            <p>🔵 The <strong style={{ color: "var(--text-primary)" }}>circle expands</strong> when you inhale and <strong style={{ color: "var(--text-primary)" }}>contracts</strong> when you exhale. Follow its rhythm.</p>
+            <p>🕉️ <strong style={{ color: "var(--text-primary)" }}>Om drones</strong> play for each breath phase — deeper tones for exhales, higher for inhales. Toggle sound with the speaker button.</p>
+            <p>📳 Gentle <strong style={{ color: "var(--text-primary)" }}>haptic feedback</strong> ticks during hold phases so you can close your eyes and still feel the rhythm.</p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {TECHNIQUES.map((t) => {

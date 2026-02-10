@@ -1,4 +1,5 @@
-export type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green";
+export type BuiltinQuestId = "q-rowing" | "q-walk" | "q-run" | "q-recovery" | "q-green"
+  | "q-breathwork" | "q-movement" | "q-focus" | "q-journal";
 
 export type CustomQuest = {
   id: string;

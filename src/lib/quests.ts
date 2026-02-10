@@ -2,6 +2,7 @@ import { format, startOfWeek } from "date-fns";
 import { sumActivity } from "@/lib/activity";
 import type { DayColor } from "@/lib/progress";
 import { loadQuestConfig, type BuiltinQuestId, type CustomQuest } from "@/lib/questsConfig";
+import { weeklyModuleSessions } from "@/lib/sessionLog";
 
 export type Quest = {
   id: string;
@@ -46,6 +47,14 @@ export async function buildWeeklyQuests(opts: {
 
   const recovery = Number(sauna) + Number(cold);
 
+  // Session-based module counts (client-side localStorage)
+  let breathWtd = 0, moveWtd = 0, focusWtd = 0;
+  try {
+    breathWtd = weeklyModuleSessions("breathwork");
+    moveWtd = weeklyModuleSessions("movement");
+    focusWtd = weeklyModuleSessions("focus");
+  } catch { /* SSR or no localStorage */ }
+
   const builtins: Record<BuiltinQuestId, Quest> = {
     "q-rowing": {
       id: "q-rowing",
@@ -86,6 +95,38 @@ export async function buildWeeklyQuests(opts: {
       desc: `Get ${targets.greenDays} green days this week`,
       progressText: `${opts.greenDaysWtd} / ${targets.greenDays} days`,
       pct: clampPct((opts.greenDaysWtd / targets.greenDays) * 100),
+    },
+    "q-breathwork": {
+      id: "q-breathwork",
+      emoji: "🌬️",
+      title: "Breathwork",
+      desc: "Complete 3 breathwork sessions this week",
+      progressText: `${breathWtd} / 3 sessions`,
+      pct: clampPct((breathWtd / 3) * 100),
+    },
+    "q-movement": {
+      id: "q-movement",
+      emoji: "🧘",
+      title: "Movement",
+      desc: "Complete 3 movement sessions this week",
+      progressText: `${moveWtd} / 3 sessions`,
+      pct: clampPct((moveWtd / 3) * 100),
+    },
+    "q-focus": {
+      id: "q-focus",
+      emoji: "🎯",
+      title: "Focus",
+      desc: "Complete 3 focus sessions this week",
+      progressText: `${focusWtd} / 3 sessions`,
+      pct: clampPct((focusWtd / 3) * 100),
+    },
+    "q-journal": {
+      id: "q-journal",
+      emoji: "📓",
+      title: "Journal",
+      desc: "Journal 5 days this week",
+      progressText: "Check Today page",
+      pct: 0,
     },
   };
 

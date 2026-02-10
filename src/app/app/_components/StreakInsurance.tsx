@@ -49,7 +49,24 @@ export function StreakInsurance({
     setShow(true);
   }, [allCoreDone, streaks.activeStreak, dateKey]);
 
-  if (!show || dismissed || frozen || allCoreDone) return null;
+  if (!show || dismissed || allCoreDone) return null;
+
+  if (frozen) {
+    return (
+      <div className="rounded-2xl p-4 animate-fade-in-up"
+        style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">❄️</span>
+          <div>
+            <p className="text-sm font-bold" style={{ color: "var(--accent-green-text)" }}>Streak frozen!</p>
+            <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+              Your {streaks.activeStreak}-day streak is safe for today.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const dismiss = () => {
     setDismissed(true);
@@ -89,18 +106,18 @@ export function StreakInsurance({
             You haven&apos;t completed your habits today. Complete them now or freeze your streak.
           </p>
           <div className="flex gap-2 mt-3">
-            {isPremium && canUseFreeze(isPremium) && (
+            {canUseFreeze(isPremium) && (
               <button type="button" onClick={freeze}
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
                 style={{ background: "#f59e0b", color: "white" }}>
                 ❄️ Freeze Streak
               </button>
             )}
-            {!isPremium && (
+            {!isPremium && !canUseFreeze(isPremium) && (
               <Link href="/app/settings/premium"
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
                 style={{ background: "#f59e0b", color: "white", textDecoration: "none" }}>
-                🔒 Unlock Streak Freeze
+                🔒 Unlimited Freezes (Premium)
               </Link>
             )}
             <button type="button" onClick={dismiss}
