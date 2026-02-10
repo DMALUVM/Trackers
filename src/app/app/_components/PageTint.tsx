@@ -71,20 +71,47 @@ function getTint(pathname: string, isDark: boolean): string | null {
 export function PageTint() {
   const pathname = usePathname();
   const [isDark, setIsDark] = useState(true);
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
-    const check = () => {
-      const theme = document.documentElement.getAttribute("data-theme");
-      setIsDark(theme !== "light");
+    const prefersDark = () =>
+      typeof window !== "undefined" && (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? true);
+
+    const checkTheme = () => {
+      try {
+        const stored = localStorage.getItem("routines365:theme");
+        if (stored === "light") setIsDark(false);
+        else if (stored === "dark") setIsDark(true);
+        else setIsDark(prefersDark()); // system
+      } catch { setIsDark(true); }
     };
-    check();
-    // Watch for theme changes
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    return () => observer.disconnect();
+    const checkTints = () => {
+      try { setEnabled(localStorage.getItem("routines365:pageTints") !== "off"); }
+      catch { setEnabled(true); }
+    };
+
+    checkTheme();
+    checkTints();
+
+    // Listen for theme and tint changes
+    const onTheme = () => checkTheme();
+    const onTints = () => checkTints();
+    window.addEventListener("routines365:theme", onTheme);
+    window.addEventListener("routines365:pageTints", onTints);
+
+    // System preference change
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const onSystem = () => checkTheme();
+    mq?.addEventListener?.("change", onSystem);
+
+    return () => {
+      window.removeEventListener("routines365:theme", onTheme);
+      window.removeEventListener("routines365:pageTints", onTints);
+      mq?.removeEventListener?.("change", onSystem);
+    };
   }, []);
 
-  const tint = getTint(pathname, isDark);
+  const tint = enabled ? getTint(pathname, isDark) : null;
   if (!tint) return null;
 
   return (
