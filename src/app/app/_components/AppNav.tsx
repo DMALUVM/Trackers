@@ -71,7 +71,7 @@ export function AppNav() {
     "grid-cols-2";
 
   return (
-    <nav className="sticky bottom-0 nav-bar safe-bottom">
+    <nav className="sticky bottom-0 z-20 nav-bar safe-bottom">
       <div className={cn("mx-auto grid max-w-md py-1.5 px-1", colClass)}>
         {items.map(({ href, label, Icon }) => {
           const active = pathname === href || (href !== "/app/today" && pathname?.startsWith(href));
