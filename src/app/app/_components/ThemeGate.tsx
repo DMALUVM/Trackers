@@ -15,21 +15,23 @@ function resolveTheme(t: Theme): "dark" | "light" {
   return t === "system" ? (prefersDark() ? "dark" : "light") : t;
 }
 
+// Bold ambient tints — dark mode only
+// High opacity (25-40%) needed because the base is near-black (#0a0a0a)
 const TINTS: Record<string, string> = {
-  "/app/today":             "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 65%)",
-  "/app/breathwork":        "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.16) 0%, transparent 65%)",
-  "/app/movement":          "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 65%)",
-  "/app/focus":             "radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.14) 0%, transparent 65%)",
-  "/app/biometrics":        "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.14) 0%, transparent 65%)",
-  "/app/routines/progress": "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 65%)",
-  "/app/routines/edit":     "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.10) 0%, transparent 60%)",
-  "/app/streaks":           "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.14) 0%, transparent 65%)",
-  "/app/trophies":          "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.16) 0%, transparent 65%)",
-  "/app/partner":           "radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.14) 0%, transparent 65%)",
-  "/app/recovery":          "radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.14) 0%, transparent 65%)",
-  "/app/sleep":             "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.16) 0%, transparent 65%)",
-  "/app/mindfulness":       "radial-gradient(ellipse at 50% 0%, rgba(45,212,191,0.14) 0%, transparent 65%)",
-  "/app/fitness":           "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.12) 0%, transparent 65%)",
+  "/app/today":             "radial-gradient(ellipse at 50% -5%, rgba(16,185,129,0.30) 0%, transparent 55%)",
+  "/app/breathwork":        "radial-gradient(ellipse at 50% -5%, rgba(6,182,212,0.35) 0%, transparent 55%)",
+  "/app/movement":          "radial-gradient(ellipse at 50% -5%, rgba(16,185,129,0.30) 0%, transparent 55%)",
+  "/app/focus":             "radial-gradient(ellipse at 50% -5%, rgba(245,158,11,0.28) 0%, transparent 55%)",
+  "/app/biometrics":        "radial-gradient(ellipse at 50% -5%, rgba(168,85,247,0.30) 0%, transparent 55%)",
+  "/app/routines/progress": "radial-gradient(ellipse at 50% -5%, rgba(59,130,246,0.28) 0%, transparent 55%)",
+  "/app/routines/edit":     "radial-gradient(ellipse at 50% -5%, rgba(59,130,246,0.22) 0%, transparent 50%)",
+  "/app/streaks":           "radial-gradient(ellipse at 50% -5%, rgba(234,179,8,0.30) 0%, transparent 55%)",
+  "/app/trophies":          "radial-gradient(ellipse at 50% -5%, rgba(234,179,8,0.35) 0%, transparent 55%)",
+  "/app/partner":           "radial-gradient(ellipse at 50% -5%, rgba(244,114,182,0.28) 0%, transparent 55%)",
+  "/app/recovery":          "radial-gradient(ellipse at 50% -5%, rgba(20,184,166,0.28) 0%, transparent 55%)",
+  "/app/sleep":             "radial-gradient(ellipse at 50% -5%, rgba(99,102,241,0.35) 0%, transparent 55%)",
+  "/app/mindfulness":       "radial-gradient(ellipse at 50% -5%, rgba(45,212,191,0.28) 0%, transparent 55%)",
+  "/app/fitness":           "radial-gradient(ellipse at 50% -5%, rgba(239,68,68,0.25) 0%, transparent 55%)",
 };
 
 function getTint(pathname: string): string | null {
@@ -115,20 +117,9 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
   const tint = (isDark && tintsOn) ? getTint(pathname) : null;
   const bg = tint ? `${tint}, var(--bg-primary)` : "var(--bg-primary)";
 
-  // 🔴 TEMPORARY DEBUG BANNER — remove after confirming tints work
-  const debugInfo = `theme:${resolved} | tints:${tintsOn?"on":"off"} | path:${pathname} | tint:${tint?"YES":"NO"} | v13`;
-
   return (
     <div data-theme={resolved} className="theme-shell"
       style={{ background: bg, color: "var(--text-primary)" }}>
-      <div style={{
-        position: "fixed", bottom: 60, left: 8, right: 8, zIndex: 9999,
-        background: "rgba(255,0,0,0.9)", color: "#fff",
-        padding: "6px 10px", borderRadius: 8, fontSize: 10,
-        fontFamily: "monospace", textAlign: "center", pointerEvents: "none",
-      }}>
-        {debugInfo}
-      </div>
       {children}
     </div>
   );
