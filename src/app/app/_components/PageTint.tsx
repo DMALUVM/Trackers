@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 
 /**
  * Per-page ambient gradient tint — dark mode only.
- * Sets the --page-tint CSS variable on .theme-shell.
- * CSS handles the layering: background: var(--page-tint, none), var(--bg-primary);
- * No z-index battles, no inline style conflicts — just a CSS variable swap.
+ * Sets backgroundImage directly on .theme-shell.
+ * .theme-shell uses background-color (separate property) for the solid base.
+ * backgroundImage and backgroundColor are independent — no interference.
  */
 
 const ROUTE_TINTS: Record<string, string> = {
@@ -75,19 +75,15 @@ export function PageTint() {
     };
   }, []);
 
-  // Set --page-tint CSS variable on the .theme-shell element
   useEffect(() => {
     const el = document.querySelector(".theme-shell") as HTMLElement | null;
     if (!el) return;
 
     const tint = (enabled && isDark) ? getTint(pathname) : null;
-    if (tint) {
-      el.style.setProperty("--page-tint", tint);
-    } else {
-      el.style.removeProperty("--page-tint");
-    }
+    // backgroundImage is independent of backgroundColor — safe from React re-renders
+    el.style.backgroundImage = tint ?? "none";
 
-    return () => { el.style.removeProperty("--page-tint"); };
+    return () => { el.style.backgroundImage = "none"; };
   }, [pathname, isDark, enabled]);
 
   return null;

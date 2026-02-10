@@ -124,10 +124,9 @@ body {
   font-size: 16px; /* Base — ensures nothing renders tiny */
 }
 
-/* Theme shell: layers optional page tint gradient over solid background.
-   PageTint component sets --page-tint via JS; defaults to 'none'. */
+/* Theme shell: solid color base. PageTint sets backgroundImage via JS. */
 .theme-shell {
-  background: var(--page-tint, none), var(--bg-primary);
+  background-color: var(--bg-primary);
 }
 
 /* Accessibility: bump all small text for maximum readability */

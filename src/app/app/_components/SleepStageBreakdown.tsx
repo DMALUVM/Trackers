@@ -13,6 +13,15 @@ function formatHM(minutes: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+/** Show the "night of" label — one day before the wake-up date */
+function nightOfLabel(wakeDate: string): string {
+  try {
+    const d = new Date(wakeDate + "T12:00:00");
+    d.setDate(d.getDate() - 1);
+    return d.toLocaleDateString("en-US", { weekday: "short" });
+  } catch { return wakeDate.slice(-2); }
+}
+
 function SleepBar({ data, maxMinutes }: { data: HealthKitSleep; maxMinutes: number }) {
   const deep = data.deepMinutes ?? 0;
   const core = data.coreMinutes ?? 0;
@@ -21,17 +30,10 @@ function SleepBar({ data, maxMinutes }: { data: HealthKitSleep; maxMinutes: numb
   const total = data.totalMinutes;
   const w = maxMinutes > 0 ? (total / maxMinutes) * 100 : 0;
 
-  const dayLabel = (() => {
-    try {
-      const d = new Date(data.date + "T12:00:00");
-      return d.toLocaleDateString("en-US", { weekday: "short" });
-    } catch { return data.date.slice(-2); }
-  })();
-
   return (
     <div className="flex items-center gap-2">
       <span className="text-[10px] font-medium w-8 text-right tabular-nums shrink-0"
-        style={{ color: "var(--text-faint)" }}>{dayLabel}</span>
+        style={{ color: "var(--text-faint)" }}>{nightOfLabel(data.date)}</span>
       <div className="flex-1 h-5 rounded-md overflow-hidden flex" style={{ width: `${w}%`, minWidth: "20px" }}>
         {deep > 0 && (
           <div style={{ width: `${(deep / total) * 100}%`, background: "#6366f1" }}
@@ -65,7 +67,8 @@ export function SleepStageBreakdown() {
     if (!isHealthKitAvailable()) { setLoading(false); return; }
     void (async () => {
       try {
-        const data = await getSleep(7);
+        // Fetch 8 days to ensure we always get 7 complete nights
+        const data = await getSleep(8);
         setSleepData(data);
       } catch { /* ignore */ }
       setLoading(false);
@@ -75,16 +78,15 @@ export function SleepStageBreakdown() {
   if (!isHealthKitAvailable() || loading) return null;
   if (sleepData.length === 0) return null;
 
-  // Check if we have stage data (only devices like Oura/Apple Watch provide this)
   const hasStages = sleepData.some(d => (d.deepMinutes ?? 0) > 0 || (d.remMinutes ?? 0) > 0);
 
-  const maxMinutes = Math.max(...sleepData.map(d => d.totalMinutes), 1);
-  const avgSleep = sleepData.reduce((s, d) => s + d.totalMinutes, 0) / sleepData.length;
-  const avgDeep = hasStages ? sleepData.reduce((s, d) => s + (d.deepMinutes ?? 0), 0) / sleepData.length : 0;
-  const avgREM = hasStages ? sleepData.reduce((s, d) => s + (d.remMinutes ?? 0), 0) / sleepData.length : 0;
+  // Sort oldest → newest, take only last 7 nights
+  const sorted = [...sleepData].sort((a, b) => a.date.localeCompare(b.date)).slice(-7);
 
-  // Sort oldest → newest for chart
-  const sorted = [...sleepData].sort((a, b) => a.date.localeCompare(b.date));
+  const maxMinutes = Math.max(...sorted.map(d => d.totalMinutes), 1);
+  const avgSleep = sorted.reduce((s, d) => s + d.totalMinutes, 0) / sorted.length;
+  const avgDeep = hasStages ? sorted.reduce((s, d) => s + (d.deepMinutes ?? 0), 0) / sorted.length : 0;
+  const avgREM = hasStages ? sorted.reduce((s, d) => s + (d.remMinutes ?? 0), 0) / sorted.length : 0;
 
   if (!isPremium) {
     return (
@@ -121,7 +123,7 @@ export function SleepStageBreakdown() {
         <div className="flex items-center gap-2">
           <Moon size={14} style={{ color: "#8b5cf6" }} />
           <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
-            Sleep — 7 Days
+            Sleep — 7 Nights
           </span>
         </div>
         <span className="text-xs font-bold tabular-nums" style={{ color: "var(--text-muted)" }}>
@@ -129,14 +131,12 @@ export function SleepStageBreakdown() {
         </span>
       </div>
 
-      {/* Stacked bar chart */}
       <div className="space-y-1.5 mb-3">
         {sorted.map((d) => (
           <SleepBar key={d.date} data={d} maxMinutes={maxMinutes} />
         ))}
       </div>
 
-      {/* Legend + averages */}
       {hasStages ? (
         <div className="flex flex-wrap gap-3 pt-2" style={{ borderTop: "1px solid var(--border-primary)" }}>
           <div className="flex items-center gap-1.5">
