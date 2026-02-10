@@ -1,6 +1,7 @@
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { Reveal } from "@/app/_components/landing/Reveal";
 import { CTAButton } from "@/app/_components/landing/CTAButton";
+import { ScrollCarousel } from "@/app/_components/landing/ScrollCarousel";
 import { AuthOverlay } from "@/app/_components/landing/AuthOverlay";
 import {
   MockToday,
@@ -257,7 +258,7 @@ export default function Home() {
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <div className="flex gap-6 overflow-x-auto pb-4 px-2 snap-x snap-mandatory no-scrollbar justify-start lg:justify-center">
+            <ScrollCarousel>
               <div className="snap-center shrink-0">
                 <MockToday />
               </div>
@@ -273,7 +274,7 @@ export default function Home() {
               <div className="snap-center shrink-0">
                 <MockSleep />
               </div>
-            </div>
+            </ScrollCarousel>
             <p className="text-center text-xs text-neutral-600 mt-4 lg:hidden">
               ← Swipe to see more screens →
             </p>
@@ -465,8 +466,8 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-8">
-                  <CTAButton className="w-full rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">
+                <div className="mt-8 flex justify-center">
+                  <CTAButton className="rounded-xl border border-white/10 bg-white/5 px-8 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">
                     Get started free
                   </CTAButton>
                 </div>
@@ -497,7 +498,7 @@ export default function Home() {
                   <span className="ml-2 text-sm text-neutral-600 line-through">$3.99/mo</span>
                 </div>
                 <p className="text-xs text-emerald-400/80 mt-1">
-                  or $24.99/year (save 30%) · Lock in this rate forever
+                  or $24.99/year <span className="text-neutral-600 line-through">$39.99/yr</span> (save 37%) · Lock in this rate forever
                 </p>
                 <div className="mt-6 space-y-3">
                   {PREMIUM_FEATURES.map((p) => (
@@ -507,8 +508,8 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-8">
-                  <CTAButton className="w-full rounded-xl bg-emerald-500 px-6 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400">
+                <div className="mt-8 flex justify-center">
+                  <CTAButton className="rounded-xl bg-emerald-500 px-8 py-3.5 text-sm font-bold text-black transition hover:bg-emerald-400">
                     Start 7-day free trial →
                   </CTAButton>
                 </div>
