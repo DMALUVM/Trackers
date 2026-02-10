@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 
 /**
  * Per-page ambient gradient tint — dark mode only.
- * Light mode stays clean white. Injects gradient via DOM onto #app-shell.
+ * Injects gradient directly onto the [data-theme] element (ThemeGate div)
+ * by layering it on top of the solid background color.
+ * background: gradient, solid-color — guaranteed to be visible.
  */
 
 const ROUTE_TINTS: Record<string, string> = {
@@ -73,15 +75,23 @@ export function PageTint() {
     };
   }, []);
 
+  // Apply tint directly onto the ThemeGate [data-theme] element
+  // Uses CSS background layering: gradient ON TOP of solid color
   useEffect(() => {
-    const el = document.getElementById("app-shell");
+    const el = document.querySelector("[data-theme]") as HTMLElement | null;
     if (!el) return;
 
-    // Only apply tints in dark mode
     const tint = (enabled && isDark) ? getTint(pathname) : null;
-    el.style.backgroundImage = tint ?? "none";
+    if (tint) {
+      // Layer: gradient on top, solid fallback behind
+      el.style.background = `${tint}, var(--bg-primary)`;
+    } else {
+      el.style.background = "var(--bg-primary)";
+    }
 
-    return () => { el.style.backgroundImage = "none"; };
+    return () => {
+      el.style.background = "var(--bg-primary)";
+    };
   }, [pathname, isDark, enabled]);
 
   return null;
