@@ -83,9 +83,10 @@ export default function TermsPage() {
             subscription in your device&rsquo;s Settings → Subscriptions.
           </p>
           <p className="mt-2">
-            Pricing is $3.99 per month or $29.99 per year. We may change pricing
-            with reasonable notice. Free trial periods, if offered, convert to
-            paid subscriptions unless canceled before the trial ends.
+            Pricing starts at $2.99 per month or $24.99 per year for founding
+            members and may increase for new subscribers over time. We may change
+            pricing with reasonable notice. Free trial periods, if offered,
+            convert to paid subscriptions unless canceled before the trial ends.
           </p>
         </Section>
 
