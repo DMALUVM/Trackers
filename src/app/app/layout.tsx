@@ -9,6 +9,7 @@ import { SettingsGear } from "@/app/app/_components/SettingsGear";
 import { GlobalPullToRefresh } from "@/app/app/_components/GlobalPullToRefresh";
 import { PageTint } from "@/app/app/_components/PageTint";
 import { PremiumProvider } from "@/lib/premium";
+import { OfflineBanner } from "@/app/app/_components/OfflineBanner";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -20,6 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <div id="app-shell" className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
               <IosInstallPrompt />
               <SettingsGear />
+              <OfflineBanner />
               <main className="flex-1 px-4 pt-safe pb-2">
                 <GlobalPullToRefresh>
                   <ErrorBoundary>{children}</ErrorBoundary>

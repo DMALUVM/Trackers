@@ -4,6 +4,7 @@ import { upsertDailyChecks, upsertDailyLog, upsertDaySnooze, getUserId } from "@
 import type { UiItem } from "@/lib/hooks/useRoutineDay";
 import type { ToastState } from "@/app/app/_components/ui/Toast";
 import { AUTOSAVE_DELAY_MS, SNOOZE_DURATION_MS } from "@/lib/constants";
+import { enqueue } from "@/lib/offlineQueue";
 
 interface UsePersistOpts {
   dateKey: string;
@@ -27,28 +28,39 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
     pendingRef.current = false;
     setSaveState("saving");
 
+    const items = itemsRef.current;
+    const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
+    const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+
+    const logPayload = { dateKey, dayMode, sex: null, didRowing, didWeights };
+    const checksPayload = {
+      dateKey,
+      checks: items.map((i) => ({ routineItemId: i.id, done: i.done })),
+    };
+
     try {
-      const items = itemsRef.current;
-
-      // Derive flags from items
-      const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
-      const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
-
       await Promise.all([
-        upsertDailyLog({ dateKey, dayMode, sex: null, didRowing, didWeights }),
-        upsertDailyChecks({
-          dateKey,
-          checks: items.map((i) => ({ routineItemId: i.id, done: i.done })),
-        }),
+        upsertDailyLog(logPayload),
+        upsertDailyChecks(checksPayload),
       ]);
 
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.error("Save failed:", msg);
-      setSaveState("error");
-      setTimeout(() => setSaveState("idle"), 3000);
+      const isOffline = !navigator.onLine || msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+
+      if (isOffline) {
+        // Queue for later sync
+        enqueue({ type: "dailyLog", payload: logPayload as unknown as Record<string, unknown> });
+        enqueue({ type: "dailyChecks", payload: checksPayload as unknown as Record<string, unknown> });
+        setSaveState("saved"); // Show saved — user's checks are preserved locally
+        setTimeout(() => setSaveState("idle"), 1500);
+      } else {
+        console.error("Save failed:", msg);
+        setSaveState("error");
+        setTimeout(() => setSaveState("idle"), 3000);
+      }
     } finally {
       inflightRef.current = false;
       if (pendingRef.current) {

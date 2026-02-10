@@ -1,116 +1,129 @@
 // ===========================================================================
-// SERVICE WORKER — Offline shell + instant launch
+// SERVICE WORKER — Offline shell + cached data
 // ===========================================================================
-// Strategy: "App Shell" model
-// - Cache the HTML shell, CSS, JS, and images on install
-// - Network-first for API calls (Supabase data always fresh)
-// - Cache-first for static assets (instant paint)
-// - Stale-while-revalidate for everything else
+// Strategy:
+// - Pre-cache the app shell (key pages, icons)
+// - Cache-first for static assets (images, fonts, CSS)
+// - Network-first + cache fallback for JS chunks
+// - Network-first + cache fallback for navigation (HTML)
+// - Network-first + cache fallback for Supabase GET requests
+// - Pass through Supabase writes (queued client-side when offline)
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v5";
+const CACHE_NAME = "routines365-v6";
+const DATA_CACHE = "routines365-data-v1";
 
 // ---------------------------------------------------------------------------
 // Push Notifications
 // ---------------------------------------------------------------------------
 self.addEventListener("push", (event) => {
   if (!event.data) return;
-
   let payload;
-  try {
-    payload = event.data.json();
-  } catch {
-    payload = { title: "Routine Reminder", body: event.data.text() };
-  }
-
-  const options = {
-    body: payload.body || "Time to check in!",
-    icon: "/brand/pwa/icon-192.png",
-    badge: "/brand/pwa/icon-192.png",
-    tag: payload.tag || "routine-reminder",
-    data: { url: payload.url || "/app/today" },
-    vibrate: [100, 50, 100],
-    actions: [
-      { action: "open", title: "Open" },
-      { action: "dismiss", title: "Dismiss" },
-    ],
-  };
+  try { payload = event.data.json(); }
+  catch { payload = { title: "Routine Reminder", body: event.data.text() }; }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || "Routines 365", options)
+    self.registration.showNotification(payload.title || "Routines 365", {
+      body: payload.body || "Time to check in!",
+      icon: "/brand/pwa/icon-192.png",
+      badge: "/brand/pwa/icon-192.png",
+      tag: payload.tag || "routine-reminder",
+      data: { url: payload.url || "/app/today" },
+      vibrate: [100, 50, 100],
+      actions: [
+        { action: "open", title: "Open" },
+        { action: "dismiss", title: "Dismiss" },
+      ],
+    })
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-
   if (event.action === "dismiss") return;
-
   const url = event.notification.data?.url || "/app/today";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
-      // Focus existing window if available
       for (const client of clients) {
-        if (client.url.includes("/app/") && "focus" in client) {
-          return client.focus();
-        }
+        if (client.url.includes("/app/") && "focus" in client) return client.focus();
       }
-      // Otherwise open a new window
       return self.clients.openWindow(url);
     })
   );
 });
+
+// ---------------------------------------------------------------------------
+// Pre-cache shell
+// ---------------------------------------------------------------------------
 const SHELL_ASSETS = [
   "/app/today",
+  "/app/breathwork",
+  "/app/movement",
+  "/app/focus",
+  "/app/journal",
   "/brand/pwa/icon-192.png",
   "/brand/pwa/apple-touch-icon.png",
 ];
 
-// Install: pre-cache the shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(SHELL_ASSETS).catch(() => {
-        // Some assets may fail — that's OK, we'll cache them on first visit
-      });
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(SHELL_ASSETS).catch(() => {})
+    )
   );
   self.skipWaiting();
 });
 
+// ---------------------------------------------------------------------------
 // Activate: clean old caches
+// ---------------------------------------------------------------------------
 self.addEventListener("activate", (event) => {
+  const keep = new Set([CACHE_NAME, DATA_CACHE]);
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// Fetch: route-based strategy
+// ---------------------------------------------------------------------------
+// Fetch strategies
+// ---------------------------------------------------------------------------
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
   if (request.method !== "GET") return;
-
-  // Skip non-http(s) schemes (chrome-extension://, etc.)
   if (!url.protocol.startsWith("http")) return;
-
-  // Skip Supabase API calls — always network-first for fresh data
-  if (url.hostname.includes("supabase")) return;
-
-  // Skip auth-related requests
   if (url.pathname.includes("/auth/")) return;
 
-  // Immutable static assets (images, fonts, CSS) — cache-first
-  // NOTE: JS is NOT here — JS chunks must be network-first to prevent
-  // hydration crashes when deployments change chunk hashes.
-  if (
-    url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|css)$/)
-  ) {
+  // ── Supabase data: network-first → cache fallback ──
+  if (url.hostname.includes("supabase")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const cacheKey = new Request(url.pathname + url.search);
+            const clone = response.clone();
+            caches.open(DATA_CACHE).then((cache) => cache.put(cacheKey, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          const cacheKey = new Request(url.pathname + url.search);
+          return caches.match(cacheKey, { cacheName: DATA_CACHE })
+            .then((cached) => cached || new Response("[]", {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }));
+        })
+    );
+    return;
+  }
+
+  // ── Static assets — cache-first ──
+  if (url.pathname.match(/\.(png|jpg|jpeg|svg|gif|webp|ico|woff2?|ttf|css)$/)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         if (cached) return cached;
@@ -126,13 +139,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // JS chunks and _next/static — network-first with cache fallback
-  // This prevents the #1 PWA crash: stale JS chunks from old deployments
-  // trying to manipulate DOM rendered by new HTML.
-  if (
-    url.pathname.match(/\.js$/) ||
-    url.pathname.startsWith("/_next/static/")
-  ) {
+  // ── JS chunks — network-first ──
+  if (url.pathname.match(/\.js$/) || url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -147,7 +155,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation requests (HTML pages) — network-first with cache fallback
+  // ── Navigation — network-first ──
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -161,7 +169,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Everything else — stale-while-revalidate
+  // ── Everything else — stale-while-revalidate ──
   event.respondWith(
     caches.match(request).then((cached) => {
       const fetchPromise = fetch(request).then((response) => {
