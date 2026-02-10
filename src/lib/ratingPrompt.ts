@@ -2,14 +2,19 @@
  * App Store Rating Prompt
  *
  * Triggers SKStoreReviewController via Capacitor bridge at positive moments.
- * Apple throttles this to 3 prompts per 365 days regardless, so we can
- * call it fairly freely — but we still add our own cooldowns for good UX.
+ * Apple throttles this to 3 prompts per 365 days regardless, so we add our
+ * own cooldowns for good UX and to avoid annoying users.
  *
  * Trigger points (called from app code):
  *  - After a streak milestone (7, 14, 30 days)
- *  - After 7th day of app usage
- *  - After completing a breathwork session for the 3rd time
- *  - After marking all core habits done (only once per week)
+ *  - After 7th green day
+ *  - After completing a breathwork/movement session for the 3rd time
+ *
+ * Safety nets:
+ *  - 30-day cooldown between our prompts (on top of Apple's limit)
+ *  - Max 3 prompts total per year (resets each calendar year)
+ *  - Per-trigger flags — once a specific trigger fires, it never fires again
+ *  - Native iOS further limits to 3 actual displays per 365 days
  */
 
 const LS_KEY = "routines365:ratingPrompt";
@@ -17,20 +22,33 @@ const LS_KEY = "routines365:ratingPrompt";
 interface RatingState {
   /** Last time we showed (or attempted) the prompt — ISO string */
   lastPrompted: string | null;
-  /** Number of times prompted */
+  /** Number of times prompted this cycle */
   promptCount: number;
-  /** Total app opens / green days (for timing first prompt) */
+  /** Total green days tracked (for timing first prompt) */
   greenDayCount: number;
-  /** Has ever rated (user dismissed or completed — we can't tell) */
+  /** Per-trigger flags — once true, that trigger never fires again */
   prompted7: boolean;
   prompted14: boolean;
   prompted30: boolean;
+  promptedGreen7: boolean;
+  promptedModule3: boolean;
+  /** Year the promptCount was last reset (auto-resets yearly) */
+  resetYear: number;
 }
 
 function load(): RatingState {
   try {
     const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : defaultState();
+    if (!raw) return defaultState();
+    const state: RatingState = { ...defaultState(), ...JSON.parse(raw) };
+    // Auto-reset prompt count each calendar year (Apple resets their limit yearly too)
+    const currentYear = new Date().getFullYear();
+    if (state.resetYear < currentYear) {
+      state.promptCount = 0;
+      state.resetYear = currentYear;
+      save(state);
+    }
+    return state;
   } catch {
     return defaultState();
   }
@@ -44,11 +62,16 @@ function defaultState(): RatingState {
     prompted7: false,
     prompted14: false,
     prompted30: false,
+    promptedGreen7: false,
+    promptedModule3: false,
+    resetYear: new Date().getFullYear(),
   };
 }
 
 function save(state: RatingState) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch {}
 }
 
 /** Minimum days between prompts (our own cooldown on top of Apple's) */
@@ -61,39 +84,54 @@ function daysSinceLastPrompt(state: RatingState): number {
 }
 
 function canPrompt(state: RatingState): boolean {
-  // Max 3 prompts total (matches Apple's yearly limit)
   if (state.promptCount >= 3) return false;
-  // Respect cooldown
   if (daysSinceLastPrompt(state) < MIN_DAYS_BETWEEN) return false;
   return true;
 }
 
-/** Show the native App Store review dialog */
+/**
+ * Show the native App Store review dialog via Capacitor bridge.
+ *
+ * @capacitor-community/app-review registers as "AppReview" in the
+ * Capacitor plugin registry. We also check legacy names as fallbacks.
+ */
 function showNativePrompt(): boolean {
   try {
-    // Capacitor bridge to SKStoreReviewController
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cap = (window as any).Capacitor as Record<string, unknown> | undefined;
     if (!cap) return false;
-    const plugins = cap.Plugins as Record<string, Record<string, (...args: unknown[]) => void>> | undefined;
-    // Try AppRate plugin first
+
+    const plugins = cap.Plugins as
+      | Record<string, Record<string, (...args: unknown[]) => void>>
+      | undefined;
+
+    // @capacitor-community/app-review → registers as "AppReview"
+    if (plugins?.AppReview?.requestReview) {
+      plugins.AppReview.requestReview();
+      return true;
+    }
+    // Fallback: some plugins register as "AppRate"
     if (plugins?.AppRate?.requestReview) {
       plugins.AppRate.requestReview();
       return true;
     }
-    // Try direct StoreReview plugin
+    // Fallback: "StoreReview"
     if (plugins?.StoreReview?.requestReview) {
       plugins.StoreReview.requestReview();
       return true;
     }
-    // Fallback: webkit messageHandler (works in WKWebView)
+
+    // Last resort: webkit messageHandler (bare WKWebView without Capacitor)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const wk = (window as any).webkit as Record<string, unknown> | undefined;
-    const handlers = wk?.messageHandlers as Record<string, { postMessage: (msg: unknown) => void }> | undefined;
+    const handlers = wk?.messageHandlers as
+      | Record<string, { postMessage: (msg: unknown) => void }>
+      | undefined;
     if (handlers?.requestReview) {
       handlers.requestReview.postMessage({});
       return true;
     }
+
     return false;
   } catch {
     return false;
@@ -136,22 +174,26 @@ export function ratingOnGreenDay() {
   const state = load();
   state.greenDayCount++;
   save(state);
-  // Prompt on 7th green day (user is engaged and happy)
-  if (state.greenDayCount === 7) {
+  if (state.greenDayCount === 7 && !state.promptedGreen7) {
+    state.promptedGreen7 = true;
+    save(state);
     attemptPrompt(state);
   }
 }
 
 /** Call after completing a breathwork/movement session. Prompts on 3rd completion. */
 export function ratingOnModuleComplete() {
-  // Use a separate counter
   const KEY = "routines365:ratingModuleCount";
   try {
     const count = (parseInt(localStorage.getItem(KEY) ?? "0", 10) || 0) + 1;
     localStorage.setItem(KEY, String(count));
     if (count === 3) {
       const state = load();
-      attemptPrompt(state);
+      if (!state.promptedModule3) {
+        state.promptedModule3 = true;
+        save(state);
+        attemptPrompt(state);
+      }
     }
   } catch {}
 }
