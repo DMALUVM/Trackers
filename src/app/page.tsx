@@ -1,7 +1,6 @@
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { Reveal } from "@/app/_components/landing/Reveal";
 import { CTAButton } from "@/app/_components/landing/CTAButton";
-import { AuthBlock } from "@/app/_components/landing/AuthBlock";
 import { AuthOverlay } from "@/app/_components/landing/AuthOverlay";
 import {
   MockToday,
@@ -124,9 +123,14 @@ export default function Home() {
               Routines365
             </span>
           </div>
-          <CTAButton className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400">
-            Get started free
-          </CTAButton>
+          <div className="flex items-center gap-4">
+            <a href="/login" className="text-sm text-neutral-400 hover:text-white transition-colors">
+              Sign in
+            </a>
+            <CTAButton className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400">
+              Get started free
+            </CTAButton>
+          </div>
         </div>
       </nav>
 
@@ -517,9 +521,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA + AUTH ── */}
+      {/* ── FINAL CTA ── */}
       <section
-        id="auth-section"
         className="py-20 px-6 border-t border-white/5"
         style={{ background: "rgba(255,255,255,0.01)" }}
       >
@@ -534,7 +537,15 @@ export default function Home() {
             <p className="text-xs text-emerald-400/70 mb-8">
               🚀 Founding member pricing available for a limited time
             </p>
-            <AuthBlock />
+            <CTAButton className="inline-block rounded-xl bg-emerald-500 px-10 py-4 text-base font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]">
+              Create free account →
+            </CTAButton>
+            <p className="mt-4 text-xs text-neutral-600">
+              Already have an account?{" "}
+              <a href="/login" className="text-emerald-400/70 underline underline-offset-2 hover:text-emerald-400 transition">
+                Sign in
+              </a>
+            </p>
           </Reveal>
         </div>
       </section>

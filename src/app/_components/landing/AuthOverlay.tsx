@@ -61,8 +61,28 @@ export function AuthOverlay() {
     if (authState === "signed-in") router.replace("/app/today");
   }, [authState, router]);
 
-  // Signed out → return nothing. Marketing page shows on web, AuthBlock handles native.
-  if (authState === "signed-out") return null;
+  // Signed out
+  if (authState === "signed-out") {
+    // Native app: skip marketing, go straight to login
+    if (isNative()) {
+      router.replace("/login");
+      // Keep showing splash during redirect
+      return (
+        <div
+          className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <div className="text-center space-y-5 animate-fade-in">
+            <div className="mx-auto" style={{ width: 72 }}>
+              <BrandIcon size={72} />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // Web: return nothing, reveal the marketing page
+    return null;
+  }
 
   // Checking auth or signed in (redirecting) or native → show splash overlay
   return (

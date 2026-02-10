@@ -1,4 +1,4 @@
-"use client";
+import Link from "next/link";
 
 export function CTAButton({
   children,
@@ -8,16 +8,8 @@ export function CTAButton({
   className?: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() =>
-        document
-          .getElementById("auth-section")
-          ?.scrollIntoView({ behavior: "smooth" })
-      }
-      className={className}
-    >
+    <Link href="/login" className={className}>
       {children}
-    </button>
+    </Link>
   );
 }
