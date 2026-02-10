@@ -137,7 +137,8 @@ export default function HowItWorksPage() {
             { title: "Make it Core", desc: "In Settings → Routines, tap the OPT button next to any habit to switch it to CORE (and vice versa)." },
             { title: "Remove a habit", desc: "Tap the 🗑 trash icon next to any habit to archive it. It won't appear in your daily checklist anymore." },
             { title: "Reorder habits", desc: "Use the ↑↓ arrows next to each habit to change the order they appear in." },
-            { title: "Set reminders", desc: "Tap the 🔔 bell icon on any habit to set a daily push notification reminder." },
+            { title: "Set reminders", desc: "Tap the 🔔 bell icon on any habit to set a daily reminder at a specific time. Choose which days of the week to be reminded." },
+            { title: "Schedule days", desc: "Tap any habit name on the Today screen to set which days of the week it should appear (M/W/F, weekdays only, etc.)." },
           ].map(({ title, desc }) => (
             <div key={title}>
               <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
@@ -147,7 +148,146 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Modules */}
+      {/* Day-of-week scheduling */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>📅 Day-of-Week Scheduling</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Not every habit needs to happen every day. You can schedule habits to only appear on specific days of the week.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "From the Today screen", desc: "Tap any habit name → use the \"Show on days\" toggles (M T W T F S S) to pick which days it appears." },
+            { title: "From Settings", desc: "Settings → Routines → tap a habit → set Frequency to Every day, Mon–Fri, Mon/Wed/Fri, Tue/Thu, or Custom." },
+            { title: "How it works", desc: "Scheduled habits only appear on their assigned days. They won't show as bonus habits on off-days. If no habits are scheduled for a day, your core habits will still appear." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Great for medication (M/W/F), gym days (Tue/Thu), or weekly reviews (Sunday only).
+        </p>
+      </section>
+
+      {/* Apple Health */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>💚 Apple Health</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Connect Apple Health to automatically pull in your health data. See how your habits correlate with your body&apos;s metrics.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Free tier", desc: "Steps, sleep hours, calories burned, and workouts — all synced automatically from Apple Health." },
+            { title: "Premium biometrics", desc: "HRV (heart rate variability), resting heart rate, SpO2 (blood oxygen), and respiratory rate. Requires a device like Apple Watch, Oura Ring, or Garmin." },
+            { title: "Sleep stages", desc: "Premium users see a breakdown of Deep, Light, and REM sleep with a visual bar chart and bed/wake times." },
+            { title: "Auto-complete", desc: "Habits like \"Walk 10k steps\" or \"8 hours sleep\" can auto-complete when Apple Health data meets your targets." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Tap the ⚙️ gear on the Health card to choose which metrics to show. Tap the 🔄 refresh icon to sync latest data.
+        </p>
+      </section>
+
+      {/* Breathwork & Movement */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>🫁 Breathwork &amp; Movement</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Built-in guided sessions you can do right from the app — no YouTube or separate apps needed.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Box Breathing (4-4-4-4)", desc: "A calming technique used by Navy SEALs. Inhale 4s, hold 4s, exhale 4s, hold 4s." },
+            { title: "Wim Hof Method", desc: "30 power breaths followed by a retention hold. Builds cold tolerance and focus." },
+            { title: "4-7-8 Relaxation", desc: "Dr. Andrew Weil's sleep technique. Inhale 4s, hold 7s, exhale 8s." },
+            { title: "Physiological Sigh", desc: "Double inhale through the nose, long exhale. Instantly calms the nervous system." },
+            { title: "Mobility flows", desc: "Guided movement routines for morning activation, desk breaks, and recovery." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Access from the quick action buttons on the Today screen, or check the &quot;Breathwork&quot; habit for a direct link.
+        </p>
+      </section>
+
+      {/* Focus Timer */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>🧠 Focus Timer</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          A built-in Pomodoro-style timer for deep work sessions. Set your work duration and break duration, then start the timer.
+        </p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Access from the quick action buttons on the Today screen. Sessions are logged automatically.
+        </p>
+      </section>
+
+      {/* Rest Days & Streak Freezes */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>🛌 Rest Days &amp; Streak Freezes</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Life happens. These tools protect your streak without compromising your commitment.
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Rest Days", desc: "Plan days off in advance (Settings → Rest Days). Rest days don't count as missed — your streak stays intact. Great for Sundays or recovery days." },
+            { title: "Day Modes", desc: "Set today's mode to Normal, Travel, or Sick from the ⋯ menu. Travel and Sick modes are more forgiving with your score." },
+            { title: "Streak Freezes", desc: "Emergency protection when you forget. Use from the ⋯ menu. Free users get 1 per month, Premium users get unlimited." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Customize Today */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>🎛️ Customize Your Today Screen</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Show or hide sections on your Today page to keep it clean and focused. Go to Settings → Customize Today.
+        </p>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+          You can toggle: Apple Health card, Water Tracker, Quests, Daily Wisdom quotes, and Quick Action buttons (Breathwork, Focus, Movement).
+        </p>
+      </section>
+
+      {/* Premium */}
+      <section className="card p-5 space-y-3">
+        <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>👑 Premium</h2>
+        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Routines365 is fully usable for free. Premium adds power-user features for those who want to go deeper:
+        </p>
+        <div className="space-y-2">
+          {[
+            { title: "Biometric insights", desc: "HRV, resting heart rate, SpO2, respiratory rate, and sleep stages from Apple Health." },
+            { title: "Health auto-complete", desc: "Habits auto-check when Apple Health data meets your targets." },
+            { title: "Unlimited habits", desc: "Free tier allows up to 10 habits. Premium removes the limit." },
+            { title: "Per-habit analytics", desc: "Completion rate, best/worst days, current and best streaks per habit." },
+            { title: "Weekly reports", desc: "Detailed breakdown of your week with trends and insights." },
+            { title: "Themes", desc: "Additional color themes beyond the defaults." },
+            { title: "Unlimited streak freezes", desc: "Free users get 1/month. Premium gets unlimited." },
+          ].map(({ title, desc }) => (
+            <div key={title}>
+              <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{title}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{desc}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          💡 Go to Settings → Premium to see plans and enter a promo code.
+        </p>
+      </section>
       <section className="card p-5 space-y-3">
         <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>📦 Modules</h2>
         <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
@@ -208,11 +348,12 @@ export default function HowItWorksPage() {
         <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>📱 Your Daily Routine</h2>
         <div className="space-y-2.5">
           {[
-            { step: "1", text: "Open the app" },
-            { step: "2", text: "Tap each habit you completed today" },
-            { step: "3", text: "Log your water as you drink throughout the day" },
-            { step: "4", text: "Watch your score fill up and your streak grow" },
-            { step: "5", text: "That's it! Come back tomorrow and do it again." },
+            { step: "1", text: "Open the app — your Today screen shows everything" },
+            { step: "2", text: "Tap each habit you completed" },
+            { step: "3", text: "Check your Apple Health stats and log water" },
+            { step: "4", text: "Watch your score and streak grow" },
+            { step: "5", text: "Use breathwork, focus timer, or movement when you need a boost" },
+            { step: "6", text: "That's it! Come back tomorrow and do it again." },
           ].map(({ step, text }) => (
             <div key={step} className="flex items-center gap-3">
               <div className="shrink-0 flex items-center justify-center rounded-full font-bold"
