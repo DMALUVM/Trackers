@@ -5,12 +5,11 @@ import { ChevronLeft, Play, Pause, RotateCcw, Lock, Crown, Volume2, VolumeX } fr
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
+import { logSession } from "@/lib/sessionLog";
 
-// ── Om Drone Audio Engine ──
-// Generates smooth, sustained Om-like drones using layered harmonics.
-// Each tone lasts the full phase duration with a gentle fade-out in the final 25%.
-// No vibrato or pulsing — pure smooth sustained sound.
-// Rendered as WAV blobs, played via HTMLAudioElement for iOS reliability.
+// ═══════════════════════════════════════════════
+// Om Drone Audio Engine
+// ═══════════════════════════════════════════════
 
 function writeStr(v: DataView, o: number, s: string) {
   for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i));
@@ -39,194 +38,105 @@ function samplesToWav(samples: Float64Array, sr: number): string {
   return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
 }
 
-/**
- * Generate a smooth Om drone.
- * - Fades in over 0.3s
- * - Sustains at full volume
- * - Last 25% of duration gently fades to silence
- */
 function makeOmDrone(
-  fundamental: number,
-  duration: number,
-  volume: number,
+  fundamental: number, duration: number, volume: number,
   harmonics: Array<{ ratio: number; amp: number }>,
 ): string {
   const sr = 44100;
   const n = Math.floor(sr * duration);
   const raw = new Float64Array(n);
-
   for (let i = 0; i < n; i++) {
     const t = i / sr;
-
-    // Smooth envelope: 0.3s fade-in → sustain → last 25% fades out
     const fadeIn = Math.min(t / 0.3, 1);
     const fadeOutStart = duration * 0.75;
-    const fadeOut = t > fadeOutStart
-      ? Math.max(0, 1 - ((t - fadeOutStart) / (duration - fadeOutStart)))
-      : 1;
-    // Smooth the fade-out curve (ease-out)
+    const fadeOut = t > fadeOutStart ? Math.max(0, 1 - ((t - fadeOutStart) / (duration - fadeOutStart))) : 1;
     const env = fadeIn * (fadeOut * fadeOut);
-
     let val = 0;
-    for (const h of harmonics) {
-      val += Math.sin(2 * Math.PI * fundamental * h.ratio * t) * h.amp;
-    }
+    for (const h of harmonics) val += Math.sin(2 * Math.PI * fundamental * h.ratio * t) * h.amp;
     raw[i] = val * env;
   }
-
-  // Normalize to target volume
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
-  if (peak > 0) {
-    const norm = volume / peak;
-    for (let i = 0; i < n; i++) raw[i] *= norm;
-  }
-
+  if (peak > 0) { const norm = volume / peak; for (let i = 0; i < n; i++) raw[i] *= norm; }
   return samplesToWav(raw, sr);
 }
 
-/** Completion: three Om tones cascading into a warm chord that slowly fades */
 function makeCompletionUrl(): string {
-  const sr = 44100;
-  const dur = 5.0;
-  const n = Math.floor(sr * dur);
+  const sr = 44100; const dur = 5.0; const n = Math.floor(sr * dur);
   const raw = new Float64Array(n);
-
   const voices = [
-    { fund: 130, delay: 0,   vol: 0.30 }, // C3
-    { fund: 164, delay: 0.8, vol: 0.25 }, // E3
-    { fund: 196, delay: 1.6, vol: 0.22 }, // G3
+    { fund: 130, delay: 0, vol: 0.30 },
+    { fund: 164, delay: 0.8, vol: 0.25 },
+    { fund: 196, delay: 1.6, vol: 0.22 },
   ];
-
-  const harmonics = [
-    { ratio: 1.0, amp: 1.0 },
-    { ratio: 2.0, amp: 0.4 },
-    { ratio: 3.0, amp: 0.15 },
-    { ratio: 0.5, amp: 0.25 },
-  ];
-
+  const harmonics = [{ ratio: 1.0, amp: 1.0 }, { ratio: 2.0, amp: 0.4 }, { ratio: 3.0, amp: 0.15 }, { ratio: 0.5, amp: 0.25 }];
   for (let i = 0; i < n; i++) {
-    const t = i / sr;
-    let val = 0;
+    const t = i / sr; let val = 0;
     for (const voice of voices) {
       if (t < voice.delay) continue;
-      const vt = t - voice.delay;
-      const remaining = dur - voice.delay;
-      // Fade in 0.4s, sustain, fade out last 30%
+      const vt = t - voice.delay; const remaining = dur - voice.delay;
       const fadeIn = Math.min(vt / 0.4, 1);
       const fadeOutStart = remaining * 0.7;
-      const fadeOut = vt > fadeOutStart
-        ? Math.max(0, 1 - ((vt - fadeOutStart) / (remaining - fadeOutStart)))
-        : 1;
+      const fadeOut = vt > fadeOutStart ? Math.max(0, 1 - ((vt - fadeOutStart) / (remaining - fadeOutStart))) : 1;
       const env = fadeIn * (fadeOut * fadeOut);
-
-      for (const h of harmonics) {
-        val += Math.sin(2 * Math.PI * voice.fund * h.ratio * vt) * h.amp * env * voice.vol;
-      }
+      for (const h of harmonics) val += Math.sin(2 * Math.PI * voice.fund * h.ratio * vt) * h.amp * env * voice.vol;
     }
     raw[i] = val;
   }
-
   let peak = 0;
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(raw[i]));
-  if (peak > 0) {
-    const norm = 0.45 / peak;
-    for (let i = 0; i < n; i++) raw[i] *= norm;
-  }
-
+  if (peak > 0) { const norm = 0.45 / peak; for (let i = 0; i < n; i++) raw[i] *= norm; }
   return samplesToWav(raw, sr);
 }
 
-// Om harmonic profiles for each phase type
 const INHALE_HARMONICS = [
-  { ratio: 1.0, amp: 1.0 },   // fundamental
-  { ratio: 2.0, amp: 0.45 },  // octave
-  { ratio: 3.0, amp: 0.2 },   // 5th above octave
-  { ratio: 4.0, amp: 0.08 },  // 2nd octave
-  { ratio: 0.5, amp: 0.25 },  // sub-octave for depth
+  { ratio: 1.0, amp: 1.0 }, { ratio: 2.0, amp: 0.45 }, { ratio: 3.0, amp: 0.2 },
+  { ratio: 4.0, amp: 0.08 }, { ratio: 0.5, amp: 0.25 },
 ];
-
 const EXHALE_HARMONICS = [
-  { ratio: 1.0, amp: 1.0 },
-  { ratio: 2.0, amp: 0.35 },
-  { ratio: 3.0, amp: 0.12 },
-  { ratio: 0.5, amp: 0.4 },   // stronger sub for deeper feel
-  { ratio: 1.5, amp: 0.15 },  // perfect 5th — adds warmth
+  { ratio: 1.0, amp: 1.0 }, { ratio: 2.0, amp: 0.35 }, { ratio: 3.0, amp: 0.12 },
+  { ratio: 0.5, amp: 0.4 }, { ratio: 1.5, amp: 0.15 },
 ];
-
 const HOLD_HARMONICS = [
-  { ratio: 1.0, amp: 1.0 },
-  { ratio: 2.0, amp: 0.3 },
-  { ratio: 3.0, amp: 0.1 },
+  { ratio: 1.0, amp: 1.0 }, { ratio: 2.0, amp: 0.3 }, { ratio: 3.0, amp: 0.1 },
   { ratio: 0.5, amp: 0.2 },
 ];
 
-interface SoundSet {
-  /** Map of "phase_index" → blob URL, where tone duration matches phase seconds */
-  phases: Map<number, string>;
-  complete: string;
-}
-
 class BreathAudio {
-  private cache = new Map<string, SoundSet>();
+  private cache = new Map<string, { phases: Map<number, string>; complete: string }>();
   private completionUrl: string | null = null;
 
-  /** Pre-generate all tones for a technique (each phase gets its exact duration) */
   prepareTechnique(technique: { id: string; phases: Array<{ seconds: number; type: string }> }) {
     if (this.cache.has(technique.id)) return;
-
     const phases = new Map<number, string>();
     for (let i = 0; i < technique.phases.length; i++) {
       const p = technique.phases[i];
-      const dur = p.seconds;
-
-      if (p.type === "inhale") {
-        // C3 (130Hz) — bright, uplifting
-        phases.set(i, makeOmDrone(130, dur, 0.35, INHALE_HARMONICS));
-      } else if (p.type === "exhale") {
-        // G2 (98Hz) — deep, calming
-        phases.set(i, makeOmDrone(98, dur, 0.30, EXHALE_HARMONICS));
-      } else {
-        // A2 (110Hz) — neutral, gentle hold
-        phases.set(i, makeOmDrone(110, dur, 0.20, HOLD_HARMONICS));
-      }
+      if (p.type === "inhale") phases.set(i, makeOmDrone(130, p.seconds, 0.35, INHALE_HARMONICS));
+      else if (p.type === "exhale") phases.set(i, makeOmDrone(98, p.seconds, 0.30, EXHALE_HARMONICS));
+      else phases.set(i, makeOmDrone(110, p.seconds, 0.20, HOLD_HARMONICS));
     }
-
-    if (!this.completionUrl) {
-      this.completionUrl = makeCompletionUrl();
-    }
-
+    if (!this.completionUrl) this.completionUrl = makeCompletionUrl();
     this.cache.set(technique.id, { phases, complete: this.completionUrl });
   }
 
   playPhase(techniqueId: string, phaseIdx: number) {
-    const set = this.cache.get(techniqueId);
-    const url = set?.phases.get(phaseIdx);
+    const url = this.cache.get(techniqueId)?.phases.get(phaseIdx);
     if (!url) return;
-    try {
-      const a = new Audio(url);
-      a.volume = 1.0;
-      const p = a.play();
-      if (p) p.catch(() => {});
-    } catch { /* silent */ }
+    try { const a = new Audio(url); a.volume = 1.0; a.play().catch(() => {}); } catch {}
   }
 
   playComplete(techniqueId: string) {
-    const set = this.cache.get(techniqueId);
-    const url = set?.complete;
+    const url = this.cache.get(techniqueId)?.complete;
     if (!url) return;
-    try {
-      const a = new Audio(url);
-      a.volume = 1.0;
-      const p = a.play();
-      if (p) p.catch(() => {});
-    } catch { /* silent */ }
+    try { const a = new Audio(url); a.volume = 1.0; a.play().catch(() => {}); } catch {}
   }
 }
 
 const breathAudio = new BreathAudio();
 
-// ── Types ──
+// ═══════════════════════════════════════════════
+// Technique definitions
+// ═══════════════════════════════════════════════
 
 interface BreathPhase {
   label: string;
@@ -244,6 +154,9 @@ interface BreathTechnique {
   rounds: number;
   premium: boolean;
   benefits: string;
+  /** Optional post-rounds phase (e.g. Wim Hof retention hold) */
+  postPhases?: BreathPhase[];
+  postLabel?: string;
 }
 
 const TECHNIQUES: BreathTechnique[] = [
@@ -261,8 +174,8 @@ const TECHNIQUES: BreathTechnique[] = [
   },
   {
     id: "478", name: "4-7-8 Relaxation",
-    description: "Dr. Andrew Weil's natural tranquilizer for the nervous system.",
-    emoji: "🌙",
+    description: "Dr. Andrew Weil\u2019s natural tranquilizer for the nervous system.",
+    emoji: "\uD83C\uDF19",
     phases: [
       { label: "Breathe In", seconds: 4, color: "#3b82f6", type: "inhale" },
       { label: "Hold", seconds: 7, color: "#8b5cf6", type: "hold" },
@@ -272,29 +185,35 @@ const TECHNIQUES: BreathTechnique[] = [
   },
   {
     id: "wimhof", name: "Wim Hof Power Breath",
-    description: "30 rapid breaths followed by a retention hold. Energizing.",
-    emoji: "❄️",
+    description: "30 rapid breaths, then a deep retention hold. The original cold exposure method.",
+    emoji: "\u2744\uFE0F",
     phases: [
       { label: "In", seconds: 1.5, color: "#ef4444", type: "inhale" },
       { label: "Out", seconds: 1.5, color: "#f97316", type: "exhale" },
     ],
     rounds: 30, premium: true, benefits: "Boosts energy, strengthens immune system",
+    postPhases: [
+      { label: "Let Go", seconds: 3, color: "#06b6d4", type: "exhale" },
+      { label: "Retention Hold", seconds: 60, color: "#8b5cf6", type: "hold" },
+      { label: "Recovery Breath", seconds: 15, color: "#3b82f6", type: "inhale" },
+    ],
+    postLabel: "Retention",
   },
   {
     id: "sigh", name: "Physiological Sigh",
     description: "Double inhale through nose, long exhale. Fastest way to calm down.",
-    emoji: "😮‍💨",
+    emoji: "\uD83D\uDE2E\u200D\uD83D\uDCA8",
     phases: [
       { label: "Breathe In", seconds: 2, color: "#3b82f6", type: "inhale" },
       { label: "Sip In", seconds: 1, color: "#6366f1", type: "inhale" },
       { label: "Long Exhale", seconds: 6, color: "#06b6d4", type: "exhale" },
     ],
-    rounds: 5, premium: true, benefits: "Instant calm, reduces CO2",
+    rounds: 5, premium: true, benefits: "Instant calm, reduces CO\u2082",
   },
   {
     id: "energize", name: "Energizing Breath",
     description: "Quick rhythmic breathing to wake up body and mind.",
-    emoji: "⚡",
+    emoji: "\u26A1",
     phases: [
       { label: "Sharp In", seconds: 1, color: "#f59e0b", type: "inhale" },
       { label: "Sharp Out", seconds: 1, color: "#ef4444", type: "exhale" },
@@ -303,36 +222,42 @@ const TECHNIQUES: BreathTechnique[] = [
   },
 ];
 
-// ── Circle ──
+// ═══════════════════════════════════════════════
+// Breathing Circle
+// ═══════════════════════════════════════════════
 
 function BreathingCircle({ progress, label, color, secondsLeft, isActive }: {
   progress: number; label: string; color: string; secondsLeft: number; isActive: boolean;
 }) {
   const isInhale = label.toLowerCase().includes("in") || label.toLowerCase().includes("sip");
-  const isExhale = label.toLowerCase().includes("out") || label.toLowerCase().includes("exhale");
+  const isExhale = label.toLowerCase().includes("out") || label.toLowerCase().includes("exhale") || label.toLowerCase().includes("let go");
   const minScale = 0.45;
   const maxScale = 1;
   const scale = isInhale ? minScale + (maxScale - minScale) * progress
     : isExhale ? maxScale - (maxScale - minScale) * progress
-    : maxScale;
+    : maxScale; // hold: stay expanded
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 300, height: 300 }}>
+    <div className="relative flex items-center justify-center" style={{ width: 280, height: 280 }}>
+      {/* Outer glow pulse */}
       <div className="absolute rounded-full" style={{
-        width: 300, height: 300,
-        background: `radial-gradient(circle, ${color}15 0%, transparent 70%)`,
-        transform: `scale(${scale})`, transition: "transform 0.2s ease-out",
+        width: 280, height: 280,
+        background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
+        transform: `scale(${scale})`,
+        transition: "transform 0.15s linear",
       }} />
+      {/* Main circle */}
       <div className="absolute rounded-full flex items-center justify-center" style={{
-        width: 240, height: 240,
+        width: 220, height: 220,
         background: `radial-gradient(circle at 30% 30%, ${color}35, ${color}10)`,
         border: `3px solid ${color}50`,
-        transform: `scale(${scale})`, transition: "transform 0.2s ease-out",
+        transform: `scale(${scale})`,
+        transition: "transform 0.15s linear",
         boxShadow: isActive ? `0 0 60px ${color}25, inset 0 0 30px ${color}08` : "none",
       }}>
         <div className="text-center">
-          <p className="text-3xl font-black tracking-tight" style={{ color }}>{label}</p>
-          <p className="text-5xl font-bold mt-2 tabular-nums" style={{ color: "var(--text-primary)" }}>
+          <p className="text-2xl font-black tracking-tight" style={{ color }}>{label}</p>
+          <p className="text-5xl font-bold mt-1 tabular-nums" style={{ color: "var(--text-primary)" }}>
             {Math.ceil(secondsLeft)}
           </p>
         </div>
@@ -341,30 +266,96 @@ function BreathingCircle({ progress, label, color, secondsLeft, isActive }: {
   );
 }
 
-// ── Session ──
+// ═══════════════════════════════════════════════
+// Get Ready Countdown (3-2-1)
+// ═══════════════════════════════════════════════
+
+function GetReadyCountdown({ onDone, technique }: { onDone: () => void; technique: BreathTechnique }) {
+  const [count, setCount] = useState(3);
+
+  useEffect(() => {
+    if (count <= 0) { onDone(); return; }
+    const t = setTimeout(() => {
+      hapticLight();
+      setCount((c) => c - 1);
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [count, onDone]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
+      <p className="text-sm font-bold mb-4" style={{ color: "var(--text-faint)" }}>{technique.name}</p>
+      <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
+        <div className="absolute rounded-full" style={{
+          width: 200, height: 200,
+          background: `radial-gradient(circle, ${technique.phases[0].color}20, transparent 70%)`,
+          animation: "pulse 1s ease-in-out infinite",
+        }} />
+        <div className="text-8xl font-black tabular-nums" style={{
+          color: count > 0 ? "var(--text-primary)" : "var(--accent-green)",
+          animation: "breathScale 1s ease-in-out",
+        }}>
+          {count > 0 ? count : "Go"}
+        </div>
+      </div>
+      <p className="mt-6 text-base" style={{ color: "var(--text-muted)" }}>
+        {count > 0 ? "Get ready\u2026" : "Begin breathing"}
+      </p>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// Elapsed time formatter
+// ═══════════════════════════════════════════════
+
+function fmtElapsed(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+// ═══════════════════════════════════════════════
+// Breath Session
+// ═══════════════════════════════════════════════
 
 function BreathSession({ technique, onClose }: { technique: BreathTechnique; onClose: () => void }) {
-  const [isRunning, setIsRunning] = useState(false);
+  const [phase, setPhase] = useState<"countdown" | "breathing" | "post" | "done">("countdown");
   const [soundOn, setSoundOn] = useState(true);
   const [currentRound, setCurrentRound] = useState(0);
   const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
   const [phaseProgress, setPhaseProgress] = useState(0);
   const [timeInPhase, setTimeInPhase] = useState(0);
-  const [completed, setCompleted] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [postPhaseIdx, setPostPhaseIdx] = useState(0);
+  const [isRunning, setIsRunning] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastPhaseRef = useRef<string>("");
+  const startTimeRef = useRef<number>(0);
 
-  const phase = technique.phases[currentPhaseIdx];
-  const totalPhaseTime = phase.seconds;
+  const isPost = phase === "post";
+  const activePhases = isPost ? (technique.postPhases ?? []) : technique.phases;
+  const activeIdx = isPost ? postPhaseIdx : currentPhaseIdx;
+  const currentPhase = activePhases[activeIdx];
+  const totalPhaseTime = currentPhase?.seconds ?? 1;
 
-  // Play the Om drone for each new phase
+  // Play Om drone for each new phase
   useEffect(() => {
-    if (!isRunning || !soundOn) return;
-    const key = `${currentRound}-${currentPhaseIdx}`;
+    if ((phase !== "breathing" && phase !== "post") || !soundOn) return;
+    const key = `${isPost ? "post" : currentRound}-${activeIdx}`;
     if (lastPhaseRef.current === key) return;
     lastPhaseRef.current = key;
-    breathAudio.playPhase(technique.id, currentPhaseIdx);
-  }, [currentPhaseIdx, currentRound, isRunning, soundOn, technique.id]);
+    breathAudio.playPhase(technique.id, activeIdx % technique.phases.length);
+  }, [activeIdx, currentRound, phase, soundOn, technique.id, technique.phases.length, isPost]);
+
+  // Track elapsed time
+  useEffect(() => {
+    if (phase !== "breathing" && phase !== "post") return;
+    const t = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [phase]);
 
   const tick = useCallback(() => {
     setTimeInPhase((prev) => {
@@ -372,14 +363,36 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
       setPhaseProgress(Math.min(next / totalPhaseTime, 1));
       if (next >= totalPhaseTime) {
         hapticLight();
+
+        if (isPost) {
+          // Advance post phases
+          const nextPI = postPhaseIdx + 1;
+          if (nextPI >= (technique.postPhases?.length ?? 0)) {
+            // Post phases done → complete
+            hapticHeavy();
+            if (soundOn) breathAudio.playComplete(technique.id);
+            setPhase("done");
+            return 0;
+          }
+          setPostPhaseIdx(nextPI);
+          return 0;
+        }
+
+        // Normal breathing phases
         const nextPI = currentPhaseIdx + 1;
         if (nextPI >= technique.phases.length) {
           const nextR = currentRound + 1;
           if (nextR >= technique.rounds) {
+            // All rounds done — check for post phases (Wim Hof retention)
+            if (technique.postPhases && technique.postPhases.length > 0) {
+              hapticMedium();
+              setPhase("post");
+              setPostPhaseIdx(0);
+              return 0;
+            }
             hapticHeavy();
             if (soundOn) breathAudio.playComplete(technique.id);
-            setCompleted(true);
-            setIsRunning(false);
+            setPhase("done");
             return 0;
           }
           setCurrentRound(nextR);
@@ -391,50 +404,97 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
       }
       return next;
     });
-  }, [currentPhaseIdx, currentRound, technique, totalPhaseTime, soundOn]);
+  }, [currentPhaseIdx, currentRound, technique, totalPhaseTime, soundOn, isPost, postPhaseIdx]);
 
   useEffect(() => {
-    if (isRunning) {
+    if (isRunning && (phase === "breathing" || phase === "post")) {
       intervalRef.current = setInterval(tick, 50);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, tick]);
+  }, [phase, tick, isRunning]);
 
-  // Start: pre-generate tones (sync, in gesture context) then play first phase
-  const start = () => {
-    hapticMedium();
+  const startBreathing = useCallback(() => {
     breathAudio.prepareTechnique(technique);
     if (soundOn) {
       breathAudio.playPhase(technique.id, 0);
       lastPhaseRef.current = "0-0";
     }
-    setIsRunning(true);
-  };
+    startTimeRef.current = Date.now();
+    setPhase("breathing");
+  }, [technique, soundOn]);
 
-  const resume = () => { hapticMedium(); setIsRunning(true); };
   const pause = () => { hapticMedium(); setIsRunning(false); };
-  const hasStarted = currentRound > 0 || currentPhaseIdx > 0 || timeInPhase > 0;
+  const resume = () => { hapticMedium(); setIsRunning(true); };
+
+  // Log session once when reaching "done"
+  const loggedRef = useRef(false);
+  useEffect(() => {
+    if (phase === "done" && !loggedRef.current) {
+      loggedRef.current = true;
+      const totalBreathTime = technique.phases.reduce((s, p) => s + p.seconds, 0) * technique.rounds
+        + (technique.postPhases?.reduce((s, p) => s + p.seconds, 0) ?? 0);
+      logSession({ module: "breathwork", name: technique.name, minutes: Math.max(1, Math.round(totalBreathTime / 60)) });
+    }
+    if (phase === "countdown") loggedRef.current = false;
+  }, [phase, technique]);
+
   const reset = () => {
     hapticLight();
-    setIsRunning(false);
-    setCurrentRound(0);
-    setCurrentPhaseIdx(0);
-    setPhaseProgress(0);
-    setTimeInPhase(0);
-    setCompleted(false);
+    setPhase("countdown");
+    setCurrentRound(0); setCurrentPhaseIdx(0); setPostPhaseIdx(0);
+    setPhaseProgress(0); setTimeInPhase(0); setElapsedSeconds(0);
+    setIsRunning(true);
     lastPhaseRef.current = "";
   };
 
-  if (completed) {
-    const totalTime = technique.phases.reduce((s, p) => s + p.seconds, 0) * technique.rounds;
+  // ── Countdown ──
+  if (phase === "countdown") {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-2 px-1">
+          <button type="button" onClick={onClose} className="tap-btn rounded-full flex items-center justify-center" style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+            <ChevronLeft size={20} style={{ color: "var(--text-muted)" }} />
+          </button>
+          <span />
+          <button type="button" onClick={() => { hapticLight(); setSoundOn((s) => !s); }} className="tap-btn rounded-full flex items-center justify-center" style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+            {soundOn ? <Volume2 size={18} style={{ color: "var(--text-muted)" }} /> : <VolumeX size={18} style={{ color: "var(--text-faint)" }} />}
+          </button>
+        </div>
+        <GetReadyCountdown technique={technique} onDone={startBreathing} />
+      </div>
+    );
+  }
+
+  // ── Completion ──
+  if (phase === "done") {
+    const totalTime = elapsedSeconds;
+    const totalBreaths = technique.rounds * technique.phases.filter((p) => p.type === "inhale").length;
+    const minutes = Math.round(totalTime / 60);
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6">
         <div className="text-6xl mb-6">🧘</div>
         <h2 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>Complete</h2>
         <p className="text-lg mb-1" style={{ color: "var(--text-muted)" }}>{technique.name}</p>
-        <p className="text-sm mb-8" style={{ color: "var(--text-faint)" }}>{technique.rounds} rounds · {Math.round(totalTime / 60)} min</p>
+
+        {/* Session stats */}
+        <div className="flex gap-6 mt-4 mb-8">
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--accent-green-text)" }}>{fmtElapsed(totalTime)}</p>
+            <p className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>Duration</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--accent-green-text)" }}>{technique.rounds}</p>
+            <p className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>Rounds</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--accent-green-text)" }}>{totalBreaths}</p>
+            <p className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>Breaths</p>
+          </div>
+        </div>
+
         <div className="flex gap-3">
           <button type="button" onClick={reset} className="px-6 py-3.5 rounded-2xl text-base font-bold"
             style={{ background: "var(--bg-card)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}>Repeat</button>
@@ -445,42 +505,73 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
     );
   }
 
+  // ── Active Session ──
+  const roundLabel = isPost
+    ? technique.postLabel ?? "Retention"
+    : `${currentRound + 1} / ${technique.rounds}`;
+
+  // Determine which dots to show
+  const dotCount = isPost ? (technique.postPhases?.length ?? 0) : Math.min(technique.rounds, 30);
+  const dotActiveIdx = isPost ? postPhaseIdx : currentRound;
+  const dotCompare = isPost ? postPhaseIdx : currentRound;
+
   return (
     <div className="flex flex-col items-center min-h-[80vh]">
-      <div className="w-full flex items-center justify-between mb-2 px-1"
-        style={{ position: "relative", zIndex: 50 }}>
-        <button type="button" onClick={onClose}
-          className="tap-btn rounded-full flex items-center justify-center"
-          style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+      {/* Top bar */}
+      <div className="w-full flex items-center justify-between mb-2 px-1" style={{ position: "relative", zIndex: 50 }}>
+        <button type="button" onClick={onClose} className="tap-btn rounded-full flex items-center justify-center" style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           <ChevronLeft size={20} style={{ color: "var(--text-muted)" }} />
         </button>
-        <p className="text-sm font-bold" style={{ color: "var(--text-faint)" }}>{technique.name}</p>
-        <button type="button"
-          onClick={() => { hapticLight(); setSoundOn(s => !s); }}
-          className="tap-btn rounded-full flex items-center justify-center"
-          style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+        <div className="text-center">
+          <p className="text-xs font-bold" style={{ color: "var(--text-faint)" }}>{technique.name}</p>
+          <p className="text-[10px] tabular-nums font-semibold" style={{ color: "var(--text-faint)" }}>{fmtElapsed(elapsedSeconds)}</p>
+        </div>
+        <button type="button" onClick={() => { hapticLight(); setSoundOn((s) => !s); }} className="tap-btn rounded-full flex items-center justify-center" style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           {soundOn ? <Volume2 size={18} style={{ color: "var(--text-muted)" }} /> : <VolumeX size={18} style={{ color: "var(--text-faint)" }} />}
         </button>
       </div>
 
+      {/* Post-phase label */}
+      {isPost && (
+        <div className="rounded-full px-4 py-1.5 mb-2" style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
+          <p className="text-xs font-bold" style={{ color: "#a78bfa" }}>Retention Phase</p>
+        </div>
+      )}
+
+      {/* Circle */}
       <div className="flex-1 flex items-center justify-center">
-        <BreathingCircle secondsLeft={totalPhaseTime - timeInPhase} progress={phaseProgress} label={phase.label} color={phase.color} isActive={isRunning} />
+        <BreathingCircle
+          secondsLeft={totalPhaseTime - timeInPhase}
+          progress={phaseProgress}
+          label={currentPhase.label}
+          color={currentPhase.color}
+          isActive={isRunning}
+        />
       </div>
 
-      <p className="text-lg font-bold tabular-nums mb-4" style={{ color: "var(--text-faint)" }}>{currentRound + 1} / {technique.rounds}</p>
+      {/* Round indicator */}
+      <p className="text-lg font-bold tabular-nums mb-3" style={{ color: "var(--text-faint)" }}>{roundLabel}</p>
 
-      <div className="flex gap-2 mb-6 flex-wrap justify-center max-w-[240px]">
-        {Array.from({ length: Math.min(technique.rounds, 30) }).map((_, i) => (
-          <div key={i} className="rounded-full" style={{ width: 10, height: 10,
-            background: i < currentRound ? "var(--accent-green)" : i === currentRound ? phase.color : "var(--bg-card-hover)", transition: "background 0.3s" }} />
-        ))}
-      </div>
+      {/* Progress dots */}
+      {dotCount <= 30 && (
+        <div className="flex gap-1.5 mb-5 flex-wrap justify-center max-w-[260px]">
+          {Array.from({ length: dotCount }).map((_, i) => (
+            <div key={i} className="rounded-full" style={{
+              width: dotCount > 15 ? 8 : 10,
+              height: dotCount > 15 ? 8 : 10,
+              background: i < dotCompare ? "var(--accent-green)" : i === dotActiveIdx ? currentPhase.color : "var(--bg-card-hover)",
+              transition: "background 0.3s",
+            }} />
+          ))}
+        </div>
+      )}
 
+      {/* Controls */}
       <div className="flex items-center gap-5 pb-8">
         <button type="button" onClick={reset} className="rounded-full p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           <RotateCcw size={22} style={{ color: "var(--text-muted)" }} />
         </button>
-        <button type="button" onClick={isRunning ? pause : (hasStarted ? resume : start)}
+        <button type="button" onClick={isRunning ? pause : resume}
           className="rounded-full p-6" style={{
             background: isRunning ? "rgba(239,68,68,0.15)" : "var(--accent-green)",
             boxShadow: isRunning ? "none" : "0 4px 30px rgba(16,185,129,0.35)",
@@ -493,7 +584,9 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
   );
 }
 
-// ── Main Page ──
+// ═══════════════════════════════════════════════
+// Technique List
+// ═══════════════════════════════════════════════
 
 export default function BreathworkPage() {
   const { isPremium } = usePremium();
@@ -516,7 +609,8 @@ export default function BreathworkPage() {
       <div className="space-y-3">
         {TECHNIQUES.map((t) => {
           const locked = t.premium && !isPremium;
-          const totalTime = t.phases.reduce((s, p) => s + p.seconds, 0) * t.rounds;
+          const totalTime = t.phases.reduce((s, p) => s + p.seconds, 0) * t.rounds
+            + (t.postPhases?.reduce((s, p) => s + p.seconds, 0) ?? 0);
           const minutes = Math.round(totalTime / 60);
           return (
             <button key={t.id} type="button"
@@ -537,6 +631,11 @@ export default function BreathworkPage() {
                     <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
                       🕉️ Om drones
                     </span>
+                    {t.postPhases && (
+                      <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}>
+                        + retention
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs mt-2" style={{ color: "var(--text-faint)" }}>{t.benefits}</p>
                 </div>

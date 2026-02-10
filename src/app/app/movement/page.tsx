@@ -6,6 +6,7 @@ import { ChevronLeft, Play, Pause, SkipForward, RotateCcw, Lock } from "lucide-r
 import Link from "next/link";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
+import { logSession } from "@/lib/sessionLog";
 
 interface MovementStep {
   name: string;
@@ -161,6 +162,8 @@ function MovementSession({
     hapticMedium();
     if (currentStep + 1 >= routine.steps.length) {
       hapticHeavy();
+      const totalSec = routine.steps.reduce((s, st) => s + st.seconds, 0);
+      logSession({ module: "movement", name: routine.name, minutes: Math.max(1, Math.round(totalSec / 60)) });
       setCompleted(true);
       setIsRunning(false);
       return;

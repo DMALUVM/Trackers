@@ -444,3 +444,10 @@ input:focus, textarea:focus {
 /* Scrollbar hide for horizontal strips */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Breathwork countdown number scale */
+@keyframes breathScale {
+  0% { transform: scale(0.6); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}

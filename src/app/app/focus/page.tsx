@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, Play, Pause, RotateCcw, Coffee, Brain } from "lucide-react";
 import Link from "next/link";
 import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
+import { logSession } from "@/lib/sessionLog";
 
 interface FocusMode {
   id: string;
@@ -43,6 +44,7 @@ export default function FocusPage() {
       if (nextRound >= selectedMode.rounds) {
         setPhase("done");
         setIsRunning(false);
+        logSession({ module: "focus", name: selectedMode.name, minutes: Math.max(1, Math.round(totalFocusSeconds / 60)) });
         return;
       }
       setPhase("break");
@@ -52,7 +54,7 @@ export default function FocusPage() {
       setPhase("work");
       setTimeLeft(selectedMode.work * 60);
     }
-  }, [phase, currentRound, selectedMode]);
+  }, [phase, currentRound, selectedMode, totalFocusSeconds]);
 
   useEffect(() => {
     if (isRunning) {

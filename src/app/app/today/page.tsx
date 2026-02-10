@@ -38,6 +38,7 @@ import Link from "next/link";
 import { updateWidgetData } from "@/lib/widgetData";
 import { checkAutoComplete } from "@/lib/healthAutoComplete";
 import { usePremium } from "@/lib/premium";
+import { todayModuleStatus, getTodaySessions, type ModuleKey } from "@/lib/sessionLog";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
@@ -110,6 +111,16 @@ export default function TodayPage() {
     try { setQuickActionsHidden(localStorage.getItem("routines365:quickActions:hidden") === "1"); } catch {}
     try { setSmartTipsHidden(localStorage.getItem("routines365:smartTips:hidden") === "1"); } catch {}
   }, []);
+
+  // Module completion badges (breathwork, movement, focus)
+  const [moduleDone, setModuleDone] = useState<Record<ModuleKey, boolean>>({ breathwork: false, movement: false, focus: false });
+  useEffect(() => {
+    setModuleDone(todayModuleStatus());
+    const handler = () => setModuleDone(todayModuleStatus());
+    window.addEventListener("routines365:sessionComplete", handler);
+    return () => window.removeEventListener("routines365:sessionComplete", handler);
+  }, []);
+  const anyModuleDone = moduleDone.breathwork || moduleDone.movement || moduleDone.focus;
 
   // Clear notification badge when app opens
   useEffect(() => {
@@ -611,25 +622,53 @@ export default function TodayPage() {
 
       {/* Quick Actions */}
       {!quickActionsHidden && (
-        <div className="grid grid-cols-3 gap-2">
-          <Link href="/app/breathwork" onClick={() => hapticLight()}
-            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-            <Wind size={20} className="mx-auto mb-1" style={{ color: "#6366f1" }} />
-            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Breathwork</p>
-          </Link>
-          <Link href="/app/movement" onClick={() => hapticLight()}
-            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-            <Dumbbell size={20} className="mx-auto mb-1" style={{ color: "#10b981" }} />
-            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Movement</p>
-          </Link>
-          <Link href="/app/focus" onClick={() => hapticLight()}
-            className="rounded-2xl p-3 text-center transition-all active:scale-[0.97]"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
-            <Brain size={20} className="mx-auto mb-1" style={{ color: "#3b82f6" }} />
-            <p className="text-[10px] font-bold" style={{ color: "var(--text-muted)" }}>Focus</p>
-          </Link>
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { href: "/app/breathwork", icon: Wind, label: "Breathwork", color: "#6366f1", key: "breathwork" as ModuleKey },
+              { href: "/app/movement", icon: Dumbbell, label: "Movement", color: "#10b981", key: "movement" as ModuleKey },
+              { href: "/app/focus", icon: Brain, label: "Focus", color: "#3b82f6", key: "focus" as ModuleKey },
+            ]).map(({ href, icon: Icon, label, color, key }) => {
+              const done = moduleDone[key];
+              return (
+                <Link key={key} href={href} onClick={() => hapticLight()}
+                  className="rounded-2xl p-3 text-center transition-all active:scale-[0.97] relative"
+                  style={{
+                    background: done ? `${color}12` : "var(--bg-card)",
+                    border: done ? `1.5px solid ${color}40` : "1px solid var(--border-primary)",
+                    textDecoration: "none",
+                  }}>
+                  {done && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                      style={{ background: color, boxShadow: `0 2px 8px ${color}60` }}>
+                      <span className="text-[9px] font-bold text-white">✓</span>
+                    </div>
+                  )}
+                  <Icon size={20} className="mx-auto mb-1" style={{ color }} />
+                  <p className="text-[10px] font-bold" style={{ color: done ? color : "var(--text-muted)" }}>{label}</p>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Session summary strip — shows when at least one module completed today */}
+          {anyModuleDone && (
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              <span className="text-sm">⚡</span>
+              <p className="text-[11px] font-semibold flex-1" style={{ color: "var(--text-muted)" }}>
+                Today&apos;s sessions:{" "}
+                {getTodaySessions().map((s, i) => (
+                  <span key={i}>
+                    {i > 0 && " · "}
+                    <span style={{ color: s.module === "breathwork" ? "#6366f1" : s.module === "movement" ? "#10b981" : "#3b82f6" }}>
+                      {s.name} ({s.minutes}m)
+                    </span>
+                  </span>
+                ))}
+              </p>
+            </div>
+          )}
         </div>
       )}
 
