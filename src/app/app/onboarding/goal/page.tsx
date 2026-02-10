@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { listRoutineItems } from "@/lib/supabaseData";
 import { hapticMedium } from "@/lib/haptics";
+import { OnboardingProgress } from "@/app/app/_components/ui/OnboardingProgress";
 
 type Goal = "energy" | "fitness" | "focus" | "sleep";
 
@@ -34,13 +35,7 @@ export default function OnboardingGoalPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
-      </div>
+      <OnboardingProgress current={1} />
 
       <header className="text-center space-y-2">
         <h1 className="text-2xl font-black tracking-tight" style={{ color: "var(--text-primary)" }}>

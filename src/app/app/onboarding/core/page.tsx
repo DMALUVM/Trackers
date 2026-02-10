@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
+import { OnboardingProgress } from "@/app/app/_components/ui/OnboardingProgress";
 
 const LS_KEY = "routines365:onboarding:templateId";
 const LS_CORE_KEY = "routines365:onboarding:coreIds";
@@ -48,13 +49,7 @@ export default function OnboardingCorePage() {
 
   return (
     <div className="space-y-5">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
-      </div>
+      <OnboardingProgress current={3} />
 
       <header>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Choose your CORE</h1>

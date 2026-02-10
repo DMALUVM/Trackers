@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { templatePacks, type OnboardingGoal } from "@/lib/templates";
 import { createRoutineItemsBulk, listRoutineItems, setEnabledModules } from "@/lib/supabaseData";
 import { hapticMedium, hapticLight } from "@/lib/haptics";
+import { OnboardingProgress } from "@/app/app/_components/ui/OnboardingProgress";
 
 export default function TemplatePickerPage() {
   const router = useRouter();
@@ -98,13 +99,7 @@ export default function TemplatePickerPage() {
 
   return (
     <div className="space-y-5">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)", opacity: 0.5 }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--accent-green)" }} />
-        <div className="h-1 flex-1 rounded-full" style={{ background: "var(--bg-card-hover)" }} />
-      </div>
+      <OnboardingProgress current={2} />
 
       <header>
         <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>Templates</h1>

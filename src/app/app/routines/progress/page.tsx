@@ -209,6 +209,26 @@ export default function RoutinesProgressPage() {
         </div>
       </section>
 
+      {/* ── NEW USER ENCOURAGEMENT ── */}
+      {!loading && !streaks.loading && streaks.totalGreenDays === 0 && (
+        <section className="rounded-2xl p-5 text-center"
+          style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+          <p className="text-3xl mb-2">🌱</p>
+          <p className="text-base font-bold" style={{ color: "var(--accent-green-text)" }}>
+            Your journey starts today
+          </p>
+          <p className="text-sm mt-1.5 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Complete all your core habits to earn your first green day. The calendar will fill up as you build consistency.
+          </p>
+          <Link href="/app/today"
+            className="inline-flex items-center gap-2 mt-3 rounded-xl px-5 py-2.5 text-sm font-bold transition-all active:scale-[0.98]"
+            style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}
+            onClick={() => hapticLight()}>
+            Go to Today →
+          </Link>
+        </section>
+      )}
+
       {/* ── STREAKS ── */}
       {!streaks.loading && (
         <section>
