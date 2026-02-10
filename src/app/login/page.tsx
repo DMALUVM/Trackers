@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { clearSessionCookies } from "@/lib/sessionCookie";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 
@@ -20,18 +19,16 @@ export default function LoginPage() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [checking, setChecking] = useState(true);
 
-  /* ── Redirect if already signed in ── */
+  /* ── Redirect if already signed in (silent, non-blocking) ── */
   useEffect(() => {
-    if (!hasSessionCookie()) { setChecking(false); return; }
+    if (!hasSessionCookie()) return;
     let cancelled = false;
     const check = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (!cancelled && data.session) { router.replace("/app/today"); return; }
+        if (!cancelled && data.session) router.replace("/app/today");
       } catch {}
-      if (!cancelled) setChecking(false);
     };
     void check();
     return () => { cancelled = true; };
@@ -95,21 +92,6 @@ export default function LoginPage() {
       setBusy(false);
     }
   };
-
-  if (checking) {
-    return (
-      <div className="min-h-dvh bg-black flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <BrandIcon size={56} />
-          <div className="flex items-center justify-center gap-2">
-            {[0, 0.15, 0.3].map(d => (
-              <div key={d} className="h-1.5 w-1.5 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: `${d}s` }} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-dvh bg-black text-white flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>

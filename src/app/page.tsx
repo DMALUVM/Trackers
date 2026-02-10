@@ -126,7 +126,7 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative pt-24 sm:pt-28 pb-10 px-4 sm:px-6">
+      <section className="relative pt-20 sm:pt-24 pb-6 px-4 sm:px-6">
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-[0.07]"
@@ -260,7 +260,7 @@ export default function Home() {
       <section className="py-8 sm:py-10 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Reveal>
-            <div className="text-center mb-6 sm:mb-8">
+            <div className="text-center mb-6 sm:mb-6">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 See it in action
               </h2>
@@ -277,7 +277,7 @@ export default function Home() {
               <div className="snap-center shrink-0"><MockProgress /></div>
               <div className="snap-center shrink-0"><MockSleep /></div>
             </ScrollCarousel>
-            <p className="text-center text-[11px] text-neutral-500 mt-3 lg:hidden">
+            <p className="text-center text-[11px] text-neutral-400 mt-3 lg:hidden">
               ← Swipe to explore →
             </p>
           </Reveal>
@@ -288,7 +288,7 @@ export default function Home() {
       <section className="py-8 sm:py-10 px-4 sm:px-6" style={{ background: "rgba(255,255,255,0.01)" }}>
         <div className="mx-auto max-w-5xl">
           <Reveal>
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 Everything you need.
                 <br />
@@ -337,11 +337,11 @@ export default function Home() {
       <section className="py-8 sm:py-10 px-4 sm:px-6" style={{ background: "rgba(16,185,129,0.03)" }}>
         <div className="mx-auto max-w-3xl">
           <Reveal>
-            <h2 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-8">
+            <h2 className="text-center text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-6">
               How it works
             </h2>
           </Reveal>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {[
               {
                 n: "1",
@@ -442,7 +442,7 @@ export default function Home() {
       <section className="py-8 sm:py-10 px-4 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <Reveal>
-            <div className="text-center mb-6 sm:mb-8">
+            <div className="text-center mb-6 sm:mb-6">
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100">
                 Free is powerful.{" "}
                 <span className="text-emerald-400">Premium is everything.</span>
@@ -541,7 +541,7 @@ export default function Home() {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="py-10 sm:py-12 px-4 sm:px-6 border-t border-white/5" style={{ background: "rgba(16,185,129,0.03)" }}>
+      <section className="py-8 sm:py-10 px-4 sm:px-6 border-t border-white/5" style={{ background: "rgba(16,185,129,0.03)" }}>
         <div className="mx-auto max-w-md text-center">
           <Reveal>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-100 mb-2">

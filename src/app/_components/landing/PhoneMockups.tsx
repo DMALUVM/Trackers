@@ -3,6 +3,40 @@
    These are pure render components — no hooks, no state.
    ──────────────────────────────────────────── */
 
+/* SVG nav icons matching the actual app */
+const NavIcons = {
+  Today: (active: boolean) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  ),
+  Progress: (active: boolean) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+    </svg>
+  ),
+  Neuro: (active: boolean) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a7 7 0 017 7c0 3-2 5-4 6.5M12 2a7 7 0 00-7 7c0 3 2 5 4 6.5M12 22v-6" />
+    </svg>
+  ),
+  Breathwork: (active: boolean) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22c-4-3-8-6-8-10a8 8 0 0116 0c0 4-4 7-8 10z" />
+    </svg>
+  ),
+  Movement: (active: boolean) => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active ? "#10b981" : "rgba(255,255,255,0.35)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="5" r="2" />
+      <path d="M6 20l4-8 2 3 2-3 4 8" />
+    </svg>
+  ),
+};
+
+type NavItem = { key: keyof typeof NavIcons; l: string };
+
 function PhoneFrame({
   children,
   label,
@@ -10,26 +44,26 @@ function PhoneFrame({
 }: {
   children: React.ReactNode;
   label: string;
-  navItems?: { icon: string; l: string }[];
+  navItems?: NavItem[];
 }) {
-  const nav = navItems ?? [
-    { icon: "🏠", l: "Today" },
-    { icon: "📈", l: "Progress" },
-    { icon: "🧠", l: "Neuro" },
+  const nav: NavItem[] = navItems ?? [
+    { key: "Today", l: "Today" },
+    { key: "Progress", l: "Progress" },
+    { key: "Neuro", l: "Neuro" },
   ];
   return (
     <div className="flex flex-col items-center gap-3">
       <div
         className="rounded-[36px] p-2"
         style={{
-          background: "linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 40px 80px rgba(0,0,0,0.5)",
+          background: "linear-gradient(145deg, #222 0%, #111 100%)",
+          border: "1.5px solid rgba(255,255,255,0.15)",
+          boxShadow: "0 4px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset",
         }}
       >
         <div
           className="rounded-[28px] overflow-hidden relative"
-          style={{ background: "#0a0a0a", width: 240 }}
+          style={{ background: "#0c0c0c", width: 240 }}
         >
           {/* Notch */}
           <div className="flex justify-center pt-1.5 pb-0.5">
@@ -39,14 +73,14 @@ function PhoneFrame({
           {/* Bottom nav */}
           <div
             className="flex justify-around items-center py-2 border-t"
-            style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.5)" }}
+            style={{ borderColor: "rgba(255,255,255,0.08)", background: "rgba(0,0,0,0.6)" }}
           >
-            {nav.map(({ icon, l }) => (
+            {nav.map(({ key, l }) => (
               <div key={l} className="flex flex-col items-center gap-0.5">
-                <span style={{ fontSize: 11 }}>{icon}</span>
+                {NavIcons[key](l === label)}
                 <span
                   className="text-[7px] font-semibold"
-                  style={{ color: l === label ? "#10b981" : "rgba(255,255,255,0.3)" }}
+                  style={{ color: l === label ? "#10b981" : "rgba(255,255,255,0.35)" }}
                 >
                   {l}
                 </span>
@@ -55,7 +89,7 @@ function PhoneFrame({
           </div>
         </div>
       </div>
-      <p className="text-xs font-semibold text-neutral-500">{label}</p>
+      <p className="text-xs font-semibold text-neutral-400">{label}</p>
     </div>
   );
 }
@@ -264,9 +298,9 @@ export function MockBreathwork() {
 
   return (
     <PhoneFrame label="Breathwork" navItems={[
-      { icon: "🏠", l: "Today" },
-      { icon: "🌬️", l: "Breathwork" },
-      { icon: "📈", l: "Progress" },
+      { key: "Today", l: "Today" },
+      { key: "Breathwork", l: "Breathwork" },
+      { key: "Progress", l: "Progress" },
     ]}>
       <div className="space-y-2">
         <div>
@@ -375,9 +409,9 @@ export function MockMovement() {
 
   return (
     <PhoneFrame label="Movement" navItems={[
-      { icon: "🏠", l: "Today" },
-      { icon: "🧘", l: "Movement" },
-      { icon: "📈", l: "Progress" },
+      { key: "Today", l: "Today" },
+      { key: "Movement", l: "Movement" },
+      { key: "Progress", l: "Progress" },
     ]}>
       <div className="space-y-2">
         <div>
