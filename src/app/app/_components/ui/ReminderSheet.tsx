@@ -131,9 +131,9 @@ export function ReminderSheet({
               </h3>
             </div>
             <button type="button" onClick={onClose}
-              className="rounded-full p-1.5"
+              className="rounded-full p-2.5"
               style={{ background: "var(--bg-card-hover)" }}>
-              <X size={16} style={{ color: "var(--text-muted)" }} />
+              <X size={18} style={{ color: "var(--text-muted)" }} />
             </button>
           </div>
 

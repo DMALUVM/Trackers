@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { RoutineItemRow } from "@/lib/types";
 import { getRoutineItem, updateRoutineItem } from "@/lib/supabaseData";
 import { Toast, SkeletonCard, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
+import { hapticLight, hapticMedium } from "@/lib/haptics";
 
 type FrequencyPreset = "everyday" | "mon-fri" | "mwf" | "tth" | "custom";
 
@@ -120,13 +121,13 @@ export default function RoutineDetailsPage() {
       <section className="card p-4 space-y-3">
         <div>
           <p className="text-xs" style={{ color: "var(--text-faint)" }}>Name</p>
-          <input className="mt-1 w-full rounded-lg px-3 py-2 text-sm"
+          <input className="mt-1 w-full rounded-xl px-4 py-3 text-sm"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Routine name" />
         </div>
         <div>
           <p className="text-xs" style={{ color: "var(--text-faint)" }}>Emoji</p>
-          <input className="mt-1 w-full rounded-lg px-3 py-2 text-sm"
+          <input className="mt-1 w-full rounded-xl px-4 py-3 text-sm"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="😀" />
         </div>
@@ -135,7 +136,7 @@ export default function RoutineDetailsPage() {
             <p className="text-xs" style={{ color: "var(--text-faint)" }}>CORE</p>
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>CORE drives your Daily Score.</p>
           </div>
-          <button type="button" onClick={() => void quickSaveCore()} disabled={saving}
+          <button type="button" onClick={() => { hapticLight(); void quickSaveCore(); }} disabled={saving}
             className="rounded-full px-3 py-2 text-[12px] font-semibold"
             style={{
               background: isCore ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
@@ -161,7 +162,7 @@ export default function RoutineDetailsPage() {
             { key: "tth" as const, label: "Tue/Thu" },
             { key: "custom" as const, label: "Custom" },
           ]).map((opt) => (
-            <button key={opt.key} type="button" onClick={() => void quickSavePreset(opt.key)}
+            <button key={opt.key} type="button" onClick={() => { hapticLight(); void quickSavePreset(opt.key); }}
               className={preset === opt.key ? "btn-primary text-sm" : "btn-secondary text-sm"}>
               {opt.label}
             </button>
@@ -173,7 +174,7 @@ export default function RoutineDetailsPage() {
               const active = customDays.includes(d.value);
               return (
                 <button key={d.value} type="button"
-                  onClick={() => setCustomDays((prev) => prev.includes(d.value) ? prev.filter((x) => x !== d.value) : [...prev, d.value])}
+                  onClick={() => { hapticLight(); setCustomDays((prev) => prev.includes(d.value) ? prev.filter((x) => x !== d.value) : [...prev, d.value]); }}
                   className="rounded-full px-3 py-2 text-xs font-semibold"
                   style={{
                     background: active ? "var(--accent-green)" : "var(--bg-card-hover)",
@@ -187,9 +188,10 @@ export default function RoutineDetailsPage() {
         )}
       </section>
 
-      <div className="flex justify-end">
-        <button type="button" onClick={() => void onSaveAll()} className="btn-primary text-sm">Save</button>
-      </div>
+      <button type="button" onClick={() => { hapticMedium(); void onSaveAll(); }} disabled={saving}
+        className="btn-primary w-full text-sm py-3 font-bold transition-all active:scale-[0.98] disabled:opacity-60">
+        {saving ? "Saving…" : "Save changes"}
+      </button>
     </div>
   );
 }

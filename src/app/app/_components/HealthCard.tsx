@@ -8,10 +8,11 @@ import { hapticLight } from "@/lib/haptics";
 import { getDaySummary } from "@/lib/healthKit";
 
 const LS_KEY = "routines365:healthcard:metrics";
-type MetricId = "steps" | "sleep" | "calories" | "workouts" | "hrv" | "rhr" | "spo2" | "respiratory";
+type MetricId = "steps" | "sleep" | "sleep_stages" | "calories" | "workouts" | "hrv" | "rhr" | "spo2" | "respiratory";
 const ALL_METRICS: { id: MetricId; label: string; premium?: boolean }[] = [
   { id: "steps", label: "Steps" },
   { id: "sleep", label: "Sleep" },
+  { id: "sleep_stages", label: "Sleep Stages", premium: true },
   { id: "calories", label: "Calories" },
   { id: "workouts", label: "Workouts" },
   { id: "hrv", label: "HRV", premium: true },
@@ -159,6 +160,7 @@ export function HealthCard() {
   const metricData: Record<MetricId, { icon: typeof Heart; color: string; bg: string; value: string; sub: string }> = {
     steps: { icon: Footprints, color: "#3b82f6", bg: "rgba(59,130,246,0.1)", value: steps >= 1000 ? `${(steps / 1000).toFixed(1)}k` : String(steps), sub: "steps" },
     sleep: { icon: Moon, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: sleepHours ?? "—", sub: sleepHours ? "hrs sleep" : "no data" },
+    sleep_stages: { icon: Moon, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: "", sub: "" },
     calories: { icon: Flame, color: "#f97316", bg: "rgba(249,115,22,0.1)", value: calories > 0 ? String(calories) : "—", sub: calories > 0 ? "cal burned" : "no data" },
     workouts: { icon: Dumbbell, color: "#10b981", bg: "rgba(16,185,129,0.1)", value: workoutCount > 0 ? String(workoutCount) : "—", sub: workoutCount === 1 ? "workout" : workoutCount > 1 ? "workouts" : "none today" },
     hrv: { icon: Activity, color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", value: hrvValue ? String(Math.round(hrvValue)) : "—", sub: hrvValue ? "ms HRV" : "no data" },
@@ -213,6 +215,7 @@ export function HealthCard() {
       {/* Stats grid — only show visible metrics */}
       <div className="grid grid-cols-2 gap-3">
         {visible.map((id) => {
+          if (id === "sleep_stages") return null; // rendered separately below
           const m = metricData[id];
           if (!m) return null;
           const Icon = m.icon;
@@ -232,6 +235,55 @@ export function HealthCard() {
           );
         })}
       </div>
+
+      {/* Sleep stage breakdown — toggleable via settings */}
+      {visible.includes("sleep_stages") && sleep &&
+       (sleep.deepMinutes || sleep.coreMinutes || sleep.remMinutes) && (
+        <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Moon size={12} style={{ color: "#8b5cf6" }} />
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
+              Sleep stages
+            </span>
+          </div>
+          <div className="flex gap-1 mb-2" style={{ height: 8, borderRadius: 4, overflow: "hidden" }}>
+            {(() => {
+              const deep = sleep.deepMinutes ?? 0;
+              const core = sleep.coreMinutes ?? 0;
+              const rem = sleep.remMinutes ?? 0;
+              const total = deep + core + rem || 1;
+              return (
+                <>
+                  <div style={{ flex: deep / total, background: "#6366f1", borderRadius: 4 }} />
+                  <div style={{ flex: core / total, background: "#8b5cf6", borderRadius: 4 }} />
+                  <div style={{ flex: rem / total, background: "#c084fc", borderRadius: 4 }} />
+                </>
+              );
+            })()}
+          </div>
+          <div className="flex justify-between text-[10px]">
+            <span style={{ color: "#8b8bf6" }}>
+              <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 2, background: "#6366f1", marginRight: 3 }} />
+              Deep {sleep.deepMinutes ? `${Math.round(sleep.deepMinutes)}m` : "—"}
+            </span>
+            <span style={{ color: "#a78bfa" }}>
+              <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 2, background: "#8b5cf6", marginRight: 3 }} />
+              Light {sleep.coreMinutes ? `${Math.round(sleep.coreMinutes)}m` : "—"}
+            </span>
+            <span style={{ color: "#d8b4fe" }}>
+              <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 2, background: "#c084fc", marginRight: 3 }} />
+              REM {sleep.remMinutes ? `${Math.round(sleep.remMinutes)}m` : "—"}
+            </span>
+          </div>
+          {sleep.bedTime && sleep.wakeTime && (
+            <p className="text-[10px] mt-1.5" style={{ color: "var(--text-faint)" }}>
+              {new Date(sleep.bedTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              {" → "}
+              {new Date(sleep.wakeTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Workout details */}
       {visible.includes("workouts") && summary?.workouts && summary.workouts.length > 0 && (

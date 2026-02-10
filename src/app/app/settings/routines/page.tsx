@@ -35,12 +35,12 @@ function SortRow({
         <div className="flex flex-col">
           <button type="button" className="p-1 rounded-lg disabled:opacity-30"
             style={{ color: "var(--text-faint)" }}
-            onClick={() => onMove(index, index - 1)} disabled={index === 0} title="Move up">
+            onClick={() => { hapticLight(); onMove(index, index - 1); }} disabled={index === 0} title="Move up">
             <ArrowUp size={14} />
           </button>
           <button type="button" className="p-1 rounded-lg disabled:opacity-30"
             style={{ color: "var(--text-faint)" }}
-            onClick={() => onMove(index, index + 1)} disabled={index === total - 1} title="Move down">
+            onClick={() => { hapticLight(); onMove(index, index + 1); }} disabled={index === total - 1} title="Move down">
             <ArrowDown size={14} />
           </button>
         </div>
@@ -66,7 +66,7 @@ function SortRow({
         </button>
 
         {/* Core/Opt toggle */}
-        <button type="button" onClick={() => onToggleNon(item)}
+        <button type="button" onClick={() => { hapticLight(); onToggleNon(item); }}
           className="rounded-full px-2 py-1.5 text-[11px] font-semibold"
           style={{
             background: item.is_non_negotiable ? "var(--accent-green-soft)" : "var(--bg-card-hover)",
@@ -77,7 +77,7 @@ function SortRow({
         </button>
 
         {/* Archive */}
-        <button type="button" onClick={() => onArchive(item)}
+        <button type="button" onClick={() => { hapticLight(); onArchive(item); }}
           className="p-2 rounded-lg" style={{ color: "var(--text-faint)" }} title="Archive">
           <Trash2 size={18} />
         </button>
@@ -215,7 +215,7 @@ export default function RoutinesSettingsPage() {
           <input className="w-12 shrink-0 rounded-xl px-2 py-3 text-sm text-center"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} placeholder="📝" />
-          <button type="button" onClick={onAdd} className="btn-primary shrink-0 px-3">
+          <button type="button" onClick={() => { hapticLight(); onAdd(); }} className="btn-primary shrink-0 px-3">
             <Plus size={18} />
           </button>
         </div>

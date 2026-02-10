@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
+import { hapticLight, hapticMedium } from "@/lib/haptics";
 
 const LS_KEY = "routines365:onboarding:templateId";
 const LS_CORE_KEY = "routines365:onboarding:coreIds";
@@ -28,9 +29,10 @@ export default function OnboardingCorePage() {
     setCoreIds(pack.routines.filter((r) => r.defaultCore).map((r) => r.id));
   }, [pack, coreIds.length]);
 
-  const toggle = (id: string) => setCoreIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const toggle = (id: string) => { hapticLight(); setCoreIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]); };
 
   const saveAndNext = () => {
+    hapticMedium();
     try { localStorage.setItem(LS_CORE_KEY, JSON.stringify(coreIds)); } catch { /* ignore */ }
     router.push("/app/onboarding/addons");
   };

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks } from "@/lib/templates";
 import { createRoutineItemsBulk, listRoutineItems, setEnabledModules } from "@/lib/supabaseData";
+import { hapticLight, hapticMedium, hapticHeavy } from "@/lib/haptics";
 
 const LS_TEMPLATE = "routines365:onboarding:templateId";
 const LS_CORE = "routines365:onboarding:coreIds";
@@ -36,9 +37,10 @@ export default function OnboardingAddonsPage() {
     setAddonIds(pack.addons.filter((a) => a.defaultOn).map((a) => a.id));
   }, [pack]);
 
-  const toggleAddon = (id: string) => setAddonIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  const toggleAddon = (id: string) => { hapticLight(); setAddonIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]); };
 
   const finish = async () => {
+    hapticHeavy();
     if (!pack) return;
     if (coreIds.length === 0) { router.replace("/app/onboarding/core"); return; }
     setBusy(true); setError("");
@@ -130,7 +132,7 @@ export default function OnboardingAddonsPage() {
       )}
 
       <div className="flex items-center justify-between">
-        <button type="button" disabled={busy} onClick={() => router.push("/app/onboarding/core")}
+        <button type="button" disabled={busy} onClick={() => { hapticLight(); router.push("/app/onboarding/core"); }}
           className="btn-secondary text-sm py-3 px-4 disabled:opacity-60">Back</button>
         <button type="button" disabled={busy} onClick={() => void finish()}
           className="btn-primary text-sm py-3 px-4 disabled:opacity-60">{busy ? "Creating…" : "Finish"}</button>

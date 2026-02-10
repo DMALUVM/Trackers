@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { templatePacks, type OnboardingGoal } from "@/lib/templates";
 import { createRoutineItemsBulk, listRoutineItems, setEnabledModules } from "@/lib/supabaseData";
+import { hapticMedium, hapticLight } from "@/lib/haptics";
 
 export default function TemplatePickerPage() {
   const router = useRouter();
@@ -87,9 +88,9 @@ export default function TemplatePickerPage() {
         {busy === p.id && <span className="text-xs" style={{ color: "var(--text-muted)" }}>Working…</span>}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button type="button" disabled={!!busy} onClick={() => void quickStart(p.id)}
+        <button type="button" disabled={!!busy} onClick={() => { hapticMedium(); void quickStart(p.id); }}
           className="btn-primary text-sm py-3 disabled:opacity-60">Quick start</button>
-        <button type="button" disabled={!!busy} onClick={() => void applyTemplate(p.id)}
+        <button type="button" disabled={!!busy} onClick={() => { hapticLight(); void applyTemplate(p.id); }}
           className="btn-secondary text-sm py-3 disabled:opacity-60">Customize</button>
       </div>
     </div>
@@ -141,7 +142,7 @@ export default function TemplatePickerPage() {
         })()}
 
         <div className="card p-4">
-          <button type="button" className="w-full text-left" onClick={() => setShowAdvanced((v) => !v)}>
+          <button type="button" className="w-full text-left" onClick={() => { hapticLight(); setShowAdvanced((v) => !v); }}>
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>Advanced templates</p>
               <span className="text-xs" style={{ color: "var(--text-muted)" }}>{showAdvanced ? "Hide" : "Show"}</span>
