@@ -65,9 +65,23 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["authorized": false])
             return
         }
-        let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-        let status = store.authorizationStatus(for: stepType)
-        call.resolve(["authorized": status == .sharingAuthorized || status == .notDetermined ? false : true])
+        // HealthKit intentionally hides READ authorization status for privacy.
+        // authorizationStatus(for:) only works for WRITE permissions.
+        // The reliable approach: try to read a small amount of data.
+        // If we get results (or an empty set without error), user granted access.
+        guard let stepType = HKQuantityType.quantityType(forIdentifier: .stepCount) else {
+            call.resolve(["authorized": false])
+            return
+        }
+        let now = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -1, to: now)!
+        let pred = HKQuery.predicateForSamples(withStart: start, end: now, options: .strictStartDate)
+        let q = HKStatisticsQuery(quantityType: stepType, quantitySamplePredicate: pred, options: .cumulativeSum) { _, stats, error in
+            // If no error, user has granted read access (even if stats is nil / 0 steps)
+            let authorized = error == nil
+            call.resolve(["authorized": authorized])
+        }
+        store.execute(q)
     }
 
     // MARK: - Steps
@@ -120,7 +134,7 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
         let now = Date()
         let startDate = calendar.date(byAdding: .day, value: -days, to: calendar.startOfDay(for: now))!
         let predicate = HKQuery.predicateForSamples(withStart: startDate, end: now, options: .strictStartDate)
-        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let sort = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)
 
         let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sort]) { [weak self] _, samples, _ in
             guard let self = self, let samples = samples as? [HKCategorySample] else {
@@ -128,66 +142,149 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
                 return
             }
 
-            var nightMap: [String: (asleepMinutes: Double, inBedMinutes: Double, deepMinutes: Double, coreMinutes: Double, remMinutes: Double, bedTime: Date?, wakeTime: Date?)] = [:]
+            // ── Collect time intervals by category ──
+            // We merge overlapping intervals across ALL sources (same approach Apple Health uses).
+            struct Interval {
+                let start: Date
+                let end: Date
+            }
+
+            var asleepIntervals: [Interval] = []
+            var inBedIntervals: [Interval] = []
+            var deepIntervals: [Interval] = []
+            var coreIntervals: [Interval] = []
+            var remIntervals: [Interval] = []
 
             for sample in samples {
                 let value = HKCategoryValueSleepAnalysis(rawValue: sample.value)
-                let duration = sample.endDate.timeIntervalSince(sample.startDate) / 60.0
-                let dateKey = self.dateFormatter.string(from: sample.endDate)
-
-                var entry = nightMap[dateKey] ?? (asleepMinutes: 0, inBedMinutes: 0, deepMinutes: 0, coreMinutes: 0, remMinutes: 0, bedTime: nil, wakeTime: nil)
+                let iv = Interval(start: sample.startDate, end: sample.endDate)
 
                 if #available(iOS 16.0, *) {
                     switch value {
                     case .asleepDeep:
-                        entry.asleepMinutes += duration
-                        entry.deepMinutes += duration
+                        asleepIntervals.append(iv)
+                        deepIntervals.append(iv)
                     case .asleepCore:
-                        entry.asleepMinutes += duration
-                        entry.coreMinutes += duration
+                        asleepIntervals.append(iv)
+                        coreIntervals.append(iv)
                     case .asleepREM:
-                        entry.asleepMinutes += duration
-                        entry.remMinutes += duration
+                        asleepIntervals.append(iv)
+                        remIntervals.append(iv)
                     case .asleepUnspecified:
-                        entry.asleepMinutes += duration
+                        asleepIntervals.append(iv)
                     case .inBed:
-                        entry.inBedMinutes += duration
+                        inBedIntervals.append(iv)
                     default:
-                        continue // skip awake
+                        continue
                     }
                 } else {
                     if value == .asleep {
-                        entry.asleepMinutes += duration
+                        asleepIntervals.append(iv)
                     } else if value == .inBed {
-                        entry.inBedMinutes += duration
+                        inBedIntervals.append(iv)
                     } else {
                         continue
                     }
                 }
-
-                if entry.bedTime == nil || sample.startDate < entry.bedTime! { entry.bedTime = sample.startDate }
-                if entry.wakeTime == nil || sample.endDate > entry.wakeTime! { entry.wakeTime = sample.endDate }
-                nightMap[dateKey] = entry
             }
 
-            let data: [[String: Any]] = nightMap.map { key, value in
-                // Use asleep time if available, otherwise fall back to inBed
-                let totalMinutes = value.asleepMinutes > 0 ? value.asleepMinutes : value.inBedMinutes
-                var dict: [String: Any] = [
-                    "date": key,
-                    "totalMinutes": Int(totalMinutes),
-                    "asleepMinutes": Int(value.asleepMinutes),
-                    "inBedMinutes": Int(value.inBedMinutes > 0 ? value.inBedMinutes : value.asleepMinutes),
-                ]
-                if value.deepMinutes > 0 { dict["deepMinutes"] = Int(value.deepMinutes) }
-                if value.coreMinutes > 0 { dict["coreMinutes"] = Int(value.coreMinutes) }
-                if value.remMinutes > 0 { dict["remMinutes"] = Int(value.remMinutes) }
-                if let bed = value.bedTime { dict["bedTime"] = self.isoFormatter.string(from: bed) }
-                if let wake = value.wakeTime { dict["wakeTime"] = self.isoFormatter.string(from: wake) }
-                return dict
-            }.sorted { ($0["date"] as? String ?? "") > ($1["date"] as? String ?? "") }
+            // ── Merge overlapping intervals and sum unique minutes ──
+            func mergeAndSum(_ intervals: [Interval]) -> (minutes: Double, earliest: Date?, latest: Date?) {
+                guard !intervals.isEmpty else { return (0, nil, nil) }
+                let sorted = intervals.sorted { $0.start < $1.start }
+                var merged: [(start: Date, end: Date)] = []
+                var cur = (start: sorted[0].start, end: sorted[0].end)
+                for iv in sorted.dropFirst() {
+                    if iv.start <= cur.end {
+                        cur.end = max(cur.end, iv.end)
+                    } else {
+                        merged.append(cur)
+                        cur = (start: iv.start, end: iv.end)
+                    }
+                }
+                merged.append(cur)
+                let total = merged.reduce(0.0) { $0 + $1.end.timeIntervalSince($1.start) / 60.0 }
+                return (total, merged.first?.start, merged.last?.end)
+            }
 
-            call.resolve(["data": data])
+            let asleep = mergeAndSum(asleepIntervals)
+            let inBed = mergeAndSum(inBedIntervals)
+            let deep = mergeAndSum(deepIntervals)
+            let core = mergeAndSum(coreIntervals)
+            let rem = mergeAndSum(remIntervals)
+
+            // ── Bucket by wake-up date ──
+            // A sleep session belongs to the date you WAKE UP (endDate of last interval).
+            // For "last night" = today's date. This matches Apple Health's grouping.
+            let allIntervals = asleepIntervals + inBedIntervals
+            guard !allIntervals.isEmpty else {
+                call.resolve(["data": []])
+                return
+            }
+
+            // Group all intervals into "nights" — a gap > 4 hours starts a new night
+            let allSorted = allIntervals.sorted { $0.start < $1.start }
+            var nights: [[(start: Date, end: Date)]] = [[]]
+            var prevEnd = allSorted[0].start
+            for iv in allSorted {
+                if iv.start.timeIntervalSince(prevEnd) > 4 * 3600 {
+                    nights.append([])
+                }
+                nights[nights.count - 1].append((start: iv.start, end: iv.end))
+                prevEnd = max(prevEnd, iv.end)
+            }
+
+            // For each night, compute stats and key by wake-up date
+            var nightMap: [String: [String: Any]] = [:]
+            for night in nights {
+                guard let first = night.first, let last = night.max(by: { $0.end < $1.end }) else { continue }
+                let wakeDate = last.end
+                let dateKey = self.dateFormatter.string(from: wakeDate)
+
+                // Filter intervals belonging to this night's time window
+                let nightStart = first.start
+                let nightEnd = last.end
+
+                func minutesInNight(_ intervals: [Interval]) -> Double {
+                    let filtered = intervals.filter { $0.start >= nightStart.addingTimeInterval(-300) && $0.end <= nightEnd.addingTimeInterval(300) }
+                    return mergeAndSum(filtered).minutes
+                }
+
+                let nightAsleep = minutesInNight(asleepIntervals)
+                let nightInBed = minutesInNight(inBedIntervals)
+                let totalMinutes = nightAsleep > 0 ? nightAsleep : nightInBed
+
+                // Skip tiny sessions (< 30 min = naps)
+                if totalMinutes < 30 { continue }
+
+                var dict: [String: Any] = [
+                    "date": dateKey,
+                    "totalMinutes": Int(totalMinutes),
+                    "asleepMinutes": Int(nightAsleep),
+                    "inBedMinutes": Int(nightInBed > 0 ? nightInBed : nightAsleep),
+                ]
+                let nightDeep = minutesInNight(deepIntervals)
+                let nightCore = minutesInNight(coreIntervals)
+                let nightRem = minutesInNight(remIntervals)
+                if nightDeep > 0 { dict["deepMinutes"] = Int(nightDeep) }
+                if nightCore > 0 { dict["coreMinutes"] = Int(nightCore) }
+                if nightRem > 0 { dict["remMinutes"] = Int(nightRem) }
+                dict["bedTime"] = self.isoFormatter.string(from: first.start)
+                dict["wakeTime"] = self.isoFormatter.string(from: wakeDate)
+
+                // If multiple sessions for same date, keep the longer one
+                if let existing = nightMap[dateKey],
+                   let existingMins = existing["totalMinutes"] as? Int,
+                   existingMins >= Int(totalMinutes) {
+                    continue
+                }
+                nightMap[dateKey] = dict
+            }
+
+            let data = nightMap.values
+                .sorted { ($0["date"] as? String ?? "") > ($1["date"] as? String ?? "") }
+
+            call.resolve(["data": Array(data)])
         }
         store.execute(query)
     }
@@ -339,56 +436,78 @@ public class HealthKitPlugin: CAPPlugin, CAPBridgedPlugin {
             store.execute(q)
         }
 
-        // Sleep
+        // Sleep — merge overlapping intervals across all sources (matches Apple Health)
         if let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) {
             group.enter()
             let sleepStart = calendar.date(byAdding: .hour, value: -12, to: startOfDay)!
             let pred = HKQuery.predicateForSamples(withStart: sleepStart, end: endOfDay, options: .strictStartDate)
             let q = HKSampleQuery(sampleType: sleepType, predicate: pred, limit: HKObjectQueryNoLimit, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]) { [weak self] _, samples, _ in
                 guard let self = self, let samples = samples as? [HKCategorySample] else { group.leave(); return }
-                var asleepTotal = 0.0; var inBedTotal = 0.0; var earliest: Date?; var latest: Date?
+
+                var asleepIvs: [(start: Date, end: Date)] = []
+                var inBedIvs: [(start: Date, end: Date)] = []
+
                 for s in samples {
                     let v = HKCategoryValueSleepAnalysis(rawValue: s.value)
-                    let dur = s.endDate.timeIntervalSince(s.startDate) / 60.0
+                    let iv = (start: s.startDate, end: s.endDate)
                     if #available(iOS 16.0, *) {
                         switch v {
                         case .asleepCore, .asleepDeep, .asleepREM, .asleepUnspecified:
-                            asleepTotal += dur
+                            asleepIvs.append(iv)
                         case .inBed:
-                            inBedTotal += dur
+                            inBedIvs.append(iv)
                         default: continue
                         }
                     } else {
-                        if v == .asleep { asleepTotal += dur }
-                        else if v == .inBed { inBedTotal += dur }
+                        if v == .asleep { asleepIvs.append(iv) }
+                        else if v == .inBed { inBedIvs.append(iv) }
                         else { continue }
                     }
-                    if earliest == nil || s.startDate < earliest! { earliest = s.startDate }
-                    if latest == nil || s.endDate > latest! { latest = s.endDate }
                 }
-                // Use asleep time if available, otherwise inBed
-                sleepMins = Int(asleepTotal > 0 ? asleepTotal : inBedTotal)
-                if let b = earliest { bedTime = self.isoFormatter.string(from: b) }
-                if let w = latest { wakeTime = self.isoFormatter.string(from: w) }
+
+                // Merge overlapping intervals
+                func mergeSum(_ ivs: [(start: Date, end: Date)]) -> (mins: Double, earliest: Date?, latest: Date?) {
+                    guard !ivs.isEmpty else { return (0, nil, nil) }
+                    let sorted = ivs.sorted { $0.start < $1.start }
+                    var merged: [(start: Date, end: Date)] = []
+                    var cur = sorted[0]
+                    for iv in sorted.dropFirst() {
+                        if iv.start <= cur.end { cur.end = max(cur.end, iv.end) }
+                        else { merged.append(cur); cur = iv }
+                    }
+                    merged.append(cur)
+                    let total = merged.reduce(0.0) { $0 + $1.end.timeIntervalSince($1.start) / 60.0 }
+                    return (total, merged.first?.start, merged.last?.end)
+                }
+
+                let asleep = mergeSum(asleepIvs)
+                let inBed = mergeSum(inBedIvs)
+                sleepMins = Int(asleep.mins > 0 ? asleep.mins : inBed.mins)
+                let allEarliest = [asleep.earliest, inBed.earliest].compactMap { $0 }.min()
+                let allLatest = [asleep.latest, inBed.latest].compactMap { $0 }.max()
+                if let b = allEarliest { bedTime = self.isoFormatter.string(from: b) }
+                if let w = allLatest { wakeTime = self.isoFormatter.string(from: w) }
                 group.leave()
             }
             store.execute(q)
         }
 
-        // HRV
+        // HRV — look back to previous evening (wearables like Oura/Garmin write HRV during sleep)
         if let t = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
             group.enter()
-            let q = HKSampleQuery(sampleType: t, predicate: HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate), limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { _, samples, _ in
+            let hrvStart = calendar.date(byAdding: .hour, value: -12, to: startOfDay)!
+            let q = HKSampleQuery(sampleType: t, predicate: HKQuery.predicateForSamples(withStart: hrvStart, end: endOfDay, options: .strictStartDate), limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { _, samples, _ in
                 if let s = samples?.first as? HKQuantitySample { hrv = s.quantity.doubleValue(for: HKUnit.secondUnit(with: .milli)) }
                 group.leave()
             }
             store.execute(q)
         }
 
-        // RHR
+        // RHR — look back to previous evening (wearables calculate RHR during overnight sleep)
         if let t = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) {
             group.enter()
-            let q = HKSampleQuery(sampleType: t, predicate: HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate), limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { _, samples, _ in
+            let rhrStart = calendar.date(byAdding: .hour, value: -12, to: startOfDay)!
+            let q = HKSampleQuery(sampleType: t, predicate: HKQuery.predicateForSamples(withStart: rhrStart, end: endOfDay, options: .strictStartDate), limit: 1, sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)]) { _, samples, _ in
                 if let s = samples?.first as? HKQuantitySample { rhr = s.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute())) }
                 group.leave()
             }
