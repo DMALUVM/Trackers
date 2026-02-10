@@ -9,21 +9,29 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  title: "Routines365 — Stack your days. Change your life.",
-  description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
+  title: {
+    default: "Routines365 — Daily Habit Tracker with Streaks, Journaling & Breathwork",
+    template: "%s | Routines365",
+  },
+  description: "Build daily habits that stick. Track streaks, journal with guided prompts, practice breathwork, connect Apple Health, and watch consistency compound. Free with premium.",
   applicationName: "Routines365",
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://routines365.vercel.app"),
+  metadataBase: new URL("https://routines365.com"),
+  alternates: {
+    canonical: "https://routines365.com",
+  },
   openGraph: {
-    title: "Routines365 — Stack your days. Change your life.",
-    description: "The daily habit tracker that keeps it simple. Check off your core habits, build streaks, and watch consistency compound.",
+    title: "Routines365 — Daily Habit Tracker with Streaks, Journaling & Breathwork",
+    description: "Build daily habits that stick. Track streaks, journal with guided prompts, practice breathwork, connect Apple Health, and watch consistency compound.",
     siteName: "Routines365",
     type: "website",
+    url: "https://routines365.com",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Routines365",
-    description: "Stack your days. Change your life.",
+    title: "Routines365 — Stack your days. Change your life.",
+    description: "Daily habit tracker with streaks, guided journal, breathwork, Apple Health, and accountability partner. 10 seconds a day.",
   },
   appleWebApp: {
     capable: true,
@@ -34,8 +42,22 @@ export const metadata: Metadata = {
     icon: "/brand/pwa/icon-192.png",
     apple: "/brand/pwa/apple-touch-icon.png",
   },
+  keywords: [
+    "habit tracker", "daily routine", "streak tracker", "habit journal",
+    "breathwork app", "Wim Hof breathing", "box breathing",
+    "Apple Health habits", "morning routine", "daily checklist",
+    "accountability partner", "focus timer", "Pomodoro",
+    "gratitude journal", "Qigong app", "wellness tracker",
+    "HRV tracking", "sleep tracking", "habit streaks",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
   other: {
     "apple-mobile-web-app-capable": "yes",
+    "apple-itunes-app": "app-id=XXXXXXXXXX",
   },
 };
 
@@ -53,10 +75,48 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Routines365",
+    applicationCategory: "HealthApplication",
+    operatingSystem: "iOS",
+    description: "Daily habit tracker with streaks, guided journal, breathwork, Apple Health integration, and accountability partner.",
+    offers: [
+      {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        description: "Free with optional premium upgrade",
+      },
+      {
+        "@type": "Offer",
+        price: "3.99",
+        priceCurrency: "USD",
+        description: "Routines365 Premium Monthly",
+      },
+      {
+        "@type": "Offer",
+        price: "29.99",
+        priceCurrency: "USD",
+        description: "Routines365 Premium Annual",
+      },
+    ],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "5.0",
+      ratingCount: "1",
+    },
+  };
+
   return (
     <html lang="en" style={{ background: "#000" }}>
       <head>
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className={`${interTight.variable} antialiased`}
         style={{ fontFamily: "var(--font-inter-tight), system-ui, sans-serif" }}>

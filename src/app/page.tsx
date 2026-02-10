@@ -9,18 +9,75 @@ import { hapticLight, hapticMedium } from "@/lib/haptics";
 
 type AuthState = "checking" | "signed-in" | "signed-out";
 
-/** Check synchronously if returning user (has auth flag cookie) */
 function hasSessionCookie(): boolean {
   if (typeof document === "undefined") return false;
   return document.cookie.includes("r365_sb.flag=");
 }
 
-/** Detect Capacitor native shell */
 function isNative(): boolean {
   if (typeof window === "undefined") return false;
   // @ts-expect-error - Capacitor global
   return !!window.Capacitor;
 }
+
+// ── Feature data ──
+const FEATURES = [
+  {
+    emoji: "✅",
+    title: "One-Tap Daily Checklist",
+    desc: "Mark habits as Core or Bonus. Complete your core habits to earn a green day. Takes 10 seconds.",
+  },
+  {
+    emoji: "📓",
+    title: "Guided Journal",
+    desc: "Gratitude prompts, daily intention, and reflection — or free write. Auto-checks your journal habit on save.",
+  },
+  {
+    emoji: "🌬️",
+    title: "Breathwork & Qigong",
+    desc: "Box Breathing, 4-7-8, Wim Hof, Physiological Sigh with Om audio. Plus Qigong movement routines.",
+  },
+  {
+    emoji: "🔥",
+    title: "Streaks & Trophies",
+    desc: "Build daily streaks with milestones at 7, 30, 100, and 365 days. Earn trophies. Complete weekly quests.",
+  },
+  {
+    emoji: "❤️",
+    title: "Apple Health Integration",
+    desc: "See sleep, HRV, heart rate, steps, and SpO2. Habits auto-complete when your health data hits goals.",
+  },
+  {
+    emoji: "👥",
+    title: "Accountability Partner",
+    desc: "Invite a friend and track each other's progress. Send cheers when they hit milestones.",
+  },
+  {
+    emoji: "🎯",
+    title: "Focus Timer",
+    desc: "Pomodoro sessions to protect your deep work. Track completed focus blocks alongside your habits.",
+  },
+  {
+    emoji: "📊",
+    title: "Progress & Insights",
+    desc: "Beautiful calendar, sleep stage charts, day-of-week patterns, and AI-powered insights that get smarter.",
+  },
+];
+
+const HOW_IT_WORKS = [
+  { n: "1", t: "Pick your habits", d: "Choose from 45+ built-in routines or create your own. Morning, fitness, mindfulness, and more." },
+  { n: "2", t: "Mark your CORE", d: "Tag 3–5 non-negotiable habits that define a successful day." },
+  { n: "3", t: "Check off daily", d: "One tap per habit — done in under 10 seconds. Activity logging for steps, workouts, and more." },
+  { n: "4", t: "Watch streaks grow", d: "See your calendar fill with green. Earn trophies, complete quests, journal your reflections." },
+];
+
+const PREMIUM_PERKS = [
+  "Biometric insights — HRV trends, resting heart rate analysis",
+  "Sleep stage breakdown — Deep, Core, REM with 7-night trends",
+  "Health auto-complete — habits check themselves from Apple Health",
+  "Unlimited habits, streak freezes, and detailed reports",
+  "Custom themes, share cards, and per-habit analytics",
+];
 
 export default function Home() {
   const router = useRouter();
@@ -33,7 +90,6 @@ export default function Home() {
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
-  // ── Session check: fast path for returning users ──
   useEffect(() => {
     if (!hasSessionCookie()) setAuthState("signed-out");
 
@@ -43,7 +99,6 @@ export default function Home() {
     const check = async () => {
       try {
         let { data } = await supabase.auth.getSession();
-
         if (!data.session) {
           for (const delay of [0, 250, 800]) {
             if (delay) await sleep(delay);
@@ -52,22 +107,16 @@ export default function Home() {
             if (data.session) break;
           }
         }
-
         if (cancelled) return;
         if (data.session) {
           setSignedInEmail(data.session.user.email ?? null);
           setAuthState("signed-in");
-        } else {
-          setAuthState("signed-out");
-        }
-      } catch {
-        if (!cancelled) setAuthState("signed-out");
-      }
+        } else { setAuthState("signed-out"); }
+      } catch { if (!cancelled) setAuthState("signed-out"); }
     };
     void check();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return;
-      // Clear stale localStorage if a different user logs in
       if (session?.user.id) {
         const prevUserId = localStorage.getItem("routines365:userId");
         if (prevUserId && prevUserId !== session.user.id) {
@@ -84,8 +133,6 @@ export default function Home() {
 
   useEffect(() => {
     if (authState !== "signed-in") return;
-    // Always go to /app/today first — it handles onboarding redirect for new users
-    // and is the correct landing page for returning users
     router.replace("/app/today");
   }, [authState, router]);
 
@@ -128,9 +175,7 @@ export default function Home() {
       }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : String(err));
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   };
 
   const signOut = async () => {
@@ -142,19 +187,15 @@ export default function Home() {
       setSignedInEmail(null);
       setAuthState("signed-out");
       window.location.href = "/";
-    } catch {
-      setBusy(false);
-    }
+    } catch { setBusy(false); }
   };
 
-  // ── SPLASH: shown while checking session ──
+  // ── SPLASH ──
   if (authState === "checking" || authState === "signed-in") {
     return (
       <main className="min-h-dvh bg-black text-white flex items-center justify-center">
         <div className="text-center space-y-5 animate-fade-in">
-          <div className="mx-auto" style={{ width: 72 }}>
-            <BrandIcon size={72} />
-          </div>
+          <div className="mx-auto" style={{ width: 72 }}><BrandIcon size={72} /></div>
           <div>
             <p className="text-xl font-semibold uppercase" style={{ letterSpacing: "0.06em" }}>ROUTINES365</p>
             <p className="text-xs text-neutral-500 mt-1.5">Stack your days. Change your life.</p>
@@ -171,31 +212,34 @@ export default function Home() {
 
   const native = isNative();
 
-  // ── SIGN-IN / LANDING PAGE ──
+  // ── LANDING PAGE ──
   return (
     <main className="min-h-dvh bg-black text-white">
       <div className="mx-auto w-full max-w-md px-6 py-8" style={{ paddingTop: "max(env(safe-area-inset-top, 32px), 32px)" }}>
 
-        {/* ── Hero — compact in native ── */}
+        {/* ── Hero ── */}
         <header className="space-y-4 text-center">
           <div className="mx-auto" style={{ width: native ? 72 : 96 }}>
             <BrandIcon size={native ? 72 : 96} />
           </div>
           <div>
-            <h1 className={`font-semibold uppercase ${native ? "text-2xl" : "text-3xl"}`} style={{ letterSpacing: "0.06em" }}>ROUTINES365</h1>
+            <h1 className={`font-semibold uppercase ${native ? "text-2xl" : "text-3xl"}`}
+              style={{ letterSpacing: "0.06em" }}>ROUTINES365</h1>
             <p className="mt-2 text-sm font-medium text-emerald-400">Stack your days. Change your life.</p>
             {!native && (
-              <p className="mt-2 text-sm text-neutral-400 leading-relaxed max-w-xs mx-auto">
-                The daily habit tracker that keeps it simple — check off your core habits, build streaks, and watch consistency compound.
+              <p className="mt-3 text-sm text-neutral-400 leading-relaxed max-w-xs mx-auto">
+                The daily habit tracker with guided journaling, breathwork, streaks, and Apple Health — built for people who want to get 1% better every day.
               </p>
             )}
           </div>
+
+          {/* Quick stats */}
           {!native && (
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
               {[
-                { emoji: "⚡", top: "One-tap", bot: "Check off in seconds" },
-                { emoji: "🟢", top: "Green days", bot: "See your wins" },
-                { emoji: "🔥", top: "Streaks", bot: "Stay motivated" },
+                { emoji: "⚡", top: "10 seconds", bot: "Daily check-in" },
+                { emoji: "📓", top: "Journal", bot: "Guided prompts" },
+                { emoji: "🔥", top: "Streaks", bot: "365-day milestones" },
               ].map(({ emoji, top, bot }) => (
                 <div key={top} className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3 text-neutral-300">
                   <span className="text-lg">{emoji}</span>
@@ -304,17 +348,34 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── How it works — hidden in native ── */}
+        {/* ── Features grid — web only ── */}
+        {!native && (
+          <section className="mt-6">
+            <h2 className="text-xs font-bold tracking-wider uppercase text-neutral-500 mb-4 px-1">
+              Everything you need to build better habits
+            </h2>
+            <div className="grid grid-cols-1 gap-3">
+              {FEATURES.map(({ emoji, title, desc }) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-200">{title}</h3>
+                      <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ── How it works — web only ── */}
         {!native && (
           <section className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-neutral-500 mb-4">How it works</h3>
+            <h2 className="text-xs font-bold tracking-wider uppercase text-neutral-500 mb-4">How it works</h2>
             <div className="space-y-4 text-sm text-neutral-300">
-              {[
-                { n: "1", t: "Pick your habits", d: "Choose from 75+ built-in routines or create your own" },
-                { n: "2", t: "Mark your CORE", d: "Tag 3–5 non-negotiable habits that define a green day" },
-                { n: "3", t: "Check off daily", d: "One tap per habit — done in under 30 seconds" },
-                { n: "4", t: "Watch streaks grow", d: "Consistency compounds. See your calendar fill with green" },
-              ].map(({ n, t, d }) => (
+              {HOW_IT_WORKS.map(({ n, t, d }) => (
                 <div key={n} className="flex items-start gap-3">
                   <span className="shrink-0 flex items-center justify-center rounded-full text-xs font-bold"
                     style={{ width: 24, height: 24, background: "rgba(16,185,129,0.15)", color: "rgb(16,185,129)" }}>
@@ -330,43 +391,54 @@ export default function Home() {
           </section>
         )}
 
-        {/* ── Features — compact in native ── */}
+        {/* ── Premium — web only ── */}
         {!native && (
-          <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="space-y-3 text-sm text-neutral-300">
-              {[
-                { e: "🏆", t: "Trophies and milestones that celebrate your wins" },
-                { e: "📊", t: "Progress calendar, activity totals, and trend analytics" },
-                { e: "💪", t: "Modular design — add fitness, sleep, journal, and more" },
-                { e: "📱", t: "Installs as a PWA — feels native on iPhone and Android" },
-                { e: "🔒", t: "Private and secure — your data stays yours" },
-              ].map(({ e, t }) => (
-                <div key={t} className="flex items-start gap-3">
-                  <span className="text-base shrink-0 mt-0.5">{e}</span>
-                  <span>{t}</span>
+          <section className="mt-4 rounded-2xl border border-emerald-900/50 bg-emerald-950/20 p-5">
+            <h2 className="text-sm font-bold text-emerald-400 mb-1">Routines365 Premium</h2>
+            <p className="text-xs text-neutral-500 mb-4">7-day free trial · $3.99/mo or $29.99/yr</p>
+            <div className="space-y-2.5">
+              {PREMIUM_PERKS.map((perk) => (
+                <div key={perk} className="flex items-start gap-2.5">
+                  <span className="text-emerald-400 text-xs mt-0.5 shrink-0">✦</span>
+                  <span className="text-sm text-neutral-300">{perk}</span>
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* ── Install instructions — NEVER shown in native ── */}
+        {/* ── Install instructions — web only ── */}
         {!native && (
           <section className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <h3 className="text-sm font-bold">📱 Install on your phone</h3>
+            <h2 className="text-sm font-bold">📱 Install on your phone</h2>
             <div className="mt-2 space-y-1.5 text-sm text-neutral-400">
               <p><strong className="text-neutral-200">iPhone:</strong> Open in Safari → Share → Add to Home Screen</p>
               <p><strong className="text-neutral-200">Android:</strong> Chrome menu → Install app</p>
-              <p className="text-xs text-neutral-500 mt-2">Launches full-screen with no browser bar — feels like a native app.</p>
+              <p className="text-xs text-neutral-500 mt-2">Launches full-screen — feels like a native app.</p>
             </div>
+          </section>
+        )}
+
+        {/* ── SEO content — web only, visually subtle ── */}
+        {!native && (
+          <section className="mt-6 space-y-3 text-xs text-neutral-600 leading-relaxed px-1">
+            <p>
+              Routines365 is a daily habit tracker designed for people who want to build consistent morning routines, track fitness goals, practice breathwork, and journal with guided gratitude prompts. Whether you're building a Wim Hof breathing practice, tracking steps with Apple Health, or simply checking off your daily habits, Routines365 makes consistency simple.
+            </p>
+            <p>
+              Features include streak tracking with milestones at 7, 14, 30, 50, 100, and 365 days; a guided journal with gratitude, intention, and reflection prompts; five breathwork techniques with audio cues; Qigong movement routines; Apple Health integration for sleep, HRV, heart rate, and steps; an accountability partner system; Pomodoro focus timer; activity logging for workouts and recovery; and a beautiful progress calendar that shows your consistency at a glance.
+            </p>
+            <p>
+              Available as a native iOS app and progressive web app (PWA). Free to start with optional premium upgrade for biometric insights, sleep stage analysis, health auto-complete, unlimited habits, and custom themes.
+            </p>
           </section>
         )}
 
         <footer className="mt-6 text-center space-y-2 pb-6">
           <p className="text-xs text-neutral-500">Routines365 — Stack your days. Change your life.</p>
           <div className="text-xs text-neutral-600 space-x-3">
-            <a className="transition-colors" href="/privacy">Privacy</a>
-            <a className="transition-colors" href="/terms">Terms</a>
+            <a className="transition-colors hover:text-neutral-400" href="/privacy">Privacy</a>
+            <a className="transition-colors hover:text-neutral-400" href="/terms">Terms</a>
           </div>
         </footer>
       </div>
