@@ -36,14 +36,21 @@ export function ReminderSheet({
   const [deleting, setDeleting] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [isNative, setIsNative] = useState(false);
 
   useEffect(() => {
     if (open) {
       setTime(existing?.time ?? "09:00");
       setDays(existing?.days_of_week ?? [1, 2, 3, 4, 5]);
       setEnabled(existing?.enabled ?? true);
-      isPushSupported().then(setPushSupported);
-      getPushPermission().then(setPushPermission);
+      // Check if running in native Capacitor app
+      // @ts-expect-error - Capacitor global
+      const native = !!window.Capacitor;
+      setIsNative(native);
+      if (!native) {
+        isPushSupported().then(setPushSupported);
+        getPushPermission().then(setPushPermission);
+      }
     }
   }, [open, existing]);
 
@@ -60,8 +67,9 @@ export function ReminderSheet({
     hapticMedium();
 
     try {
-      // Ensure push is enabled before saving
-      if (pushPermission !== "granted") {
+      // In native app, skip web push — save reminder directly
+      // In web, try to get push permission first
+      if (!isNative && pushPermission !== "granted") {
         const ok = await subscribeToPush();
         if (!ok) {
           setSaving(false);
@@ -108,10 +116,10 @@ export function ReminderSheet({
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
         onClick={onClose} />
 
-      {/* Modal — centered */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-        <div className="w-full max-w-sm rounded-2xl p-5 animate-fade-in-up"
-          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}
+      {/* Modal — bottom-anchored on mobile for keyboard */}
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+        <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5 animate-fade-in-up"
+          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 32px rgba(0,0,0,0.3)" }}
           onClick={(e) => e.stopPropagation()}>
 
           {/* Handle + close */}
@@ -138,12 +146,12 @@ export function ReminderSheet({
             </p>
           </div>
 
-          {/* Push not supported warning */}
-          {!pushSupported && (
+          {/* Push not supported warning — only on web, never in native app */}
+          {!isNative && !pushSupported && (
             <div className="rounded-xl px-3 py-2.5 mb-4 text-xs"
               style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
-              Push notifications aren&apos;t available on this device/browser.
-              Reminders will only work if the app is open.
+              Push notifications aren&apos;t available in this browser.
+              Try opening the app from your home screen.
             </div>
           )}
 
