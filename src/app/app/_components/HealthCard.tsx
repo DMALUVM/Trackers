@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2, Activity, Wind, Droplets, Lock } from "lucide-react";
+import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2, Activity, Wind, Droplets, Lock, RefreshCw } from "lucide-react";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
 import { usePremium } from "@/lib/premium";
 import { hapticLight } from "@/lib/haptics";
@@ -38,11 +38,13 @@ function saveVisibleMetrics(ids: MetricId[]) {
  * Shows: steps, sleep, calories, workouts + premium biometrics.
  */
 export function HealthCard() {
-  const { available, authorized, requestAuth, steps, sleep, summary, loading } = useHealthKit();
+  const { available, authorized, requestAuth, steps, sleep, summary, refresh, loading } = useHealthKit();
   const { isPremium } = usePremium();
   const [visible, setVisible] = useState<MetricId[]>(DEFAULT_METRICS);
   const [showSettings, setShowSettings] = useState(false);
   const [bio, setBio] = useState<{ hrv?: number; restingHeartRate?: number; spo2?: number; respiratory?: number } | null>(null);
+  const [refreshCount, setRefreshCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => { setVisible(getVisibleMetrics()); }, []);
 
@@ -54,12 +56,12 @@ export function HealthCard() {
     void (async () => {
       try {
         const { getBiometricSummary } = await import("@/lib/healthKit");
-        const [s, bio] = await Promise.all([
+        const [s, bioData] = await Promise.all([
           getDaySummary(),
           getBiometricSummary(1),
         ]);
-        const spo2Val = bio?.bloodOxygen?.[0]?.value;
-        const rrVal = bio?.respiratoryRate?.[0]?.value;
+        const spo2Val = bioData?.bloodOxygen?.[0]?.value;
+        const rrVal = bioData?.respiratoryRate?.[0]?.value;
         setBio({
           hrv: s?.hrv,
           restingHeartRate: s?.restingHeartRate,
@@ -68,7 +70,15 @@ export function HealthCard() {
         });
       } catch { /* ignore */ }
     })();
-  }, [available, authorized, isPremium, visible]);
+  }, [available, authorized, isPremium, visible, refreshCount]);
+
+  const handleRefresh = async () => {
+    setSyncing(true);
+    hapticLight();
+    await refresh();
+    setRefreshCount(c => c + 1); // triggers bio re-fetch too
+    setTimeout(() => setSyncing(false), 600);
+  };
 
   // Don't show anything on web
   if (!available) return null;
@@ -128,6 +138,11 @@ export function HealthCard() {
       return;
     }
     hapticLight();
+    // When toggling ON a biometric metric, re-request auth to ensure
+    // new HealthKit types (HRV, RHR, SpO2, respiratory) are authorized
+    if (metric?.premium && !visible.includes(id)) {
+      void requestAuth();
+    }
     setVisible((prev) => {
       const next = prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id];
       if (next.length === 0) return prev; // must have at least 1
@@ -163,10 +178,18 @@ export function HealthCard() {
             Apple Health
           </span>
         </div>
-        <button type="button" onClick={() => { hapticLight(); setShowSettings(!showSettings); }}
-          className="rounded-full p-1.5" style={{ background: showSettings ? "var(--bg-card-hover)" : "transparent" }}>
-          <Settings2 size={14} style={{ color: "var(--text-faint)" }} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={handleRefresh}
+            className="rounded-full p-1.5"
+            style={{ background: "transparent" }}
+            aria-label="Refresh health data">
+            <RefreshCw size={13} style={{ color: "var(--text-faint)", transition: "transform 0.3s", transform: syncing ? "rotate(180deg)" : "none" }} />
+          </button>
+          <button type="button" onClick={() => { hapticLight(); setShowSettings(!showSettings); }}
+            className="rounded-full p-1.5" style={{ background: showSettings ? "var(--bg-card-hover)" : "transparent" }}>
+            <Settings2 size={14} style={{ color: "var(--text-faint)" }} />
+          </button>
+        </div>
       </div>
 
       {/* Customization toggles */}
@@ -224,6 +247,15 @@ export function HealthCard() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Hint for biometric "no data" */}
+      {isPremium && visible.some(id => ["hrv", "rhr", "spo2", "respiratory"].includes(id)) &&
+       !hrvValue && !rhrValue && !spo2Value && !respiratoryValue && (
+        <p className="mt-3 pt-3 text-[10px] leading-tight" style={{ color: "var(--text-faint)", borderTop: "1px solid var(--border-primary)" }}>
+          Biometrics require a device that writes to Apple Health (Apple Watch, Oura Ring, Garmin, etc.).
+          Check Settings → Health → Routines365 to ensure all categories are enabled.
+        </p>
       )}
     </div>
   );

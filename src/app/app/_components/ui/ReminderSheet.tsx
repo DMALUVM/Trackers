@@ -116,10 +116,10 @@ export function ReminderSheet({
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
         onClick={onClose} />
 
-      {/* Modal — bottom-anchored on mobile for keyboard */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-        <div className="w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 pb-8 sm:pb-5 animate-fade-in-up"
-          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 32px rgba(0,0,0,0.3)" }}
+      {/* Modal — centered accounting for iPhone safe areas */}
+      <div className="modal-center" onClick={onClose}>
+        <div className="w-full max-w-sm rounded-2xl p-5 animate-fade-in-up"
+          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 40px rgba(0,0,0,0.4)" }}
           onClick={(e) => e.stopPropagation()}>
 
           {/* Handle + close */}

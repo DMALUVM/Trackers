@@ -74,11 +74,22 @@ export function useHealthKit(): UseHealthKitReturn {
       if (!avail) { setLoading(false); return; }
 
       try {
-        const auth = await isHealthKitAuthorized();
-        setAuthorized(auth);
-        if (auth) await refresh();
+        // Always call requestAuthorization on mount (not just isAuthorized).
+        // This ensures new data types (HRV, RHR, SpO2, respiratory) added in
+        // later versions get prompted even if user already authorized earlier.
+        // iOS only shows the prompt for NEW types — already-granted types are
+        // skipped silently, so this is safe to call every time.
+        const ok = await requestHealthKitAuth();
+        setAuthorized(ok);
+        if (ok) await refresh();
       } catch {
         // Plugin may not be fully registered yet — that's OK
+        // Fall back to checking auth status
+        try {
+          const auth = await isHealthKitAuthorized();
+          setAuthorized(auth);
+          if (auth) await refresh();
+        } catch { /* ignore */ }
       }
       setLoading(false);
     };

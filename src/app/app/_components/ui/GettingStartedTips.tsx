@@ -75,8 +75,8 @@ export function GettingStartedTips() {
   const tip = TIPS[step];
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+    <div className="modal-center"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 150 }}
       onClick={dismiss}>
       <div
         className="w-full max-w-sm rounded-2xl p-6 animate-fade-in-up relative"

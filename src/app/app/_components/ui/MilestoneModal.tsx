@@ -60,17 +60,9 @@ export function MilestoneModal({
       role="dialog"
       aria-modal="true"
       onClick={dismiss}
+      className="modal-center"
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100dvh",
         zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "24px",
         background: phase === "show" ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0)",
         backdropFilter: phase === "show" ? "blur(8px)" : "blur(0)",
         WebkitBackdropFilter: phase === "show" ? "blur(8px)" : "blur(0)",
