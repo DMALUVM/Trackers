@@ -1,30 +1,29 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 /**
  * Per-page ambient gradient tint — dark mode only.
- * Sets backgroundImage directly on .theme-shell.
- * .theme-shell uses background-color (separate property) for the solid base.
- * backgroundImage and backgroundColor are independent — no interference.
+ * Renders an absolute-positioned div inside .theme-shell (which is position:relative).
+ * Normal flow content paints on top of z-index:0 positioned children.
  */
 
 const ROUTE_TINTS: Record<string, string> = {
-  "/app/today":             "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.10) 0%, transparent 65%)",
-  "/app/breathwork":        "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.14) 0%, transparent 65%)",
-  "/app/movement":          "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 65%)",
-  "/app/focus":             "radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 65%)",
-  "/app/biometrics":        "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.12) 0%, transparent 65%)",
-  "/app/routines/progress": "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.10) 0%, transparent 65%)",
-  "/app/routines/edit":     "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 60%)",
-  "/app/streaks":           "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.12) 0%, transparent 65%)",
-  "/app/trophies":          "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.14) 0%, transparent 65%)",
-  "/app/partner":           "radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.12) 0%, transparent 65%)",
-  "/app/recovery":          "radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.12) 0%, transparent 65%)",
-  "/app/sleep":             "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.14) 0%, transparent 65%)",
-  "/app/mindfulness":       "radial-gradient(ellipse at 50% 0%, rgba(45,212,191,0.12) 0%, transparent 65%)",
-  "/app/fitness":           "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.10) 0%, transparent 65%)",
+  "/app/today":             "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 65%)",
+  "/app/breathwork":        "radial-gradient(ellipse at 50% 0%, rgba(6,182,212,0.16) 0%, transparent 65%)",
+  "/app/movement":          "radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.14) 0%, transparent 65%)",
+  "/app/focus":             "radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.14) 0%, transparent 65%)",
+  "/app/biometrics":        "radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.14) 0%, transparent 65%)",
+  "/app/routines/progress": "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 65%)",
+  "/app/routines/edit":     "radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.10) 0%, transparent 60%)",
+  "/app/streaks":           "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.14) 0%, transparent 65%)",
+  "/app/trophies":          "radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.16) 0%, transparent 65%)",
+  "/app/partner":           "radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.14) 0%, transparent 65%)",
+  "/app/recovery":          "radial-gradient(ellipse at 50% 0%, rgba(20,184,166,0.14) 0%, transparent 65%)",
+  "/app/sleep":             "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.16) 0%, transparent 65%)",
+  "/app/mindfulness":       "radial-gradient(ellipse at 50% 0%, rgba(45,212,191,0.14) 0%, transparent 65%)",
+  "/app/fitness":           "radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.12) 0%, transparent 65%)",
 };
 
 function getTint(pathname: string): string | null {
@@ -75,16 +74,27 @@ export function PageTint() {
     };
   }, []);
 
-  useEffect(() => {
-    const el = document.querySelector(".theme-shell") as HTMLElement | null;
-    if (!el) return;
-
-    const tint = (enabled && isDark) ? getTint(pathname) : null;
-    // backgroundImage is independent of backgroundColor — safe from React re-renders
-    el.style.backgroundImage = tint ?? "none";
-
-    return () => { el.style.backgroundImage = "none"; };
+  const tint = useMemo(() => {
+    if (!enabled || !isDark) return null;
+    return getTint(pathname);
   }, [pathname, isDark, enabled]);
 
-  return null;
+  if (!tint) return null;
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "100vh",
+        pointerEvents: "none",
+        zIndex: 0,
+        background: tint,
+        transition: "opacity 0.5s ease-out",
+      }}
+    />
+  );
 }

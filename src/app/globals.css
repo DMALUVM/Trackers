@@ -124,9 +124,10 @@ body {
   font-size: 16px; /* Base — ensures nothing renders tiny */
 }
 
-/* Theme shell: solid color base. PageTint sets backgroundImage via JS. */
+/* Theme shell: solid color base. position:relative for PageTint overlay. */
 .theme-shell {
   background-color: var(--bg-primary);
+  position: relative;
 }
 
 /* Accessibility: bump all small text for maximum readability */

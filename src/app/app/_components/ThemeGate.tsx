@@ -84,7 +84,7 @@ export function ThemeGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div data-theme={resolved} style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
+    <div data-theme={resolved} className="theme-shell" style={{ color: "var(--text-primary)" }}>
       {children}
     </div>
   );
