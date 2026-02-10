@@ -14,6 +14,7 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "scheduleDailyReminder", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancelReminder", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "cancelAll", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "clearBadge", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "listPending", returnType: CAPPluginReturnPromise),
     ]
 
@@ -123,8 +124,33 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func cancelAll(_ call: CAPPluginCall) {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-        UIApplication.shared.applicationIconBadgeNumber = 0
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(0) { _ in }
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+            }
+        }
         call.resolve(["cancelled": true])
+    }
+
+    @objc func clearBadge(_ call: CAPPluginCall) {
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(0) { error in
+                if let error = error {
+                    call.reject("Failed to clear badge: \(error.localizedDescription)")
+                } else {
+                    call.resolve(["cleared": true])
+                }
+            }
+        } else {
+            DispatchQueue.main.async {
+                UIApplication.shared.applicationIconBadgeNumber = 0
+                call.resolve(["cleared": true])
+            }
+        }
     }
 
     // MARK: - List

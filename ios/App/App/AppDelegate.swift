@@ -1,51 +1,41 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: CAPAppDelegate {
 
-    var window: UIWindow?
-
-    func application(_ application: UIApplication,
-                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-
-        // Audio session — play breathwork sounds even when ringer/silent switch is off
+    override func application(_ application: UIApplication,
+                              didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Configure audio session for breathwork and focus sounds
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
         } catch {
-            print("AVAudioSession error: \(error)")
+            print("Audio session setup failed: \(error)")
         }
 
-        return true
+        return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
-    func applicationWillResignActive(_ application: UIApplication) {
-    }
+    // Clear badge + delivered notifications whenever app becomes active
+    override func applicationDidBecomeActive(_ application: UIApplication) {
+        super.applicationDidBecomeActive(application)
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-    }
+        // Clear badge — use modern API on iOS 16+, legacy fallback otherwise
+        if #available(iOS 16.0, *) {
+            UNUserNotificationCenter.current().setBadgeCount(0) { error in
+                if let error = error {
+                    print("Failed to clear badge: \(error)")
+                }
+            }
+        } else {
+            application.applicationIconBadgeNumber = 0
+        }
 
-    func applicationWillEnterForeground(_ application: UIApplication) {
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-    }
-
-    func applicationWillTerminate(_ application: UIApplication) {
-    }
-
-    func application(_ app: UIApplication, open url: URL,
-                     options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
-    }
-
-    func application(_ application: UIApplication,
-                     continue userActivity: NSUserActivity,
-                     restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
-        return ApplicationDelegateProxy.shared.application(application, continue: userActivity,
-                                                           restorationHandler: restorationHandler)
+        // Also remove delivered notifications from Notification Center
+        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
     }
 }
