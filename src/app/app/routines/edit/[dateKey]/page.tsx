@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Check, Plus, Footprints, Moon, Dumbbell } from "lucide-react";
+import { ArrowLeft, Check, Plus } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 import { useRoutineDay, usePersist } from "@/lib/hooks";
@@ -24,10 +24,21 @@ export default function EditDayPage() {
   const [confettiTrigger, setConfettiTrigger] = useState(false);
 
   // Activity logging for past days
-  const [actSteps, setActSteps] = useState("");
-  const [actSleep, setActSleep] = useState("");
+  const ACTIVITIES = [
+    { key: "walking", label: "Steps", emoji: "🚶", unit: "steps" as ActivityUnit, inputMode: "numeric" as const, placeholder: "8500" },
+    { key: "sleep_hours", label: "Sleep", emoji: "😴", unit: "hours" as ActivityUnit, inputMode: "decimal" as const, placeholder: "7.5" },
+    { key: "rowing", label: "Rowing", emoji: "🚣", unit: "meters" as ActivityUnit, inputMode: "numeric" as const, placeholder: "5000" },
+    { key: "running", label: "Running", emoji: "🏃", unit: "miles" as ActivityUnit, inputMode: "decimal" as const, placeholder: "2.5" },
+    { key: "hydration", label: "Water", emoji: "💧", unit: "glasses" as ActivityUnit, inputMode: "numeric" as const, placeholder: "8" },
+    { key: "sauna", label: "Sauna", emoji: "🔥", unit: "sessions" as ActivityUnit, inputMode: "numeric" as const, placeholder: "1" },
+    { key: "cold", label: "Cold plunge", emoji: "❄️", unit: "sessions" as ActivityUnit, inputMode: "numeric" as const, placeholder: "1" },
+    { key: "meditation", label: "Meditation", emoji: "🧘", unit: "minutes" as ActivityUnit, inputMode: "numeric" as const, placeholder: "15" },
+    { key: "workout", label: "Workout", emoji: "💪", unit: "minutes" as ActivityUnit, inputMode: "numeric" as const, placeholder: "45" },
+  ];
+  const [actValues, setActValues] = useState<Record<string, string>>({});
   const [actSaved, setActSaved] = useState<string[]>([]);
   const [actSaving, setActSaving] = useState(false);
+  const [actExpanded, setActExpanded] = useState(false);
 
   useEffect(() => { setItems(routine.items); setDayMode(routine.dayMode); }, [routine.loading]); // eslint-disable-line
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
@@ -126,91 +137,65 @@ export default function EditDayPage() {
         </div>
       </section>
 
-      {/* Activity Log section — log steps, sleep, etc. for this day */}
+      {/* Activity Log section — log steps, sleep, rowing, etc. for this day */}
       <section>
-        <p className="text-xs font-bold tracking-wider uppercase mb-3 px-1" style={{ color: "var(--text-muted)" }}>
-          Activity Log
-        </p>
-        <div className="space-y-3">
-          {/* Steps */}
-          <div className="rounded-2xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Footprints size={14} style={{ color: "#3b82f6" }} />
-              <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Steps</span>
-              {actSaved.includes("steps") && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>✓ Saved</span>
-              )}
+        <div className="flex items-center justify-between mb-3 px-1">
+          <p className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-muted)" }}>
+            Activity Log
+          </p>
+          <button type="button" onClick={() => { hapticLight(); setActExpanded(!actExpanded); }}
+            className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+            style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
+            {actExpanded ? "Show less" : "Show all"}
+          </button>
+        </div>
+        <div className="space-y-2">
+          {(actExpanded ? ACTIVITIES : ACTIVITIES.slice(0, 3)).map((act) => (
+            <div key={act.key} className="rounded-2xl px-4 py-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              <div className="flex items-center gap-3">
+                <span className="text-base">{act.emoji}</span>
+                <span className="text-sm font-semibold flex-1" style={{ color: "var(--text-primary)" }}>
+                  {act.label}
+                  {actSaved.includes(act.key) && (
+                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>✓</span>
+                  )}
+                </span>
+                <input
+                  className="w-24 rounded-xl px-3 py-2 text-sm text-right"
+                  style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
+                  inputMode={act.inputMode}
+                  type="number"
+                  step={act.inputMode === "decimal" ? 0.5 : 1}
+                  placeholder={act.placeholder}
+                  value={actValues[act.key] ?? ""}
+                  onChange={(e) => setActValues(prev => ({ ...prev, [act.key]: e.target.value }))}
+                />
+                <button type="button"
+                  disabled={!actValues[act.key] || actSaving}
+                  className="shrink-0 flex items-center justify-center rounded-xl disabled:opacity-30 transition-all active:scale-90"
+                  style={{ width: 38, height: 38, background: actValues[act.key] ? "var(--accent-green)" : "var(--bg-card-hover)" }}
+                  onClick={async () => {
+                    const raw = actValues[act.key];
+                    const val = act.inputMode === "decimal" ? parseFloat(raw) : parseInt(raw, 10);
+                    if (!val || !dateKey) return;
+                    setActSaving(true);
+                    hapticMedium();
+                    try {
+                      await addActivityLog({ dateKey, activityKey: act.key as ActivityKey, value: val, unit: act.unit });
+                      setActSaved(prev => [...prev, act.key]);
+                      setActValues(prev => ({ ...prev, [act.key]: "" }));
+                    } catch { /* ignore */ }
+                    setActSaving(false);
+                  }}>
+                  <Plus size={16} style={{ color: actValues[act.key] ? "var(--text-inverse)" : "var(--text-faint)" }} />
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 rounded-xl px-3 py-2.5 text-sm"
-                style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-                inputMode="numeric"
-                type="number"
-                placeholder="e.g. 8500"
-                value={actSteps}
-                onChange={(e) => setActSteps(e.target.value)}
-              />
-              <button type="button" disabled={!actSteps || actSaving}
-                className="btn-primary shrink-0 px-4 py-2.5 text-sm disabled:opacity-50"
-                onClick={async () => {
-                  const val = parseInt(actSteps, 10);
-                  if (!val || !dateKey) return;
-                  setActSaving(true);
-                  hapticMedium();
-                  try {
-                    await addActivityLog({ dateKey, activityKey: "walking" as ActivityKey, value: val, unit: "steps" as ActivityUnit });
-                    setActSaved(prev => [...prev, "steps"]);
-                    setActSteps("");
-                  } catch { /* ignore */ }
-                  setActSaving(false);
-                }}>
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Sleep hours */}
-          <div className="rounded-2xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-            <div className="flex items-center gap-2 mb-2">
-              <Moon size={14} style={{ color: "#8b5cf6" }} />
-              <span className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Sleep</span>
-              {actSaved.includes("sleep") && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>✓ Saved</span>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 rounded-xl px-3 py-2.5 text-sm"
-                style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-                inputMode="decimal"
-                type="number"
-                step={0.5}
-                placeholder="e.g. 7.5 hours"
-                value={actSleep}
-                onChange={(e) => setActSleep(e.target.value)}
-              />
-              <button type="button" disabled={!actSleep || actSaving}
-                className="btn-primary shrink-0 px-4 py-2.5 text-sm disabled:opacity-50"
-                onClick={async () => {
-                  const val = parseFloat(actSleep);
-                  if (!val || !dateKey) return;
-                  setActSaving(true);
-                  hapticMedium();
-                  try {
-                    await addActivityLog({ dateKey, activityKey: "sleep_hours" as ActivityKey, value: val, unit: "hours" as ActivityUnit });
-                    setActSaved(prev => [...prev, "sleep"]);
-                    setActSleep("");
-                  } catch { /* ignore */ }
-                  setActSaving(false);
-                }}>
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
         <p className="text-[10px] mt-2 px-1" style={{ color: "var(--text-faint)" }}>
-          Log activities you did on this day. Each save adds to your totals.
+          Log activities for this day. Each save adds to your totals.
         </p>
       </section>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getUserSettings, setEnabledModules } from "@/lib/supabaseData";
 import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 import { hapticLight } from "@/lib/haptics";
@@ -171,7 +172,7 @@ export default function ModulesPage() {
         <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
           Today page widgets
         </p>
-        <a href="/app/settings/customize"
+        <Link href="/app/settings/customize"
           className="card-interactive px-4 py-3.5 flex items-center justify-between w-full text-left"
           style={{ textDecoration: "none" }}>
           <div className="flex items-center gap-3">
@@ -182,7 +183,7 @@ export default function ModulesPage() {
             </div>
           </div>
           <span className="text-xs" style={{ color: "var(--text-faint)" }}>→</span>
-        </a>
+        </Link>
       </section>
     </div>
   );

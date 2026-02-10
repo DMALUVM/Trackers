@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Shield, X } from "lucide-react";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
@@ -96,11 +97,11 @@ export function StreakInsurance({
               </button>
             )}
             {!isPremium && (
-              <a href="/app/settings/premium"
+              <Link href="/app/settings/premium"
                 className="px-3 py-1.5 rounded-lg text-xs font-bold"
                 style={{ background: "#f59e0b", color: "white", textDecoration: "none" }}>
                 🔒 Unlock Streak Freeze
-              </a>
+              </Link>
             )}
             <button type="button" onClick={dismiss}
               className="px-3 py-1.5 rounded-lg text-xs font-medium"

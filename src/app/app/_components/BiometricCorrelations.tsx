@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Activity, TrendingUp, Lock, Sparkles } from "lucide-react";
 import { getBiometricSummary, isHealthKitAvailable, type BiometricReading } from "@/lib/healthKit";
@@ -175,11 +176,11 @@ export function BiometricCorrelations() {
           </div>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <a href="/app/settings/premium" className="flex items-center gap-1.5 rounded-full px-4 py-2"
+          <Link href="/app/settings/premium" className="flex items-center gap-1.5 rounded-full px-4 py-2"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
             <Lock size={12} style={{ color: "var(--text-faint)" }} />
             <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>Unlock Insights</span>
-          </a>
+          </Link>
         </div>
       </div>
     );

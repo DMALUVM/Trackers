@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Moon, Lock } from "lucide-react";
 import { getSleep, type HealthKitSleep } from "@/lib/healthKit";
@@ -103,11 +104,11 @@ export function SleepStageBreakdown() {
           </div>
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <a href="/app/settings/premium" className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
+          <Link href="/app/settings/premium" className="flex items-center gap-1.5 rounded-full px-3 py-1.5"
             style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", textDecoration: "none" }}>
             <Lock size={12} style={{ color: "var(--text-faint)" }} />
             <span className="text-xs font-bold" style={{ color: "var(--text-muted)" }}>Premium</span>
-          </a>
+          </Link>
         </div>
       </div>
     );

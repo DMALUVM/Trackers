@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Activity, Heart, Wind, Droplets, TrendingUp, TrendingDown, Minus, Lock } from "lucide-react";
 import { SubPageHeader, SkeletonCard } from "@/app/app/_components/ui";
@@ -270,11 +271,11 @@ export default function BiometricsPage() {
           <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
             See how your daily habits correlate with HRV, heart rate, and recovery. Track trends from your Oura Ring, Apple Watch, or Garmin.
           </p>
-          <a href="/app/settings/premium"
+          <Link href="/app/settings/premium"
             className="inline-block mt-3 rounded-xl px-6 py-2.5 text-sm font-bold"
             style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
             Start 7-Day Free Trial
-          </a>
+          </Link>
         </div>
       )}
 
