@@ -7,6 +7,7 @@ import { ThemeGate } from "@/app/app/_components/ThemeGate";
 import { ErrorBoundary } from "@/app/app/_components/ErrorBoundary";
 import { SettingsGear } from "@/app/app/_components/SettingsGear";
 import { GlobalPullToRefresh } from "@/app/app/_components/GlobalPullToRefresh";
+import { PageTint } from "@/app/app/_components/PageTint";
 import { PremiumProvider } from "@/lib/premium";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <AuthGate>
         <ThemeGate>
           <PremiumProvider>
+            <PageTint />
             <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
               <IosInstallPrompt />
               <SettingsGear />

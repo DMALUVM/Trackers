@@ -9,7 +9,7 @@ import { useRoutineDay, usePersist } from "@/lib/hooks";
 import { RoutineCheckItem, SkeletonCard, SkeletonLine, Toast, ConfettiBurst } from "@/app/app/_components/ui";
 import { hapticLight, hapticHeavy, hapticSuccess, hapticMedium } from "@/lib/haptics";
 import type { DayMode } from "@/lib/types";
-import { addActivityLog, type ActivityKey, type ActivityUnit } from "@/lib/activity";
+import { addActivityLog, listActivityLogsForDate, type ActivityKey, type ActivityUnit, type ActivityLogRow } from "@/lib/activity";
 
 export default function EditDayPage() {
   const params = useParams<{ dateKey: string }>();
@@ -39,6 +39,24 @@ export default function EditDayPage() {
   const [actSaved, setActSaved] = useState<string[]>([]);
   const [actSaving, setActSaving] = useState(false);
   const [actExpanded, setActExpanded] = useState(false);
+  const [existingLogs, setExistingLogs] = useState<ActivityLogRow[]>([]);
+
+  // Load existing activity logs for this date on mount
+  useEffect(() => {
+    if (!dateKey) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const logs = await listActivityLogsForDate(dateKey);
+        if (cancelled) return;
+        setExistingLogs(logs);
+        // Mark activities that already have saved data
+        const savedKeys = [...new Set(logs.map(l => l.activity_key))];
+        setActSaved(savedKeys);
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [dateKey]);
 
   useEffect(() => { setItems(routine.items); setDayMode(routine.dayMode); }, [routine.loading]); // eslint-disable-line
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
@@ -150,24 +168,36 @@ export default function EditDayPage() {
           </button>
         </div>
         <div className="space-y-2">
-          {(actExpanded ? ACTIVITIES : ACTIVITIES.slice(0, 3)).map((act) => (
+          {(actExpanded ? ACTIVITIES : ACTIVITIES.slice(0, 3)).map((act) => {
+            // Sum up all existing logs for this activity on this date
+            const savedLogs = existingLogs.filter(l => l.activity_key === act.key);
+            const savedTotal = savedLogs.reduce((sum, l) => sum + Number(l.value || 0), 0);
+            const hasSaved = savedLogs.length > 0;
+            return (
             <div key={act.key} className="rounded-2xl px-4 py-3" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
               <div className="flex items-center gap-3">
                 <span className="text-base">{act.emoji}</span>
-                <span className="text-sm font-semibold flex-1" style={{ color: "var(--text-primary)" }}>
-                  {act.label}
-                  {actSaved.includes(act.key) && (
-                    <span className="ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>✓</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {act.label}
+                  </span>
+                  {hasSaved && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs font-bold" style={{ color: "var(--accent-green-text)" }}>
+                        {act.inputMode === "decimal" ? savedTotal.toFixed(1) : savedTotal} {act.unit}
+                      </span>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: "var(--accent-green-soft)", color: "var(--accent-green-text)" }}>✓ saved</span>
+                    </div>
                   )}
-                </span>
+                </div>
                 <input
                   className="w-24 rounded-xl px-3 py-2 text-sm text-right"
                   style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
                   inputMode={act.inputMode}
                   type="number"
                   step={act.inputMode === "decimal" ? 0.5 : 1}
-                  placeholder={act.placeholder}
+                  placeholder={hasSaved ? "add more" : act.placeholder}
                   value={actValues[act.key] ?? ""}
                   onChange={(e) => setActValues(prev => ({ ...prev, [act.key]: e.target.value }))}
                 />
@@ -183,7 +213,10 @@ export default function EditDayPage() {
                     hapticMedium();
                     try {
                       await addActivityLog({ dateKey, activityKey: act.key as ActivityKey, value: val, unit: act.unit });
-                      setActSaved(prev => [...prev, act.key]);
+                      // Refresh the existing logs to show updated total
+                      const logs = await listActivityLogsForDate(dateKey);
+                      setExistingLogs(logs);
+                      setActSaved(prev => [...new Set([...prev, act.key])]);
                       setActValues(prev => ({ ...prev, [act.key]: "" }));
                     } catch { /* ignore */ }
                     setActSaving(false);
@@ -192,7 +225,8 @@ export default function EditDayPage() {
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <p className="text-[10px] mt-2 px-1" style={{ color: "var(--text-faint)" }}>
           Log activities for this day. Each save adds to your totals.

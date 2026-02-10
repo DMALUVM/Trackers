@@ -140,6 +140,18 @@ export type ActivityLogRow = {
   notes: string | null;
 };
 
+export async function listActivityLogsForDate(dateKey: string) {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from("activity_logs")
+    .select("id,date,activity_key,value,unit,notes")
+    .eq("user_id", userId)
+    .eq("date", dateKey)
+    .order("date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ActivityLogRow[];
+}
+
 export async function listActivityLogs(opts: {
   from: string;
   to: string;
