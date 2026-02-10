@@ -16,22 +16,22 @@ function resolveTheme(t: Theme): "dark" | "light" {
 }
 
 // Solid tinted backgrounds — dark mode only
-// Each page gets a deeply saturated version of its accent color
+// Bold enough to clearly see on OLED. Toggle OFF = pure black.
 const PAGE_BG: Record<string, string> = {
-  "/app/today":             "#091a14", // deep emerald
-  "/app/breathwork":        "#091519", // deep teal-cyan
-  "/app/movement":          "#091a14", // deep emerald
-  "/app/focus":             "#1a1408", // deep amber
-  "/app/biometrics":        "#140d1e", // deep purple
-  "/app/routines/progress": "#0c1220", // deep blue
-  "/app/routines/edit":     "#0c1220", // deep blue
-  "/app/streaks":           "#1a1608", // deep gold
-  "/app/trophies":          "#1a1608", // deep gold
-  "/app/partner":           "#1e0d18", // deep pink
-  "/app/recovery":          "#091a18", // deep teal
-  "/app/sleep":             "#0d0e1e", // deep indigo
-  "/app/mindfulness":       "#091a18", // deep teal
-  "/app/fitness":           "#1a0d0d", // deep red
+  "/app/today":             "#0b3020", // emerald
+  "/app/breathwork":        "#0a3040", // teal-cyan
+  "/app/movement":          "#0b3020", // emerald
+  "/app/focus":             "#352a0a", // warm amber
+  "/app/biometrics":        "#221240", // purple
+  "/app/routines/progress": "#102040", // blue
+  "/app/routines/edit":     "#102040", // blue
+  "/app/streaks":           "#353008", // gold
+  "/app/trophies":          "#353008", // gold
+  "/app/partner":           "#3a1230", // pink
+  "/app/recovery":          "#0a3530", // teal
+  "/app/sleep":             "#161845", // indigo
+  "/app/mindfulness":       "#0a3530", // teal
+  "/app/fitness":           "#351010", // red
 };
 
 function getPageBg(pathname: string): string | null {
