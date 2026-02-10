@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [isNativeApp] = useState(() => {
     if (typeof window === "undefined") return false;
     // Capacitor sets this on the window object
-    return !!(window as Record<string, unknown>).Capacitor;
+    return !!(window as unknown as Record<string, unknown>).Capacitor;
   });
 
   /* ── Redirect if already signed in (silent, non-blocking) ── */
