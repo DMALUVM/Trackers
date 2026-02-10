@@ -49,7 +49,7 @@ export function HealthCard() {
 
   useEffect(() => { setVisible(getVisibleMetrics()); }, []);
 
-  // Fetch biometric data from today's summary if any bio metrics are visible
+  // Fetch biometric data — use both getDaySummary and getBiometricSummary for best coverage
   useEffect(() => {
     if (!available || !authorized || !isPremium) return;
     const hasBioMetric = visible.some(id => ["hrv", "rhr", "spo2", "respiratory"].includes(id));
@@ -57,15 +57,19 @@ export function HealthCard() {
     void (async () => {
       try {
         const { getBiometricSummary } = await import("@/lib/healthKit");
+        // Use 2 days for biometric summary to catch overnight data from wearables
         const [s, bioData] = await Promise.all([
           getDaySummary(),
-          getBiometricSummary(1),
+          getBiometricSummary(2),
         ]);
         const spo2Val = bioData?.bloodOxygen?.[0]?.value;
         const rrVal = bioData?.respiratoryRate?.[0]?.value;
+        // Use getDaySummary values first, fall back to biometric summary
+        const hrvFromBio = bioData?.hrv?.[0]?.value;
+        const rhrFromBio = bioData?.restingHeartRate?.[0]?.value;
         setBio({
-          hrv: s?.hrv,
-          restingHeartRate: s?.restingHeartRate,
+          hrv: s?.hrv ?? hrvFromBio,
+          restingHeartRate: s?.restingHeartRate ?? rhrFromBio,
           spo2: spo2Val,
           respiratory: rrVal,
         });
