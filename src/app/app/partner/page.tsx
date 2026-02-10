@@ -196,6 +196,8 @@ function NoPartner({ onCreated }: { onCreated: () => void }) {
             background: "var(--bg-card)", border: "1px solid var(--border-primary)",
             color: "var(--text-primary)", outline: "none",
           }}
+          autoCorrect="off"
+          enterKeyHint="next"
         />
       </div>
 
@@ -206,7 +208,7 @@ function NoPartner({ onCreated }: { onCreated: () => void }) {
           </label>
           <input
             type="text" value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => setCode(e.target.value)}
             placeholder="e.g., A3B7K9"
             maxLength={6}
             className="w-full rounded-xl px-4 py-3 text-sm font-mono font-bold tracking-[0.2em] text-center"
@@ -214,7 +216,15 @@ function NoPartner({ onCreated }: { onCreated: () => void }) {
               background: "var(--bg-card)", border: "1px solid var(--border-primary)",
               color: "var(--text-primary)", outline: "none",
             }}
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="done"
           />
+          <p className="text-[10px] mt-1 text-center" style={{ color: "var(--text-faint)" }}>
+            Case doesn't matter
+          </p>
         </div>
       )}
 
