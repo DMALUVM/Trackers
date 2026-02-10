@@ -19,6 +19,11 @@ export default function LoginPage() {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isNativeApp] = useState(() => {
+    if (typeof window === "undefined") return false;
+    // Capacitor sets this on the window object
+    return !!(window as Record<string, unknown>).Capacitor;
+  });
 
   /* ── Redirect if already signed in (silent, non-blocking) ── */
   useEffect(() => {
@@ -84,7 +89,7 @@ export default function LoginPage() {
           redirectTo: `${getSiteUrl()}/reset`,
         });
         if (error) throw error;
-        setStatus("Check your email for the reset link ✓");
+        setStatus("Check your email for the reset link. After resetting, come back here and sign in with your new password ✓");
       }
     } catch (err: unknown) {
       setStatus(err instanceof Error ? err.message : String(err));
@@ -188,13 +193,13 @@ export default function LoginPage() {
                 Create account
               </button>
             )}
-            {mode !== "magic" && (
+            {mode !== "magic" && !isNativeApp && (
               <button type="button" className="underline-offset-2 underline hover:text-neutral-300 transition"
                 onClick={() => { hapticLight(); setMode("magic"); setStatus(""); setShowPassword(false); }}>
                 Magic link
               </button>
             )}
-            {mode === "signin" && (
+            {mode !== "forgot" && (
               <button type="button" className="underline-offset-2 underline hover:text-neutral-300 transition"
                 onClick={() => { hapticLight(); setMode("forgot"); setStatus(""); setShowPassword(false); }}>
                 Forgot password?
