@@ -89,38 +89,56 @@ export function WeeklyTrend() {
   if (weeks.length < 2) return null;
 
   const maxPct = 100;
-  const barHeight = 80;
+  const barHeight = 96;
 
   return (
-    <section className="card p-5">
-      <h3 className="text-xs font-bold tracking-wider uppercase mb-4" style={{ color: "var(--text-faint)" }}>
+    <section className="card p-5 pb-4">
+      <h3 className="text-xs font-bold tracking-wider uppercase mb-5" style={{ color: "var(--text-faint)" }}>
         Weekly Trend
       </h3>
 
-      <div className="flex items-end gap-2" style={{ height: barHeight }}>
+      <div className="flex items-end gap-1" style={{ height: barHeight }}>
         {weeks.map((w, i) => {
-          const h = Math.max(4, (w.greenPct / maxPct) * barHeight);
+          const h = Math.max(6, (w.greenPct / maxPct) * barHeight);
           const isLast = i === weeks.length - 1;
-          const improving = i > 0 && w.greenPct > weeks[i - 1].greenPct;
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div key={i} className="flex-1 flex flex-col items-center" style={{ minWidth: 0 }}>
               {/* Percentage label */}
-              <span className="text-[10px] font-bold tabular-nums"
-                style={{ color: isLast ? "var(--accent-green-text)" : "var(--text-faint)" }}>
+              <span className="font-bold tabular-nums mb-1"
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1,
+                  color: isLast ? "var(--accent-green-text)" : "var(--text-faint)",
+                }}>
                 {w.greenPct}%
               </span>
               {/* Bar */}
-              <div className="w-full rounded-t-md animate-progress-fill"
+              <div className="rounded-t-md animate-progress-fill"
                 style={{
+                  width: "70%",
                   height: h,
                   background: w.greenPct >= 80 ? "var(--accent-green)" :
                     w.greenPct >= 50 ? "var(--accent-yellow)" : "var(--accent-red)",
                   opacity: isLast ? 1 : 0.6,
                   animationDelay: `${i * 80}ms`,
                 }} />
-              {/* Week label */}
-              <span className="text-[9px] font-medium whitespace-nowrap"
-                style={{ color: isLast ? "var(--text-primary)" : "var(--text-faint)" }}>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Week labels — separate row for alignment */}
+      <div className="flex gap-1 mt-1.5">
+        {weeks.map((w, i) => {
+          const isLast = i === weeks.length - 1;
+          return (
+            <div key={i} className="flex-1 text-center" style={{ minWidth: 0 }}>
+              <span className="font-medium"
+                style={{
+                  fontSize: 9,
+                  lineHeight: 1,
+                  color: isLast ? "var(--text-primary)" : "var(--text-faint)",
+                }}>
                 {w.label}
               </span>
             </div>
