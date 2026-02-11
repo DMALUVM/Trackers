@@ -49,8 +49,9 @@ export function computeDayColor(opts: {
   // ── Guard: future days are always empty ──
   if (todayKey && dateKey > todayKey) return "empty";
 
-  // ── Guard: days before account creation are empty ──
-  if (accountStartKey && dateKey < accountStartKey) return "empty";
+  // ── Guard: days before account creation are empty — UNLESS user saved data ──
+  // This prevents a wall of red on new accounts, but allows backfilled days to show color.
+  if (accountStartKey && dateKey < accountStartKey && checks.length === 0) return "empty";
 
   // ── Travel / Sick day mode = automatic green ──
   // The user explicitly set this day as travel or sick, meaning they
