@@ -102,7 +102,7 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
           <div className="h-1.5 w-10 rounded-full" style={{ background: "var(--border-primary)" }} />
         </div>
 
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           {title && (
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h3>

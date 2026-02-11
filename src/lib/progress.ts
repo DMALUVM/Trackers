@@ -52,6 +52,11 @@ export function computeDayColor(opts: {
   // ── Guard: days before account creation are empty ──
   if (accountStartKey && dateKey < accountStartKey) return "empty";
 
+  // ── Travel / Sick day mode = automatic green ──
+  // The user explicitly set this day as travel or sick, meaning they
+  // chose to rest. This MUST count as green to protect their streak.
+  if (log && (log.day_mode === "travel" || log.day_mode === "sick")) return "green";
+
   const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
 
   // ── Guard: if user never interacted this day (zero checks), show empty ──

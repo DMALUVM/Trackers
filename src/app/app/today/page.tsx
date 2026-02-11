@@ -219,7 +219,7 @@ export default function TodayPage() {
   const coreDone = coreItems.filter((i) => i.done).length;
   const coreTotal = coreItems.length;
   const optionalDone = optionalItems.filter((i) => i.done).length;
-  const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
+  const score = dayMode !== "normal" ? 100 : coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
   // Workout alias: rowing or weights can satisfy a "Workout" habit
   const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
@@ -228,11 +228,11 @@ export default function TodayPage() {
     if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
     return !i.done;
   });
-  const allCoreDone = coreTotal > 0 && missingCore.length === 0;
+  const allCoreDone = (dayMode !== "normal") || (coreTotal > 0 && missingCore.length === 0);
 
   // Week strip with live today color
   const last7WithToday = useMemo(() => {
-    const color = coreTotal === 0 ? "empty" as const : allCoreDone ? "green" as const : (coreTotal - coreDone) <= 1 ? "yellow" as const : "red" as const;
+    const color = dayMode !== "normal" ? "green" as const : coreTotal === 0 ? "empty" as const : allCoreDone ? "green" as const : (coreTotal - coreDone) <= 1 ? "yellow" as const : "red" as const;
     if (streaks.last7Days.length === 0) return [];
     const copy = [...streaks.last7Days];
     const last = copy[copy.length - 1];
