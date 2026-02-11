@@ -149,7 +149,7 @@ export function MilestoneModal({
           }}>
           <span className="text-sm font-bold text-white tabular-nums">
             {milestone.type === "streak"
-              ? `${(milestone as Record<string, unknown>)._displayStreak ?? milestone.threshold}-day streak`
+              ? `${((milestone as unknown as Record<string, unknown>)._displayStreak as number) ?? milestone.threshold}-day streak`
               : milestone.type === "green_total" ? `${milestone.threshold} green days`
               : "New personal best"}
           </span>
@@ -162,7 +162,7 @@ export function MilestoneModal({
             onClick={(e) => {
               e.stopPropagation();
               hapticMedium();
-              const streakCount = (milestone as Record<string, unknown>)._displayStreak as number ?? milestone.threshold;
+              const streakCount = ((milestone as unknown as Record<string, unknown>)._displayStreak as number) ?? milestone.threshold;
               const text = milestone.type === "streak"
                 ? `🔥 ${streakCount}-day streak on Routines365! ${milestone.message}`
                 : milestone.type === "green_total"
