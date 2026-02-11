@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Footprints, Moon, Flame, Dumbbell, Check, ExternalLink, Zap } from "lucide-react";
+import { Heart, Activity, Footprints, Moon, Flame, Dumbbell, Check, ExternalLink, Zap } from "lucide-react";
 import { SubPageHeader } from "@/app/app/_components/ui/SubPageHeader";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
 import { hapticMedium, hapticLight } from "@/lib/haptics";
@@ -57,16 +57,18 @@ export default function HealthKitSettingsPage() {
                 Connect Apple Health
               </h2>
               <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                Let Routines365 read your health data to automatically fill in steps, sleep duration, workouts, and calories.
+                Let Routines365 read your health data to auto-track steps, sleep, workouts, and biometric trends like HRV and resting heart rate.
               </p>
             </div>
 
             <div className="mt-5 space-y-3">
               {[
-                { icon: Footprints, color: "#3b82f6", label: "Step count", desc: "Daily steps from your iPhone & Apple Watch" },
-                { icon: Moon, color: "#8b5cf6", label: "Sleep analysis", desc: "Bedtime, wake time, and duration" },
+                { icon: Footprints, color: "#3b82f6", label: "Step count", desc: "Daily steps from iPhone & Apple Watch" },
+                { icon: Moon, color: "#8b5cf6", label: "Sleep & sleep stages", desc: "Bedtime, duration, deep/REM/core breakdown" },
                 { icon: Dumbbell, color: "#10b981", label: "Workouts", desc: "Type, duration, and calories burned" },
                 { icon: Flame, color: "#f97316", label: "Active calories", desc: "Energy burned throughout the day" },
+                { icon: Heart, color: "#ef4444", label: "Heart rate variability", desc: "HRV trends from Apple Watch or Oura" },
+                { icon: Activity, color: "#ec4899", label: "Resting heart rate", desc: "Daily RHR from your wearable" },
               ].map(({ icon: Icon, color, label, desc }) => (
                 <div key={label} className="flex items-center gap-3 rounded-xl p-3"
                   style={{ background: "var(--bg-card-hover)" }}>
@@ -131,7 +133,7 @@ export default function HealthKitSettingsPage() {
             <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
               Today&apos;s data
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="rounded-xl p-3" style={{ background: "var(--bg-card-hover)" }}>
                 <Footprints size={16} style={{ color: "#3b82f6" }} />
                 <p className="mt-1 text-lg font-bold" style={{ color: "var(--text-primary)" }}>
@@ -159,6 +161,20 @@ export default function HealthKitSettingsPage() {
                   {summary?.workouts?.length ?? 0}
                 </p>
                 <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>workouts</p>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: "var(--bg-card-hover)" }}>
+                <Heart size={16} style={{ color: "#ef4444" }} />
+                <p className="mt-1 text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                  {summary?.hrv ? `${Math.round(summary.hrv)}` : "—"}
+                </p>
+                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>HRV ms</p>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: "var(--bg-card-hover)" }}>
+                <Activity size={16} style={{ color: "#ec4899" }} />
+                <p className="mt-1 text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                  {summary?.restingHeartRate ? `${Math.round(summary.restingHeartRate)}` : "—"}
+                </p>
+                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>RHR bpm</p>
               </div>
             </div>
           </div>
