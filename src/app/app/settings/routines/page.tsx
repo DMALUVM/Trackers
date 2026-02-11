@@ -11,7 +11,6 @@ import { listReminders, type Reminder } from "@/lib/reminders";
 import { hapticLight } from "@/lib/haptics";
 import { usePremium, FREE_LIMITS } from "@/lib/premium";
 import { useRouter } from "next/navigation";
-import { smartSearch as smartSearchFn } from "@/lib/smartSearch";
 
 /** Simple array reorder — replaces @dnd-kit/sortable dependency */
 function arrayMove<T>(arr: T[], from: number, to: number): T[] {
@@ -93,7 +92,6 @@ export default function RoutinesSettingsPage() {
   const [items, setItems] = useState<RoutineItemRow[]>([]);
   const [toast, setToast] = useState<ToastState>("idle");
   const [toastMsg, setToastMsg] = useState<string>("");
-  const [search, setSearch] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
   const { isPremium } = usePremium();
@@ -108,14 +106,6 @@ export default function RoutinesSettingsPage() {
     for (const r of reminders) m.set(r.routine_item_id, r);
     return m;
   }, [reminders]);
-
-  const filteredItems = useMemo(() => {
-    const q = search.trim();
-    if (!q) return items;
-    const results = smartSearchFn(items, q);
-    const ids = new Set(results.map((r) => r.id));
-    return items.filter((i) => ids.has(i.id));
-  }, [items, search]);
 
   const refresh = async () => {
     const data = await listRoutineItems();
@@ -215,13 +205,6 @@ export default function RoutinesSettingsPage() {
       </section>
 
       <section className="card p-4 space-y-3">
-        <div>
-          <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Search</label>
-          <input className="mt-2 w-full rounded-xl px-3 py-3 text-sm"
-            style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-            value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search routines… (e.g. morning, exercise, sleep)" />
-        </div>
-
         <div className="flex gap-2">
           <input className="min-w-0 flex-1 rounded-xl px-3 py-3 text-sm"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
@@ -251,11 +234,11 @@ export default function RoutinesSettingsPage() {
         <p className="text-xs" style={{ color: "var(--text-faint)" }}>
           Tap a habit name to edit it. Use ↑↓ to reorder. Tap CORE/OPT to toggle.
         </p>
-        {filteredItems.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No matches.</p>
+        {items.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No routines yet. Add one above or browse the library.</p>
         ) : (
-          filteredItems.map((i, idx) => (
-            <SortRow key={i.id} item={i} index={idx} total={filteredItems.length}
+          items.map((i, idx) => (
+            <SortRow key={i.id} item={i} index={idx} total={items.length}
               hasReminder={reminderMap.has(i.id)}
               onToggleNon={onToggleNon} onArchive={onArchive} onMove={onMove}
               onSetReminder={setReminderTarget} />
