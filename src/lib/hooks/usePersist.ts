@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { DayMode } from "@/lib/types";
-import { upsertDailyChecks, upsertDailyLog, upsertDaySnooze, getUserId } from "@/lib/supabaseData";
+import { upsertDailyChecks, upsertDailyLog, upsertDaySnooze } from "@/lib/supabaseData";
 import type { UiItem } from "@/lib/hooks/useRoutineDay";
 import type { ToastState } from "@/app/app/_components/ui/Toast";
 import { AUTOSAVE_DELAY_MS, SNOOZE_DURATION_MS } from "@/lib/constants";

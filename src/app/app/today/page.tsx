@@ -275,12 +275,11 @@ export default function TodayPage() {
     milestoneCheckedForDate.current = dateKey;
 
     // ── Effective streak calculation ──
-    // At the moment of completion, Supabase may not include today yet.
-    // activeStreak = consecutive streak going INTO today (not including today).
-    // currentStreak = from Supabase, may or may not include today.
-    // Since today IS green (allCoreDone), actual streak = activeStreak + 1
-    // Use max with currentStreak in case Supabase already updated.
-    const effectiveStreak = Math.max(streaks.currentStreak, streaks.activeStreak + 1);
+    // If Supabase already includes today (currentStreak > 0), use it directly.
+    // If save hasn't landed yet (currentStreak === 0), use yesterday's streak + 1.
+    const effectiveStreak = streaks.currentStreak > 0
+      ? streaks.currentStreak
+      : streaks.activeStreak + 1;
     const effectiveTotal = Math.max(streaks.totalGreenDays, effectiveStreak);
     const result = checkMilestones({
       currentStreak: effectiveStreak,
