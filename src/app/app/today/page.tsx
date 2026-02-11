@@ -130,7 +130,9 @@ export default function TodayPage() {
 
   // Psychology state
   const [milestoneToShow, setMilestoneToShow] = useState<Milestone | null>(null);
-  const [comebackDismissed, setComebackDismissed] = useState(false);
+  const [comebackDismissed, setComebackDismissed] = useState(() => {
+    try { return localStorage.getItem("routines365:comebackDismissed") === "1"; } catch { return false; }
+  });
   const [halfwayShown, setHalfwayShown] = useState(false);
   const [todayIsRest, setTodayIsRest] = useState(false);
   const [habitDetailOpen, setHabitDetailOpen] = useState(false);
@@ -608,16 +610,16 @@ export default function TodayPage() {
       )}
 
       {/* ─── COMEBACK BANNER (after 2+ missed days) ─── */}
-      {!streaks.loading && !comebackDismissed && streaks.daysSinceLastGreen >= 2 && streaks.currentStreak === 0 && (
+      {!streaks.loading && !comebackDismissed && streaks.daysSinceLastGreen >= 2 && streaks.currentStreak === 0 && streaks.totalGreenDays > 0 && (
         <ComebackBanner
           daysSinceLastGreen={streaks.daysSinceLastGreen}
           previousStreak={streaks.previousBestStreak || streaks.bestStreak}
-          onDismiss={() => setComebackDismissed(true)}
+          onDismiss={() => { setComebackDismissed(true); try { localStorage.setItem("routines365:comebackDismissed", "1"); } catch { /* ignore */ } }}
         />
       )}
 
       {/* ─── MOTIVATION BANNER ─── */}
-      {!streaks.loading && (comebackDismissed || streaks.daysSinceLastGreen < 2 || streaks.currentStreak > 0) && (
+      {!streaks.loading && (comebackDismissed || streaks.daysSinceLastGreen < 2 || streaks.currentStreak > 0 || streaks.totalGreenDays === 0) && (
         <MotivationBanner ctx={motivationCtx} />
       )}
 
