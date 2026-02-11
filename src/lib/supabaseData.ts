@@ -201,7 +201,7 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
     if (fallback.error) throw fallback.error;
-    data = fallback.data;
+    data = fallback.data as typeof data;
     error = null;
   }
 
