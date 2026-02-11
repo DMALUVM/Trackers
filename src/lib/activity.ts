@@ -151,7 +151,7 @@ export async function listActivityLogsForDate(dateKey: string) {
     .select("id,date,activity_key,value,unit,notes")
     .eq("user_id", userId)
     .eq("date", dateKey)
-    .order("date", { ascending: false });
+    .order("id", { ascending: false });
   if (error) throw error;
   return (data ?? []) as ActivityLogRow[];
 }

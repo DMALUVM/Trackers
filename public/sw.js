@@ -88,6 +88,19 @@ self.addEventListener("activate", (event) => {
 });
 
 // ---------------------------------------------------------------------------
+// Clear caches on sign-out (prevents stale user data leaking)
+// ---------------------------------------------------------------------------
+self.addEventListener("message", (event) => {
+  if (event.data === "SIGN_OUT") {
+    event.waitUntil(
+      caches.delete(DATA_CACHE).then(() =>
+        caches.delete(CACHE_NAME)
+      )
+    );
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Fetch strategies
 // ---------------------------------------------------------------------------
 self.addEventListener("fetch", (event) => {

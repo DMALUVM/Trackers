@@ -11,7 +11,7 @@ export const CATEGORY_KEYWORDS = {
 } as const;
 
 /** Labels that satisfy the generic "workout" requirement. */
-export const WORKOUT_ALIASES = ["workout", "exercise", "strength", "lift", "gym"] as const;
+export const WORKOUT_ALIASES = ["workout", "exercise", "strength", "lift", "gym", "weight", "weights"] as const;
 
 /** Activity types that can be logged with metrics. */
 export const METRIC_ACTIVITIES: Record<
@@ -93,6 +93,18 @@ export function isJournalLabel(label: string): boolean {
 export function isWorkoutLabel(label: string): boolean {
   const l = label.toLowerCase();
   return WORKOUT_ALIASES.some((a) => l.includes(a));
+}
+
+/** Check if a label is a rowing activity. */
+export function isRowingLabel(label: string): boolean {
+  const l = label.toLowerCase();
+  return l.includes("rowing") || l.includes("row ");
+}
+
+/** Check if a label is a weights/strength activity. */
+export function isWeightsLabel(label: string): boolean {
+  const l = label.toLowerCase();
+  return l.includes("weight") || l.includes("strength") || l.includes("lift");
 }
 
 /** Debounce delay for auto-save (ms). */

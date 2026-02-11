@@ -23,7 +23,7 @@ function getBiometricPlugin(): Record<string, (...args: unknown[]) => Promise<un
   const cap = window.Capacitor;
   if (!cap) return null;
   try {
-    return cap.Plugins?.BiometricPlugin ?? null;
+    return cap.Plugins?.BiometricPlugin ?? cap.registerPlugin?.("BiometricPlugin") ?? null;
   } catch {
     return null;
   }

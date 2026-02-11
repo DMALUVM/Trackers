@@ -3,15 +3,18 @@ import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
 
 export type DayColor = "green" | "yellow" | "red" | "empty";
 
+import { isWorkoutLabel, isRowingLabel, isWeightsLabel } from "@/lib/constants";
+
 // Re-export from constants for backward compat
-export { isWorkoutLabel } from "@/lib/constants";
+export { isWorkoutLabel, isRowingLabel, isWeightsLabel };
 
 /**
- * Get ISO day of week (1=Mon..7=Sun) from a date.
- * Doesn't need timezone — dateKey parsing is always midnight local.
+ * Get ISO day of week (1=Mon..7=Sun) from a date key.
+ * Uses midday to avoid UTC-to-local date rollover issues.
  */
 function isoDow(dateKey: string): number {
-  const d = parseISO(dateKey);
+  // Parse as local midday to avoid timezone-induced date shift
+  const d = new Date(dateKey + "T12:00:00");
   const jsDay = d.getDay(); // 0=Sun..6=Sat
   return jsDay === 0 ? 7 : jsDay; // Convert to 1=Mon..7=Sun
 }
@@ -83,25 +86,24 @@ export function computeDayColor(opts: {
   const didRowing = !!log?.did_rowing;
   const didWeights = !!log?.did_weights;
 
-  // Also check if any check with "rowing" or "workout" in label is done
-  const labelDoneCheck = (keyword: string) => {
+  // Also check if any check with rowing or weights label is done
+  const labelDoneCheck = (testFn: (label: string) => boolean) => {
     for (const ri of scheduledItems) {
-      if (ri.label.toLowerCase().includes(keyword) && (checkMap.get(ri.id) ?? false)) {
+      if (testFn(ri.label) && (checkMap.get(ri.id) ?? false)) {
         return true;
       }
     }
     return false;
   };
 
-  const anyRowing = didRowing || labelDoneCheck("rowing");
-  const anyWeights = didWeights || labelDoneCheck("workout");
+  const anyRowing = didRowing || labelDoneCheck(isRowingLabel);
+  const anyWeights = didWeights || labelDoneCheck(isWeightsLabel);
 
   let missed = 0;
   for (const item of nonnegs) {
-    const lbl = item.label.toLowerCase();
     const checked = checkMap.get(item.id) ?? false;
 
-    if (lbl.includes("workout") || lbl.includes("exercise")) {
+    if (isWorkoutLabel(item.label)) {
       if (!(checked || anyRowing || anyWeights)) missed += 1;
       continue;
     }
@@ -125,14 +127,22 @@ export function inRange(dateKey: string, from: Date, to: Date) {
   return d >= from && d <= to;
 }
 
+/** Format a Date as YYYY-MM-DD in local time (not UTC). */
+function toLocalDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export function countWeeklyMetric(opts: {
   logs: DailyLogRow[];
   now: Date;
   metric: "rowing" | "neuro";
 }) {
   const { start, end } = weekBounds(opts.now);
-  const fromKey = start.toISOString().slice(0, 10);
-  const toKey = end.toISOString().slice(0, 10);
+  const fromKey = toLocalDateKey(start);
+  const toKey = toLocalDateKey(end);
 
   if (opts.metric === "rowing") {
     return opts.logs.filter(

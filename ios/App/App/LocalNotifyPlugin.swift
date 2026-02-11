@@ -70,7 +70,11 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
         let center = UNUserNotificationCenter.current()
 
         if let weekdays = weekdaysRaw, !weekdays.isEmpty {
-            // Schedule one trigger per weekday (iOS uses 1=Sun..7=Sat)
+            // Schedule one trigger per weekday — use DispatchGroup to wait for all
+            let group = DispatchGroup()
+            var firstError: Error? = nil
+            let errorLock = NSLock()
+
             for isoDay in weekdays {
                 // Convert ISO (1=Mon..7=Sun) to Apple (1=Sun..7=Sat)
                 let appleDay = isoDay == 7 ? 1 : isoDay + 1
@@ -82,14 +86,27 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
 
                 let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
                 let request = UNNotificationRequest(identifier: "\(id)_day\(isoDay)", content: content, trigger: trigger)
+
+                group.enter()
                 center.add(request) { error in
                     if let error = error {
-                        print("Failed to schedule notification: \(error)")
+                        errorLock.lock()
+                        if firstError == nil { firstError = error }
+                        errorLock.unlock()
                     }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) {
+                if let error = firstError {
+                    call.reject("Failed to schedule: \(error.localizedDescription)")
+                } else {
+                    call.resolve(["scheduled": true])
                 }
             }
         } else {
-            // Every day at this time
+            // Every day at this time — resolve/reject inside the completion handler
             var dateComponents = DateComponents()
             dateComponents.hour = hour
             dateComponents.minute = minute
@@ -99,12 +116,11 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
             center.add(request) { error in
                 if let error = error {
                     call.reject("Failed to schedule: \(error.localizedDescription)")
-                    return
+                } else {
+                    call.resolve(["scheduled": true])
                 }
             }
         }
-
-        call.resolve(["scheduled": true])
     }
 
     // MARK: - Cancel
@@ -116,7 +132,6 @@ public class LocalNotifyPlugin: CAPPlugin, CAPBridgedPlugin {
         }
 
         let center = UNUserNotificationCenter.current()
-        // Cancel the base ID and all weekday variants
         let ids = [id] + (1...7).map { "\(id)_day\($0)" }
         center.removePendingNotificationRequests(withIdentifiers: ids)
         call.resolve(["cancelled": true])

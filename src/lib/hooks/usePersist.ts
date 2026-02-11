@@ -3,7 +3,7 @@ import type { DayMode } from "@/lib/types";
 import { upsertDailyChecks, upsertDailyLog, upsertDaySnooze } from "@/lib/supabaseData";
 import type { UiItem } from "@/lib/hooks/useRoutineDay";
 import type { ToastState } from "@/app/app/_components/ui/Toast";
-import { AUTOSAVE_DELAY_MS, SNOOZE_DURATION_MS } from "@/lib/constants";
+import { AUTOSAVE_DELAY_MS, SNOOZE_DURATION_MS, isRowingLabel, isWeightsLabel } from "@/lib/constants";
 import { enqueue } from "@/lib/offlineQueue";
 
 interface UsePersistOpts {
@@ -22,8 +22,8 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
     setSaveState("saving");
 
     const items = itemsRef.current;
-    const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
-    const didWeights = items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+    const didRowing = items.some((i) => isRowingLabel(i.label) && i.done);
+    const didWeights = items.some((i) => isWeightsLabel(i.label) && i.done);
 
     const logPayload = { dateKey, dayMode, sex: null, didRowing, didWeights };
     const checksPayload = {

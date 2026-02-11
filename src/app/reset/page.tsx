@@ -37,6 +37,7 @@ export default function ResetPasswordPage() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setStatus("Password updated! You can now close this and sign in from the app.");
+      setBusy(false);
     } catch (e: unknown) {
       setStatus(e instanceof Error ? e.message : String(e));
       setBusy(false);

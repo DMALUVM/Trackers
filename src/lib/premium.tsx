@@ -169,9 +169,11 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   };
 
   const activate = () => {
-    const next: PremiumState = { ...state, isPremium: true, activatedAt: new Date().toISOString(), devOverride: false };
-    saveState(next);
-    setState(next);
+    setState((prev) => {
+      const next: PremiumState = { ...prev, isPremium: true, activatedAt: new Date().toISOString(), devOverride: false };
+      saveState(next);
+      return next;
+    });
   };
 
   const deactivate = () => {
@@ -186,15 +188,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase.rpc("redeem_promo_code", { code_input: normalized });
       if (error || !data?.valid) return false;
-      const next: PremiumState = {
-        ...state,
-        isPremium: true,
-        activatedAt: new Date().toISOString(),
-        devOverride: false,
-        redeemedCode: normalized,
-      };
-      saveState(next);
-      setState(next);
+      setState((prev) => {
+        const next: PremiumState = {
+          ...prev,
+          isPremium: true,
+          activatedAt: new Date().toISOString(),
+          devOverride: false,
+          redeemedCode: normalized,
+        };
+        saveState(next);
+        return next;
+      });
       return true;
     } catch {
       return false;

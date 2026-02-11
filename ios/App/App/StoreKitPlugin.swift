@@ -23,7 +23,7 @@ public class StoreKitPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private var products: [Product] = []
-    private var transactionListener: Task<Void, Error>?
+    private var transactionListener: Task<Void, Never>?
 
     override public func load() {
         // Listen for transaction updates (renewals, revocations, etc.)
@@ -40,7 +40,7 @@ public class StoreKitPlugin: CAPPlugin, CAPBridgedPlugin {
 
     // MARK: - Transaction Listener
 
-    private func listenForTransactions() -> Task<Void, Error> {
+    private func listenForTransactions() -> Task<Void, Never> {
         Task.detached {
             for await result in Transaction.updates {
                 do {

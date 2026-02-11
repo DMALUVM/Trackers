@@ -65,7 +65,13 @@ export default function LoginPage() {
   }, [router, getRedirectTarget]);
 
   const getSiteUrl = useCallback(
-    () => process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : ""),
+    () => {
+      // In Capacitor, window.location.origin can be capacitor://localhost which breaks email redirects
+      if (typeof window !== "undefined" && (window as Record<string, unknown>).Capacitor) {
+        return "https://routines365.com";
+      }
+      return process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : "");
+    },
     []
   );
 

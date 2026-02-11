@@ -9,7 +9,7 @@ function getPlugin(): Record<string, (...args: unknown[]) => Promise<unknown>> |
   const cap = window.Capacitor;
   if (!cap) return null;
   try {
-    return cap.Plugins?.LocalNotifyPlugin ?? null;
+    return cap.Plugins?.LocalNotifyPlugin ?? cap.registerPlugin?.("LocalNotifyPlugin") ?? null;
   } catch {
     return null;
   }

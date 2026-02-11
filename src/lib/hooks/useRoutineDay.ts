@@ -3,7 +3,7 @@ import type { DayMode, RoutineItemRow } from "@/lib/types";
 import { listRoutineItems, loadDayState, toDateKey } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabaseClient";
 import { tzIsoDow } from "@/lib/time";
-import { isWorkoutLabel } from "@/lib/constants";
+import { isWorkoutLabel, isRowingLabel, isWeightsLabel } from "@/lib/constants";
 import { computeDayColor, type DayColor } from "@/lib/progress";
 
 // ---------------------------------------------------------------------------
@@ -206,8 +206,8 @@ export function useRoutineDay(dateKey: string) {
   const coreItems = state.items.filter((i) => i.isNonNegotiable && !activeSnoozed(i.id));
   const optionalItems = state.items.filter((i) => !i.isNonNegotiable && !activeSnoozed(i.id));
 
-  const didRowing = state.items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
-  const didWeights = state.items.some((i) => i.label.toLowerCase().includes("workout") && i.done);
+  const didRowing = state.items.some((i) => isRowingLabel(i.label) && i.done);
+  const didWeights = state.items.some((i) => isWeightsLabel(i.label) && i.done);
 
   const missingCore = coreItems.filter((i) => {
     if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);

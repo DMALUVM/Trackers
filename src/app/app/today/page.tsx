@@ -25,7 +25,7 @@ import {
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { QuestsCard } from "@/app/app/_components/QuestsCard";
 import { WaterTracker } from "@/app/app/_components/WaterTracker";
-import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES, isJournalLabel, isWorkoutLabel } from "@/lib/constants";
+import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES, isJournalLabel, isWorkoutLabel, isRowingLabel, isWeightsLabel } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
@@ -224,8 +224,8 @@ export default function TodayPage() {
   const score = dayMode !== "normal" ? 100 : coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
 
   // Workout alias: rowing or weights can satisfy a "Workout" habit
-  const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
-  const didWeights = items.some((i) => i.label.toLowerCase().includes("weights") && i.done);
+  const didRowing = items.some((i) => isRowingLabel(i.label) && i.done);
+  const didWeights = items.some((i) => isWeightsLabel(i.label) && i.done);
   const missingCore = coreItems.filter((i) => {
     if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
     return !i.done;

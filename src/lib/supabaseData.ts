@@ -48,6 +48,10 @@ if (typeof window !== "undefined") {
         localStorage.removeItem(LS_ROUTINE_ITEMS);
         localStorage.removeItem("routines365:theme");
       } catch { /* ignore */ }
+      // Tell service worker to clear cached data
+      try {
+        navigator.serviceWorker?.controller?.postMessage("SIGN_OUT");
+      } catch { /* ignore */ }
     } else if (event === "SIGNED_IN") {
       // New sign-in — clear stale data from previous user
       _cachedUserId = null;
