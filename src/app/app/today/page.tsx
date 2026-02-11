@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { MoreHorizontal, Zap, Trophy, Wind, Dumbbell, Brain } from "lucide-react";
+import { MoreHorizontal, Zap, Trophy, Wind, Dumbbell, Brain, Plane, Thermometer } from "lucide-react";
 
 import { useToday, useRoutineDay, usePersist, useStreaks } from "@/lib/hooks";
 import {
@@ -456,9 +456,9 @@ export default function TodayPage() {
   const changeDayMode = useCallback((mode: typeof dayMode) => {
     setDayMode(mode);
     hapticLight();
-    debouncedPersist(mode);
+    flushNow(mode);
     setMenuOpen(false);
-  }, [debouncedPersist]);
+  }, [flushNow]);
 
   const openMetric = useCallback((id: string) => {
     const item = items.find((i) => i.id === id);
@@ -514,6 +514,15 @@ export default function TodayPage() {
             <span className="ml-2 text-base font-normal" style={{ color: "var(--text-muted)" }}>
               {format(today, "MMM d")}
             </span>
+            {dayMode !== "normal" && (
+              <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full align-middle"
+                style={{
+                  background: dayMode === "sick" ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
+                  color: dayMode === "sick" ? "var(--accent-red, #ef4444)" : "#3b82f6",
+                }}>
+                {dayMode === "sick" ? "🤒 Sick" : "✈️ Travel"}
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -559,6 +568,41 @@ export default function TodayPage() {
                 Rest today
               </button>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── DAY MODE ACTIVE BANNER ─── */}
+      {dayMode !== "normal" && (
+        <section className="rounded-2xl p-4 animate-fade-in-up"
+          style={{
+            background: dayMode === "sick"
+              ? "rgba(239, 68, 68, 0.06)"
+              : "rgba(59, 130, 246, 0.06)",
+            border: `1px solid ${dayMode === "sick" ? "rgba(239, 68, 68, 0.25)" : "rgba(59, 130, 246, 0.25)"}`,
+          }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              {dayMode === "sick"
+                ? <Thermometer size={18} style={{ color: "var(--accent-red, #ef4444)" }} />
+                : <Plane size={18} style={{ color: "#3b82f6" }} />}
+              <div>
+                <p className="text-sm font-bold" style={{ color: dayMode === "sick" ? "var(--accent-red, #ef4444)" : "#3b82f6" }}>
+                  {dayMode === "sick" ? "Sick day" : "Travel day"}
+                </p>
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  {dayMode === "sick"
+                    ? "Rest up — your streak is protected"
+                    : "Flexible mode — your streak is protected"}
+                </p>
+              </div>
+            </div>
+            <button type="button"
+              onClick={() => { hapticLight(); changeDayMode("normal"); }}
+              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0"
+              style={{ color: "var(--text-muted)", background: "var(--bg-card-hover)" }}>
+              Resume
+            </button>
           </div>
         </section>
       )}
@@ -831,11 +875,15 @@ export default function TodayPage() {
           <div>
             <p className="text-xs font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-muted)" }}>Day mode</p>
             <div className="grid grid-cols-3 gap-2">
-              {(["normal", "travel", "sick"] as const).map((mode) => (
+              {([
+                { mode: "normal" as const, label: "Normal", icon: "✨" },
+                { mode: "travel" as const, label: "Travel", icon: "✈️" },
+                { mode: "sick" as const, label: "Sick", icon: "🤒" },
+              ]).map(({ mode, label, icon }) => (
                 <button key={mode} type="button"
-                  className={dayMode === mode ? "btn-primary text-sm py-2.5 capitalize" : "btn-secondary text-sm py-2.5 capitalize"}
+                  className={dayMode === mode ? "btn-primary text-sm py-2.5" : "btn-secondary text-sm py-2.5"}
                   onClick={() => { hapticLight(); changeDayMode(mode); }}>
-                  {mode}
+                  {icon} {label}
                 </button>
               ))}
             </div>

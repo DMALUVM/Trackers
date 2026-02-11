@@ -37,7 +37,7 @@ export function Toast({ state, message, queuedCount = 0, className = "" }: Toast
     },
     saved: {
       icon: <Check size={16} strokeWidth={3} />,
-      text: message ?? "Saved ✓",
+      text: message ?? "Saved",
       bg: "var(--accent-green)",
       color: "var(--text-inverse)",
     },
