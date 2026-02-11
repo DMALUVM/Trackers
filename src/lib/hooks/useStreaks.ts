@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format, subDays, startOfMonth, startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import type { DayColor } from "@/lib/progress";
 import { computeDayColor } from "@/lib/progress";
@@ -61,12 +61,21 @@ export function useStreaks(dateKey: string) {
 
   // Allow external triggers (edit page save, pull-to-refresh) to force re-fetch
   const [refreshKey, setRefreshKey] = useState(0);
+  const lastFetchRef = useRef(0);
 
   useEffect(() => {
     const onChanged = () => setRefreshKey((k) => k + 1);
     window.addEventListener("routines365:routinesChanged", onChanged);
     return () => window.removeEventListener("routines365:routinesChanged", onChanged);
   }, []);
+
+  // Check for stale data on every render (handles Next.js router cache)
+  useEffect(() => {
+    const lastSave = (window as unknown as Record<string, number>).__r365_lastSaveTs ?? 0;
+    if (lastSave > lastFetchRef.current) {
+      setRefreshKey((k) => k + 1);
+    }
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -239,6 +248,7 @@ export function useStreaks(dateKey: string) {
           }
           const coreHitRateThisWeek = weekTotal === 0 ? 0 : Math.round((weekDone / weekTotal) * 100);
 
+          lastFetchRef.current = Date.now();
           setData({
             currentStreak,
             activeStreak,

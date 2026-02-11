@@ -2,7 +2,7 @@
 
 import { format, isSameMonth, isToday as isTodayFn } from "date-fns";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Award, FileText, Activity } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
@@ -98,20 +98,26 @@ export default function RoutinesProgressPage() {
 
   // Load everything together so calendar never renders without accountStartKey
   const [refreshKey, setRefreshKey] = useState(0);
+  const lastFetchRef = useRef(0);
 
-  // Listen for pull-to-refresh events AND returning from edit page
+  // Listen for pull-to-refresh and routinesChanged events
   useEffect(() => {
     const onRefresh = () => setRefreshKey((k) => k + 1);
-    const onVisible = () => { if (document.visibilityState === "visible") setRefreshKey((k) => k + 1); };
     window.addEventListener("routines365:pullRefresh", onRefresh);
     window.addEventListener("routines365:routinesChanged", onRefresh);
-    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("routines365:pullRefresh", onRefresh);
       window.removeEventListener("routines365:routinesChanged", onRefresh);
-      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
+
+  // Check for stale data on every render (handles Next.js router cache)
+  useEffect(() => {
+    const lastSave = (window as unknown as Record<string, number>).__r365_lastSaveTs ?? 0;
+    if (lastSave > lastFetchRef.current) {
+      setRefreshKey((k) => k + 1);
+    }
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +135,7 @@ export default function RoutinesProgressPage() {
         const [items, dataRange] = await Promise.all([listRoutineItems(), loadRangeStates({ from: fromKey, to: toKey })]);
         if (cancelled) return;
         setRoutineItems(items); setLogs(dataRange.logs); setChecks(dataRange.checks);
+        lastFetchRef.current = Date.now();
       } catch (e: unknown) { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); }
       finally { if (!cancelled) setLoading(false); }
     })();
@@ -180,6 +187,7 @@ export default function RoutinesProgressPage() {
             const dk = format(d, "yyyy-MM-dd");
             const inMonth = isSameMonth(d, month);
             const today = isTodayFn(d);
+            const isFuture = dk > dateKey;
             const color: DayColor = loading ? "empty" : computeDayColor({
               dateKey: dk, routineItems,
               checks: checksByDate.get(dk) ?? [],
@@ -187,12 +195,28 @@ export default function RoutinesProgressPage() {
               todayKey: dateKey,
               accountStartKey,
             });
+
+            const cell = (
+              <div style={{
+                ...cellStyle(color, inMonth, today),
+                ...(isFuture ? { opacity: 0.3, cursor: "default" } : {}),
+              }}>
+                {format(d, "d")}
+              </div>
+            );
+
+            if (isFuture) {
+              return (
+                <div key={dk} className="flex justify-center">
+                  {cell}
+                </div>
+              );
+            }
+
             return (
               <Link key={dk} href={`/app/routines/edit/${dk}`} className="flex justify-center"
                 onClick={() => hapticLight()}>
-                <div style={cellStyle(color, inMonth, today)}>
-                  {format(d, "d")}
-                </div>
+                {cell}
               </Link>
             );
           })}

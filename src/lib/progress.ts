@@ -62,6 +62,10 @@ export function computeDayColor(opts: {
   // ── Guard: if user never interacted this day (zero checks), show empty ──
   if (checks.length === 0 && dateKey !== todayKey) return "empty";
 
+  // ── Guard: if all checks are unchecked, treat as no data ──
+  // This prevents phantom records (e.g. from auto-save bugs) from coloring days
+  if (!checks.some((c) => c.done) && dateKey !== todayKey) return "empty";
+
   // ── Filter routine items by day-of-week schedule ──
   // A habit scheduled for M/W/F should NOT count as missed on Tuesday.
   // This matches the Today page behavior (shouldShow filter).

@@ -148,12 +148,33 @@ export default function EditDayPage() {
   let dateLabel = dateKey;
   try { dateLabel = format(parseISO(dateKey), "EEEE, MMM d"); } catch { /* keep raw */ }
 
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const isFuture = dateKey > todayKey;
+
+  // Block editing future dates
+  if (isFuture) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <header className="space-y-2">
+          <button className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-muted)" }}
+            onClick={() => router.back()} type="button"><ArrowLeft size={16} /> Back</button>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Future date</h1>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{dateLabel}</p>
+        </header>
+        <div className="rounded-2xl p-5 text-center" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+          <p className="text-3xl mb-2">📅</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>You can only edit today and past days.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (routine.loading) {
     return (
       <div className="space-y-6 animate-fade-in">
         <header className="space-y-2">
           <button className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-muted)" }}
-            onClick={() => { flushNow(dayMode); router.back(); setTimeout(() => window.dispatchEvent(new Event("routines365:routinesChanged")), 100); }} type="button"><ArrowLeft size={16} /> Back</button>
+            onClick={async () => { await flushNow(dayMode); router.back(); }} type="button"><ArrowLeft size={16} /> Back</button>
           <SkeletonLine width="180px" height="28px" />
         </header>
         <SkeletonCard lines={5} />
@@ -171,7 +192,7 @@ export default function EditDayPage() {
       <header className="space-y-2">
         <button className="flex items-center gap-2 text-sm font-medium transition-colors"
           style={{ color: "var(--text-muted)" }}
-          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); setTimeout(() => window.dispatchEvent(new Event("routines365:routinesChanged")), 100); }} type="button">
+          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); }} type="button">
           <ArrowLeft size={16} /> Back
         </button>
         <div>
@@ -323,7 +344,7 @@ export default function EditDayPage() {
           <Check size={16} /> Save
         </button>
         <button type="button" className="btn-secondary text-sm"
-          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); setTimeout(() => window.dispatchEvent(new Event("routines365:routinesChanged")), 100); }}>
+          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); }}>
           Done
         </button>
       </div>

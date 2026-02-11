@@ -17,6 +17,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
   const inflightRef = useRef(false);
   const pendingRef = useRef(false);
   const pendingDayModeRef = useRef<DayMode | null>(null);
+  const dirtyRef = useRef(false);
 
   const persistNow = useCallback(async (dayMode: DayMode) => {
     if (inflightRef.current) {
@@ -47,6 +48,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
       // Notify other pages (calendar, week strip) that data changed
+      (window as unknown as Record<string, number>).__r365_lastSaveTs = Date.now();
       window.dispatchEvent(new Event("routines365:routinesChanged"));
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -74,6 +76,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
   }, [dateKey, itemsRef]);
 
   const debouncedPersist = useCallback((dayMode: DayMode) => {
+    dirtyRef.current = true;
     pendingDayModeRef.current = dayMode;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -87,6 +90,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
+    if (!dirtyRef.current) return Promise.resolve();
     return persistNow(dayMode);
   }, [persistNow]);
 
