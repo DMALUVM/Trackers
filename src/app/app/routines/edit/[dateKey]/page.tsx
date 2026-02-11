@@ -65,6 +65,18 @@ export default function EditDayPage() {
 
   useEffect(() => { void refreshLogs(); }, [refreshLogs]);
 
+  // Flush pending saves when leaving the page (swipe back, switch tabs, close app)
+  useEffect(() => {
+    const onLeave = () => flushNow(dayMode);
+    const onVisible = () => { if (document.visibilityState === "hidden") flushNow(dayMode); };
+    window.addEventListener("beforeunload", onLeave);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("beforeunload", onLeave);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [dayMode, flushNow]);
+
   useEffect(() => { setItems(routine.items); setDayMode(routine.dayMode); }, [routine.loading]); // eslint-disable-line
   useEffect(() => { routine.itemsRef.current = items; }, [items, routine.itemsRef]);
 
@@ -141,7 +153,7 @@ export default function EditDayPage() {
       <div className="space-y-6 animate-fade-in">
         <header className="space-y-2">
           <button className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-muted)" }}
-            onClick={() => router.back()} type="button"><ArrowLeft size={16} /> Back</button>
+            onClick={() => { flushNow(dayMode); router.back(); }} type="button"><ArrowLeft size={16} /> Back</button>
           <SkeletonLine width="180px" height="28px" />
         </header>
         <SkeletonCard lines={5} />
@@ -159,7 +171,7 @@ export default function EditDayPage() {
       <header className="space-y-2">
         <button className="flex items-center gap-2 text-sm font-medium transition-colors"
           style={{ color: "var(--text-muted)" }}
-          onClick={() => { hapticLight(); router.back(); }} type="button">
+          onClick={() => { hapticLight(); flushNow(dayMode); router.back(); }} type="button">
           <ArrowLeft size={16} /> Back
         </button>
         <div>
