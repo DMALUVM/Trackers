@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -38,8 +36,7 @@ export default function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      setStatus("Password updated! Redirecting…");
-      setTimeout(() => router.replace("/app/today"), 600);
+      setStatus("Password updated! You can now close this and sign in from the app.");
     } catch (e: unknown) {
       setStatus(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -89,7 +86,7 @@ export default function ResetPasswordPage() {
         </form>
 
         <div className="text-center">
-          <a className="text-sm text-neutral-500 hover:text-neutral-300 transition-colors" href="/">
+          <a className="text-sm text-neutral-500 hover:text-neutral-300 transition-colors" href="/login">
             ← Back to sign in
           </a>
         </div>
