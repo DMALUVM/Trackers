@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, Play, Pause, RotateCcw, Lock, Crown, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { usePremium } from "@/lib/premium";
 import { hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { logSession } from "@/lib/sessionLog";
@@ -599,6 +600,7 @@ function BreathSession({ technique, onClose }: { technique: BreathTechnique; onC
 // ═══════════════════════════════════════════════
 
 export default function BreathworkPage() {
+  const router = useRouter();
   const { isPremium } = usePremium();
   const [activeTechnique, setActiveTechnique] = useState<BreathTechnique | null>(null);
   const [showIntro, setShowIntro] = useState(false);
@@ -654,7 +656,7 @@ export default function BreathworkPage() {
           const timeLabel = totalTime >= 90 ? `~${Math.round(totalTime / 60)} min` : `~${Math.round(totalTime)} sec`;
           return (
             <button key={t.id} type="button"
-              onClick={() => { if (locked) { hapticLight(); window.location.href = "/app/settings/premium"; return; } hapticMedium(); setActiveTechnique(t); }}
+              onClick={() => { if (locked) { hapticLight(); router.push("/app/settings/premium"); return; } hapticMedium(); setActiveTechnique(t); }}
               className="w-full rounded-2xl p-5 text-left transition-all active:scale-[0.98]"
               style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)", opacity: locked ? 0.65 : 1 }}>
               <div className="flex items-start gap-4">

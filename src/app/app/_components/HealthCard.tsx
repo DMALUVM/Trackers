@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Heart, Footprints, Moon, Flame, Dumbbell, Settings2, Activity, Wind, Droplets, Lock, RefreshCw } from "lucide-react";
 import { useHealthKit } from "@/lib/hooks/useHealthKit";
 import { usePremium } from "@/lib/premium";
@@ -39,6 +40,7 @@ function saveVisibleMetrics(ids: MetricId[]) {
  * Shows: steps, sleep, calories, workouts + premium biometrics.
  */
 export function HealthCard() {
+  const router = useRouter();
   const { available, authorized, requestAuth, steps, sleep, summary, refresh, loading } = useHealthKit();
   const { isPremium } = usePremium();
   const [visible, setVisible] = useState<MetricId[]>(DEFAULT_METRICS);
@@ -139,7 +141,7 @@ export function HealthCard() {
     const metric = ALL_METRICS.find(m => m.id === id);
     if (metric?.premium && !isPremium) {
       hapticLight();
-      window.location.href = "/app/settings/premium";
+      router.push("/app/settings/premium");
       return;
     }
     hapticLight();
