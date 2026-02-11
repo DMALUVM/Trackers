@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Share2 } from "lucide-react";
 import type { Milestone } from "@/lib/milestones";
 import { popPendingMilestone } from "@/lib/milestones";
@@ -72,7 +73,7 @@ export function MilestoneModal({
 
   if (!visible || !milestone) return null;
 
-  return (
+  const modal = (
     <div
       role="dialog"
       aria-modal="true"
@@ -188,4 +189,6 @@ export function MilestoneModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
