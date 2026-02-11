@@ -204,76 +204,61 @@ const SYNONYMS: Record<string, string[]> = {
   stretching: ["stretch", "mobility", "yoga"],
 };
 
-function smartSearch(items: LibraryItem[], query: string): LibraryItem[] {
-  const terms = query.toLowerCase().trim().split(" ").filter(function(t) { return t.length > 0; });
-  if (terms.length === 0) return [];
+function smartSearch(items: LibraryItem[], q: string): LibraryItem[] {
+  const term = q.toLowerCase().trim();
+  if (!term) return [];
 
-  var scored: Array<{ item: LibraryItem; score: number }> = [];
+  // Step 1: direct label or section substring match
+  const direct = items.filter(function(item) {
+    const label = (item.label || "").toLowerCase();
+    const section = (item.section || "").toLowerCase();
+    return label.indexOf(term) !== -1 || section.indexOf(term) !== -1;
+  });
 
-  for (var idx = 0; idx < items.length; idx++) {
-    var item = items[idx];
-    var label = (item.label || "").toLowerCase();
-    var section = (item.section || "").toLowerCase();
-    var score = 0;
-
-    for (var ti = 0; ti < terms.length; ti++) {
-      var term = terms[ti];
-      var found = false;
-
-      // 1. Direct substring match
-      if (label.indexOf(term) !== -1) {
-        score += term.length >= 4 ? 10 : 6;
-        if (label.indexOf(term) === 0) score += 3;
-        found = true;
-      }
-
-      // 2. Section match
-      if (!found && section.indexOf(term) !== -1) {
-        score += 2;
-        found = true;
-      }
-
-      // 3. Synonym match
-      if (!found) {
-        var synKeys = Object.keys(SYNONYMS);
-        for (var si = 0; si < synKeys.length; si++) {
-          var key = synKeys[si];
-          var isMatch = (key === term) ||
-            (term.length >= 3 && key.indexOf(term) === 0) ||
-            (term.length >= 3 && term.indexOf(key) === 0);
-          if (isMatch) {
-            var vals = SYNONYMS[key];
-            for (var vi = 0; vi < vals.length; vi++) {
-              if (label.indexOf(vals[vi]) !== -1) {
-                score += 5;
-                found = true;
-                break;
-              }
-            }
-          }
-          if (found) break;
-        }
-      }
-
-      // 4. Prefix match - check if any word in label starts with term
-      if (!found && term.length >= 2) {
-        var words = label.split(" ");
-        for (var wi = 0; wi < words.length; wi++) {
-          var w = words[wi].replace(/[^a-z0-9]/g, "");
-          if (w.indexOf(term) === 0) {
-            score += 4;
-            found = true;
+  // Step 2: synonym expansion
+  let expanded: LibraryItem[] = [];
+  const synKeys = Object.keys(SYNONYMS);
+  for (let i = 0; i < synKeys.length; i++) {
+    const key = synKeys[i];
+    if (key === term || (term.length >= 3 && key.indexOf(term) === 0) || (term.length >= 3 && term.indexOf(key) === 0)) {
+      const synonyms = SYNONYMS[key];
+      for (let j = 0; j < items.length; j++) {
+        const label = (items[j].label || "").toLowerCase();
+        for (let k = 0; k < synonyms.length; k++) {
+          if (label.indexOf(synonyms[k]) !== -1) {
+            expanded.push(items[j]);
             break;
           }
         }
       }
     }
-
-    if (score > 0) scored.push({ item: item, score: score });
   }
 
-  scored.sort(function(a, b) { return b.score - a.score; });
-  return scored.map(function(s) { return s.item; });
+  // Step 3: prefix match on individual words
+  let prefix: LibraryItem[] = [];
+  if (term.length >= 2) {
+    for (let i = 0; i < items.length; i++) {
+      const words = (items[i].label || "").toLowerCase().split(" ");
+      for (let w = 0; w < words.length; w++) {
+        if (words[w].indexOf(term) === 0) {
+          prefix.push(items[i]);
+          break;
+        }
+      }
+    }
+  }
+
+  // Deduplicate: direct first, then expanded, then prefix
+  let seen = new Set<string>();
+  let result: LibraryItem[] = [];
+  const all = direct.concat(expanded).concat(prefix);
+  for (let i = 0; i < all.length; i++) {
+    if (!seen.has(all[i].label)) {
+      seen.add(all[i].label);
+      result.push(all[i]);
+    }
+  }
+  return result;
 }
 
 export default function RoutineLibraryPage() {
@@ -384,7 +369,7 @@ export default function RoutineLibraryPage() {
 
       <section className="card p-4">
         <input value={query} onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search habits..."
+          placeholder="Search 82 habits... (e.g. morning, sleep, exercise)"
           className="w-full rounded-xl px-4 py-3 text-sm"
           style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }} />
       </section>
@@ -393,7 +378,7 @@ export default function RoutineLibraryPage() {
       {flat !== null ? (
         <section className="card p-4">
           {flat.length === 0 ? (
-            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>No matches for &ldquo;{query.trim()}&rdquo;. Try a broader term like &ldquo;exercise&rdquo;, &ldquo;sleep&rdquo;, or &ldquo;focus&rdquo;.</p>
+            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>No matches for &ldquo;{query.trim()}&rdquo; in {LIBRARY.reduce((n, g) => n + g.items.length, 0)} habits. Try &ldquo;exercise&rdquo;, &ldquo;sleep&rdquo;, or &ldquo;focus&rdquo;.</p>
           ) : (
             flat.map(renderItem)
           )}
