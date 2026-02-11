@@ -83,7 +83,23 @@ export default function BackupPage() {
   return (
     <div className="space-y-5">
       <Toast state={toast} />
-      <SubPageHeader title="Backup" subtitle="Export your data" backHref="/app/settings" />
+      <SubPageHeader title="Backup" subtitle="Your data, your way" backHref="/app/settings" />
+
+      {/* Cloud sync reassurance */}
+      <section className="rounded-2xl p-4 flex items-start gap-3"
+        style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+        <span className="text-lg shrink-0 mt-0.5">☁️</span>
+        <div>
+          <p className="text-sm font-bold" style={{ color: "var(--accent-green-text)" }}>Cloud sync is automatic</p>
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Your data syncs to the cloud every time you use the app. Log in on any device and everything is already there — no manual restore needed.
+          </p>
+        </div>
+      </section>
+
+      <p className="text-xs font-bold uppercase tracking-wider px-1" style={{ color: "var(--text-faint)" }}>
+        Export for your records
+      </p>
 
       <section className="card p-4 space-y-3">
         <div>
@@ -108,6 +124,10 @@ export default function BackupPage() {
           {busy === "csv" ? <><Spinner size={14} /> Exporting…</> : "Export CSVs"}
         </button>
       </section>
+
+      <p className="text-xs text-center px-4" style={{ color: "var(--text-faint)" }}>
+        Your data is always stored securely in your account and syncs automatically across devices. These exports are for your personal records.
+      </p>
     </div>
   );
 }
