@@ -190,10 +190,10 @@ export default function PrivacyPage() {
             If you have questions about this privacy policy or your data, please
             contact us at{" "}
             <a
-              href="mailto:support@routines365.com"
+              href="mailto:routines365.app@gmail.com"
               className="text-emerald-400 underline underline-offset-2"
             >
-              support@routines365.com
+              routines365.app@gmail.com
             </a>
             .
           </p>

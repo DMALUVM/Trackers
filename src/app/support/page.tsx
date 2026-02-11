@@ -25,7 +25,7 @@ export default function SupportPage() {
             anytime — we read every message.
           </p>
           <a
-            href="mailto:support@routines365.com"
+            href="mailto:routines365.app@gmail.com"
             className="mt-3 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors"
             style={{
               background: "rgba(16,185,129,0.12)",
@@ -33,7 +33,7 @@ export default function SupportPage() {
               border: "1px solid rgba(16,185,129,0.2)",
             }}
           >
-            <span>✉️</span> support@routines365.com
+            <span>✉️</span> routines365.app@gmail.com
           </a>
           <p className="mt-2 text-xs text-neutral-500">
             We typically respond within 24 hours.
