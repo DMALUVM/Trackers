@@ -19,7 +19,7 @@ Mark your most important habits as "Core." Complete them all and you earn a gree
 It takes about 10 seconds. Open the app, check off what you did, close it. Done.
 
 YOUR DAILY CHECKLIST
-• Choose from 45+ habits across morning, fitness, nutrition, recovery, mindfulness, and more — or create your own
+• Choose from 75+ habits across morning, fitness, nutrition, recovery, mindfulness, and more — or create your own
 • Core vs. Bonus habits — focus on what truly matters
 • Day-of-week scheduling — set habits for M/W/F, weekdays only, or any custom schedule
 • One-tap check off with haptic feedback
@@ -64,19 +64,24 @@ habit,tracker,routine,streak,journal,breathwork,wellness,health,focus,pomodoro,d
 
 ## Promotional Text (170 chars max, can be updated without new build)
 
-NEW: Guided journal with gratitude prompts, Qigong movement routines, and per-page colored themes. Build streaks, practice breathwork, and watch consistency compound.
+Build a daily routine that sticks. Check off habits, build streaks, practice guided breathwork, and track your health — all in 10 seconds a day.
 
 ---
 
-## What's New (Release Notes for v1.2)
+## What's New (Release Notes for v1.0)
 
-📓 Guided Journal — gratitude, intention, and reflection prompts or free write. Auto-checks your journal habit on save.
-🏋️ Activity Edit & Delete — fix typos and update logged activities
-🎨 Per-page color themes — each section gets its own ambient background
-🌙 Sleep chart now shows "night of" labels instead of wake-up day
-🔧 Added routines now appear on Today page immediately
-✨ Dark mode contrast improvements — cards, text, and borders more visible
-⚙️ Settings gear accessible from Progress page
+🚀 Welcome to Routines365! Build a daily routine that sticks.
+
+✅ Simple daily checklist — mark habits done in 10 seconds
+⭐ Core vs. Bonus habits — focus on what truly matters
+🔥 Streaks & Trophies — milestones at 7, 14, 30, 100, and 365 days
+📓 Guided Journal — gratitude, intention, and reflection prompts
+🫁 Breathwork — Box Breathing, Wim Hof, 4-7-8, and more
+🧘 Qigong Movement — guided step-by-step routines with timers
+💚 Apple Health — sleep, HRV, heart rate, steps, and auto-complete
+🎯 Focus Timer — Pomodoro-style deep work sessions
+👥 Accountability Partner — track progress with a friend
+🏋️ Activity Logging — steps, workouts, sauna, cold plunge, and more
 
 ---
 
@@ -99,7 +104,7 @@ https://routines365.com/privacy
 https://routines365.com/terms
 
 ## Support URL
-https://routines365.com
+https://routines365.com/support
 
 ## Marketing URL
 https://routines365.com
@@ -166,10 +171,16 @@ Show: Split view of focus timer and Qigong step-by-step
 
 This is a habit tracking app with optional HealthKit integration. Core functionality requires an account (email + password or magic link).
 
-Test account available on request. The app reads HealthKit data (steps, sleep, HRV, resting heart rate, respiratory rate, SpO2) — read-only and optional.
+**Demo account:**
+Email: review@routines365.com
+Password: [SET THIS UP BEFORE SUBMISSION]
 
-Breathwork exercises use audio (Om drone) which plays during sessions. The app handles silent mode.
+The app reads HealthKit data (steps, sleep, HRV, resting heart rate, respiratory rate, SpO2) — read-only and optional. HealthKit permission is requested only when the user taps "Connect Apple Health" in Settings.
 
-Premium features can be tested with a demo account — contact Routines365.app@gmail.com for credentials.
+Breathwork exercises use audio (Om drone) which plays during guided sessions. The app respects silent mode.
+
+Premium subscription can be tested via the promo code system: go to Settings → Upgrade to Pro → "Have a code?" and enter a valid code. Contact Routines365.app@gmail.com if needed.
+
+In-app purchases use StoreKit 2. Subscription prices: $3.99/month or $29.99/year, both with a 7-day free trial configured in App Store Connect.
 
 Journal entries are stored server-side in Supabase (encrypted at rest). No journal content is shared or analyzed.

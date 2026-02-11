@@ -211,7 +211,7 @@ export default function OnboardingPage() {
             <div>
               <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Browse the full library</p>
               <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                76 habits across Morning, Fitness, Nutrition, Recovery, Mindfulness, and more.
+                75+ habits across Morning, Fitness, Nutrition, Recovery, Mindfulness, and more.
               </p>
             </div>
           </div>

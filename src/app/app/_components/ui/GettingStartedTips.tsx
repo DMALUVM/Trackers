@@ -32,7 +32,7 @@ const TIPS = [
   {
     emoji: "⚙️",
     title: "Customize anytime",
-    desc: "Tap the gear icon (⚙️) to access Settings. Add or remove habits, choose which are Core, enable Modules for detailed logging (Sleep, Fitness, etc.), and set up Quests to track weekly goals.",
+    desc: "Tap the ••• button at the top right to access Settings. Add or remove habits, choose which are Core, enable Modules for detailed logging (Sleep, Fitness, etc.), and set up Quests to track weekly goals.",
   },
 ];
 
