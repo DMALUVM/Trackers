@@ -24,6 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Routines365 uses Face ID to lock the app.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Routines365 reads your steps, active energy, sleep, workouts, heart rate variability (HRV), resting heart rate, respiratory rate, and blood oxygen from Apple Health to display wellness insights and auto-track your daily habits.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Routines365 does not write data to Apple Health.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -38,18 +44,12 @@
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Routines365 reads your steps, active energy, sleep, workouts, heart rate variability (HRV), resting heart rate, respiratory rate, and blood oxygen from Apple Health to display wellness insights and auto-track your daily habits.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Routines365 does not write data to Apple Health.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Routines365 uses Face ID to lock the app.</string>
 </dict>
 </plist>

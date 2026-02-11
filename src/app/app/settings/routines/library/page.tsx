@@ -141,6 +141,153 @@ const LIBRARY: Array<{ title: string; items: LibraryItem[] }> = [
   },
 ];
 
+// ── Smart search: synonyms, fuzzy matching, scoring ──
+
+const SYNONYMS: Record<string, string[]> = {
+  exercise: ["workout", "run", "walk", "yoga", "stretch", "mobility", "steps", "stairs", "movement", "gym", "fitness"],
+  gym: ["workout", "run", "yoga", "stretch", "fitness", "exercise"],
+  fitness: ["workout", "run", "walk", "yoga", "stretch", "steps", "exercise", "gym"],
+  meditate: ["meditation", "breathwork", "mindfulness", "pray", "gratitude", "mindful"],
+  meditation: ["breathwork", "meditate", "mindfulness", "pray"],
+  mindfulness: ["meditate", "meditation", "breathwork", "gratitude", "journal", "emotional"],
+  sleep: ["bed", "night", "screens", "wind", "shutdown", "evening"],
+  bedtime: ["sleep", "bed", "night", "screens", "shutdown"],
+  water: ["drink", "hydration", "glasses", "hydrate"],
+  hydration: ["water", "drink", "glasses"],
+  food: ["meal", "breakfast", "lunch", "protein", "vegetables", "greens", "nutrition", "eat", "sugar"],
+  eat: ["meal", "breakfast", "lunch", "protein", "vegetables", "nutrition", "food"],
+  nutrition: ["protein", "vegetables", "meal", "breakfast", "lunch", "food", "eat", "sugar", "greens"],
+  diet: ["protein", "vegetables", "meal", "food", "sugar", "nutrition", "eat", "greens"],
+  health: ["vitamins", "supplements", "omega", "magnesium", "probiotics", "creatine", "collagen"],
+  supplement: ["vitamins", "supplements", "omega", "magnesium", "probiotics", "creatine", "collagen"],
+  vitamin: ["vitamins", "supplements", "omega", "magnesium", "probiotics"],
+  morning: ["sunlight", "bed", "water", "stretch", "skincare", "shower", "breakfast"],
+  night: ["sleep", "screens", "shutdown", "stretch", "gratitude", "tidy", "evening", "wind"],
+  evening: ["sleep", "screens", "shutdown", "night", "wind", "bed"],
+  focus: ["deep work", "priorities", "single-task", "time-block", "goals"],
+  productivity: ["deep work", "priorities", "time-block", "goals", "calendar", "batch", "inbox", "focus"],
+  work: ["deep work", "priorities", "time-block", "goals", "calendar", "focus"],
+  read: ["reading", "book", "learn"],
+  reading: ["read", "book", "learn"],
+  book: ["read", "reading", "learn"],
+  phone: ["screens", "social media", "phone", "limit"],
+  screen: ["screens", "phone", "social media", "limit"],
+  social: ["social media", "friends", "family", "kindness", "connect", "call", "partner"],
+  family: ["kids", "partner", "connect", "quality time"],
+  friend: ["call", "text", "connect", "social"],
+  creative: ["instrument", "write", "art", "draw", "project", "creative"],
+  art: ["draw", "creative", "instrument", "write"],
+  music: ["instrument", "practice"],
+  learn: ["language", "read", "book", "something new"],
+  study: ["language", "learn", "read", "book"],
+  journal: ["reflect", "write", "gratitude", "journal"],
+  writing: ["journal", "write", "blog", "reflect"],
+  cold: ["cold shower", "cold plunge", "ice"],
+  ice: ["cold plunge", "cold shower"],
+  recovery: ["sauna", "cold plunge", "foam roll", "massage", "epsom", "compression", "red light", "rest"],
+  relax: ["sauna", "bath", "stretch", "foam roll", "massage", "yoga", "rest"],
+  self: ["skincare", "bath", "foam roll", "dry brushing", "floss"],
+  clean: ["tidy", "bed", "space"],
+  teeth: ["floss"],
+  dental: ["floss"],
+  walk: ["walking", "steps", "outside", "get outside"],
+  walking: ["walk", "steps", "outside"],
+  run: ["running", "jog"],
+  running: ["run", "jog"],
+  pray: ["prayer", "scripture", "devotional", "spiritual", "meditate"],
+  prayer: ["pray", "scripture", "devotional", "spiritual"],
+  spiritual: ["pray", "scripture", "devotional", "meditation"],
+  religion: ["pray", "scripture", "devotional", "spiritual"],
+  faith: ["pray", "scripture", "devotional", "spiritual"],
+  skin: ["skincare", "dry brushing"],
+  stretch: ["stretching", "mobility", "yoga", "foam roll"],
+  stretching: ["stretch", "mobility", "yoga"],
+};
+
+function smartSearch(items: LibraryItem[], query: string): LibraryItem[] {
+  const terms = query.split(/\s+/).filter(Boolean);
+  const scored: Array<{ item: LibraryItem; score: number }> = [];
+
+  for (const item of items) {
+    const label = (item.label ?? "").toLowerCase();
+    const section = (item.section ?? "").toLowerCase();
+    let score = 0;
+
+    for (const term of terms) {
+      // Exact substring match (strongest)
+      if (label.includes(term)) {
+        score += term.length >= 4 ? 10 : 6;
+        // Bonus for starting with the term
+        if (label.startsWith(term)) score += 3;
+        continue;
+      }
+
+      // Section match
+      if (section.includes(term)) {
+        score += 2;
+        continue;
+      }
+
+      // Synonym match
+      const synonymHit = Object.entries(SYNONYMS).some(([key, vals]) => {
+        if (term.length >= 3 && (key.startsWith(term) || term.startsWith(key))) {
+          return vals.some((v) => label.includes(v));
+        }
+        if (key === term) {
+          return vals.some((v) => label.includes(v));
+        }
+        return false;
+      });
+      if (synonymHit) {
+        score += 5;
+        continue;
+      }
+
+      // Fuzzy: word starts with term (prefix match)
+      const words = label.split(/[\s\/\-\(\)]+/);
+      if (words.some((w) => w.startsWith(term) && term.length >= 2)) {
+        score += 4;
+        continue;
+      }
+
+      // Fuzzy: term starts with a word (reverse prefix)
+      if (words.some((w) => term.startsWith(w) && w.length >= 3)) {
+        score += 3;
+        continue;
+      }
+
+      // Levenshtein for short terms (catch typos)
+      if (term.length >= 4 && words.some((w) => w.length >= 4 && levenshtein(term, w) <= 1)) {
+        score += 3;
+        continue;
+      }
+    }
+
+    if (score > 0) scored.push({ item, score });
+  }
+
+  return scored.sort((a, b) => b.score - a.score).map((s) => s.item);
+}
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (Math.abs(m - n) > 2) return 3; // quick bail
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) => {
+    const row = new Array(n + 1).fill(0) as number[];
+    row[0] = i;
+    return row;
+  });
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
 export default function RoutineLibraryPage() {
   const [toast, setToast] = useState<ToastState>("idle");
   const [toastMsg, setToastMsg] = useState("");
@@ -164,7 +311,7 @@ export default function RoutineLibraryPage() {
     const q = query.trim().toLowerCase();
     const all = LIBRARY.flatMap((g) => g.items);
     if (!q) return null; // show grouped view
-    return all.filter((i) => (i.label ?? "").toLowerCase().includes(q));
+    return smartSearch(all, q);
   }, [query]);
 
   const show = (state: ToastState, msg?: string) => {
@@ -258,7 +405,7 @@ export default function RoutineLibraryPage() {
       {flat !== null ? (
         <section className="card p-4">
           {flat.length === 0 ? (
-            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>No matches. Try different keywords.</p>
+            <p className="text-sm text-center py-4" style={{ color: "var(--text-muted)" }}>No matches for &ldquo;{query.trim()}&rdquo;. Try a broader term like &ldquo;exercise&rdquo;, &ldquo;sleep&rdquo;, or &ldquo;focus&rdquo;.</p>
           ) : (
             flat.map(renderItem)
           )}
