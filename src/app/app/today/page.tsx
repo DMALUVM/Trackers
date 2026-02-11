@@ -256,14 +256,14 @@ export default function TodayPage() {
     if (milestoneCheckedForDate.current === dateKey) return;
     milestoneCheckedForDate.current = dateKey;
 
-    // totalGreenDays from useStreaks may not include today yet (data loads from
-    // Supabase before today's checks are persisted). When allCoreDone is true,
-    // today IS green, so ensure it's counted. Use activeStreak + 1 as a floor.
-    const todayIsGreen = allCoreDone;
-    const effectiveStreak = todayIsGreen
-      ? Math.max(streaks.currentStreak, streaks.activeStreak + (streaks.currentStreak === 0 ? 1 : 0))
-      : streaks.currentStreak;
-    const effectiveTotal = Math.max(streaks.totalGreenDays, todayIsGreen ? effectiveStreak : 0);
+    // ── Effective streak calculation ──
+    // At the moment of completion, Supabase may not include today yet.
+    // activeStreak = consecutive streak going INTO today (not including today).
+    // currentStreak = from Supabase, may or may not include today.
+    // Since today IS green (allCoreDone), actual streak = activeStreak + 1
+    // Use max with currentStreak in case Supabase already updated.
+    const effectiveStreak = Math.max(streaks.currentStreak, streaks.activeStreak + 1);
+    const effectiveTotal = Math.max(streaks.totalGreenDays, effectiveStreak);
     const result = checkMilestones({
       currentStreak: effectiveStreak,
       bestStreak: Math.max(streaks.bestStreak, effectiveStreak),
@@ -274,8 +274,14 @@ export default function TodayPage() {
       // Clear the pending storage since we're showing it directly
       // (LS_PENDING is only for cross-session recovery if user closes before seeing)
       try { localStorage.removeItem("routines365:milestones:pending"); } catch { /* ignore */ }
+      // For streak milestones, show actual current streak in the badge
+      // (the milestone threshold might be lower than current streak, e.g. "3-day"
+      // milestone triggering when user has a 4-day streak)
+      const display = result.type === "streak" && effectiveStreak > result.threshold
+        ? { ...result, _displayStreak: effectiveStreak }
+        : result;
       // Delay briefly so confetti plays, then show milestone
-      setTimeout(() => setMilestoneToShow(result), 400);
+      setTimeout(() => setMilestoneToShow(display), 400);
       // Trigger rating prompt at key streak milestones
       if (result.type === "streak") ratingOnStreakMilestone(result.threshold);
     }
