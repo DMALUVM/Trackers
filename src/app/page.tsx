@@ -203,7 +203,7 @@ export default function Home() {
         >
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs sm:text-sm font-semibold text-emerald-400">
-              ✨ Try Premium Free — 7-day trial, then from $2.49/mo billed yearly
+              ✨ Try Premium Free — 7-day trial, then $29.99/yr ($2.49/mo)
             </p>
             <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
               $3.99/mo monthly or $29.99/yr (37% savings). Cancel anytime.
