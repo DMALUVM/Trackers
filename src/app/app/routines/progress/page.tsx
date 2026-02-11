@@ -115,6 +115,7 @@ export default function RoutinesProgressPage() {
   useEffect(() => {
     const lastSave = (window as unknown as Record<string, number>).__r365_lastSaveTs ?? 0;
     if (lastSave > lastFetchRef.current) {
+      lastFetchRef.current = lastSave; // Prevent re-triggering before fetch completes
       setRefreshKey((k) => k + 1);
     }
   });
