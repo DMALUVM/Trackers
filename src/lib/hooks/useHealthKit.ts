@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  isNativeApp,
   isHealthKitAvailable,
   isHealthKitAuthorized,
   requestHealthKitAuth,
@@ -83,17 +84,15 @@ export function useHealthKit(): UseHealthKitReturn {
 
   useEffect(() => {
     const init = async () => {
-      const avail = isHealthKitAvailable();
+      const avail = isNativeApp();
       setAvailable(avail);
       if (!avail) { setLoading(false); return; }
 
       // If user disconnected in-app, don't re-authorize
-      try {
-        if (localStorage.getItem(HK_DISCONNECT_KEY) === "1") {
-          setLoading(false);
-          return;
-        }
-      } catch { /* ignore */ }
+      if (!isHealthKitAvailable()) {
+        setLoading(false);
+        return;
+      }
 
       try {
         // Always call requestAuthorization on mount (not just isAuthorized).

@@ -103,11 +103,21 @@ function getPlugin(): Record<string, (...args: unknown[]) => Promise<unknown>> |
   }
 }
 
-/** Returns true if running in native app (HealthKit may be available) */
-export function isHealthKitAvailable(): boolean {
+/** Returns true if running in native Capacitor app (regardless of disconnect state) */
+export function isNativeApp(): boolean {
   if (typeof window === "undefined") return false;
   // @ts-expect-error - Capacitor global
   return !!window.Capacitor;
+}
+
+/** Returns true if running in native app AND user hasn't disconnected in-app */
+export function isHealthKitAvailable(): boolean {
+  if (!isNativeApp()) return false;
+  // Check if user disconnected in-app
+  try {
+    if (localStorage.getItem("routines365:hk_disconnected") === "1") return false;
+  } catch { /* ignore */ }
+  return true;
 }
 
 /**
