@@ -8,8 +8,9 @@ import { hapticMedium, hapticLight } from "@/lib/haptics";
 import { loadThresholds, saveThresholds, type AutoCompleteThresholds } from "@/lib/healthAutoComplete";
 
 export default function HealthKitSettingsPage() {
-  const { available, authorized, requestAuth, steps, sleep, summary } = useHealthKit();
+  const { available, authorized, requestAuth, disconnect, steps, sleep, summary } = useHealthKit();
   const [connecting, setConnecting] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
   const [thresholds, setThresholds] = useState<AutoCompleteThresholds>(loadThresholds());
 
   const updateThreshold = (key: keyof AutoCompleteThresholds, value: number | boolean) => {
@@ -162,20 +163,61 @@ export default function HealthKitSettingsPage() {
             </div>
           </div>
 
-          {/* Manage in iOS Settings */}
-          <button type="button"
-            onClick={() => {
-              hapticMedium();
-              // Deep link to iOS Health app settings (best we can do)
-              window.open("x-apple-health://", "_blank");
-            }}
-            className="w-full rounded-xl p-3 flex items-center justify-between"
-            style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-            <span className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Manage permissions in Health app
-            </span>
-            <ExternalLink size={14} style={{ color: "var(--text-faint)" }} />
-          </button>
+          {/* Manage / Disconnect */}
+          <div className="space-y-2">
+            <button type="button"
+              onClick={() => {
+                hapticMedium();
+                window.open("x-apple-health://", "_blank");
+              }}
+              className="w-full rounded-xl p-3 flex items-center justify-between"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              <span className="text-sm" style={{ color: "var(--text-muted)" }}>
+                Manage permissions in Health app
+              </span>
+              <ExternalLink size={14} style={{ color: "var(--text-faint)" }} />
+            </button>
+
+            {!showDisconnectConfirm ? (
+              <button type="button"
+                onClick={() => { hapticLight(); setShowDisconnectConfirm(true); }}
+                className="w-full rounded-xl p-3 text-center text-sm font-medium"
+                style={{ color: "var(--accent-red, #ef4444)" }}>
+                Disconnect Apple Health
+              </button>
+            ) : (
+              <div className="rounded-xl p-4 space-y-3"
+                style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+                <p className="text-sm font-semibold text-center" style={{ color: "var(--text-primary)" }}>
+                  Disconnect Apple Health?
+                </p>
+                <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>
+                  Routines365 will stop reading your health data. Auto-complete and biometric insights will be disabled. You can reconnect anytime.
+                </p>
+                <div className="flex gap-2">
+                  <button type="button"
+                    onClick={() => setShowDisconnectConfirm(false)}
+                    className="flex-1 rounded-xl py-2.5 text-sm font-semibold"
+                    style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
+                    Cancel
+                  </button>
+                  <button type="button"
+                    onClick={() => {
+                      hapticMedium();
+                      disconnect();
+                      setShowDisconnectConfirm(false);
+                    }}
+                    className="flex-1 rounded-xl py-2.5 text-sm font-bold"
+                    style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>
+                    Disconnect
+                  </button>
+                </div>
+                <p className="text-[10px] text-center" style={{ color: "var(--text-faint)" }}>
+                  To fully revoke access, go to Settings → Health → Data Access → Routines365
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Smart Auto-Complete */}
           <div className="rounded-2xl p-4 space-y-4"

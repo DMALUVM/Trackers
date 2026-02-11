@@ -19,6 +19,8 @@ interface UseHealthKitReturn {
   authorized: boolean;
   /** Request authorization */
   requestAuth: () => Promise<boolean>;
+  /** Disconnect — stops reading HealthKit data */
+  disconnect: () => void;
   /** Today's step count */
   steps: number;
   /** Last night's sleep data */
@@ -30,6 +32,8 @@ interface UseHealthKitReturn {
   /** Loading state */
   loading: boolean;
 }
+
+const HK_DISCONNECT_KEY = "routines365:hk_disconnected";
 
 /**
  * Hook for accessing Apple Health data.
@@ -61,17 +65,35 @@ export function useHealthKit(): UseHealthKitReturn {
   }, []);
 
   const requestAuth = useCallback(async (): Promise<boolean> => {
+    // Clear disconnect flag when user explicitly reconnects
+    try { localStorage.removeItem(HK_DISCONNECT_KEY); } catch { /* ignore */ }
     const ok = await requestHealthKitAuth();
     setAuthorized(ok);
     if (ok) await refresh();
     return ok;
   }, [refresh]);
 
+  const disconnect = useCallback(() => {
+    try { localStorage.setItem(HK_DISCONNECT_KEY, "1"); } catch { /* ignore */ }
+    setAuthorized(false);
+    setSteps(0);
+    setSleep(null);
+    setSummary(null);
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       const avail = isHealthKitAvailable();
       setAvailable(avail);
       if (!avail) { setLoading(false); return; }
+
+      // If user disconnected in-app, don't re-authorize
+      try {
+        if (localStorage.getItem(HK_DISCONNECT_KEY) === "1") {
+          setLoading(false);
+          return;
+        }
+      } catch { /* ignore */ }
 
       try {
         // Always call requestAuthorization on mount (not just isAuthorized).
@@ -110,6 +132,7 @@ export function useHealthKit(): UseHealthKitReturn {
     available,
     authorized,
     requestAuth,
+    disconnect,
     steps,
     sleep,
     summary,
