@@ -4,20 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Share2 } from "lucide-react";
 import type { Milestone } from "@/lib/milestones";
-import { popPendingMilestone } from "@/lib/milestones";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
 
 /**
  * Full-screen celebration overlay when a milestone is earned.
- * 
- * Psychology: "Peak-end rule" — people remember the most intense
- * moment and the end of an experience. This IS the peak moment.
- * Make it feel EARNED, not just informational.
- * 
- * Fixes applied:
- * - Inline centering (no reliance on modal-center class)
- * - Scroll lock uses overflow:hidden instead of position:fixed (prevents iOS lockup)
- * - Queue support: after dismissing, checks for additional pending milestones
+ * Renders via portal to document.body to escape stacking contexts.
  */
 export function MilestoneModal({
   milestone,
@@ -34,31 +25,16 @@ export function MilestoneModal({
     setVisible(true);
     setPhase("enter");
     hapticHeavy();
-    // Small delay for entrance animation
     const t1 = setTimeout(() => setPhase("show"), 50);
     return () => clearTimeout(t1);
   }, [milestone]);
 
   const dismiss = useCallback(() => {
     setPhase("exit");
-    setTimeout(() => {
-      setVisible(false);
-      onDismiss();
-      // Check for queued milestones after a brief pause
-      // (let the UI settle before showing the next one)
-      setTimeout(() => {
-        const next = popPendingMilestone();
-        if (next) {
-          // Re-trigger by calling the parent's milestone setter
-          // We dispatch a custom event that the Today page listens for
-          window.dispatchEvent(new CustomEvent("routines365:showMilestone", { detail: next }));
-        }
-      }, 600);
-    }, 300);
+    setTimeout(() => { setVisible(false); onDismiss(); }, 300);
   }, [onDismiss]);
 
-  // Lock body scroll when modal is visible — use overflow:hidden instead of
-  // position:fixed to avoid iOS visual lockup and scroll position jumping
+  // Lock body scroll — use overflow:hidden (not position:fixed which causes iOS lockup)
   useEffect(() => {
     if (!visible) return;
     const prev = document.body.style.overflow;
@@ -73,12 +49,17 @@ export function MilestoneModal({
 
   if (!visible || !milestone) return null;
 
+  // Badge text with proper grammar
+  const badgeText =
+    milestone.type === "streak" ? `${milestone.threshold}-day streak` :
+    milestone.type === "green_total" ? `${milestone.threshold} green day${milestone.threshold !== 1 ? "s" : ""}` :
+    "New personal best";
+
   const modal = (
     <div
       role="dialog"
       aria-modal="true"
       onClick={dismiss}
-      // ── FIX: Inline centering — no reliance on modal-center class ──
       style={{
         position: "fixed",
         inset: 0,
@@ -148,10 +129,7 @@ export function MilestoneModal({
             animation: phase === "show" ? "fade-in-up 0.5s ease-out 0.2s both" : undefined,
           }}>
           <span className="text-sm font-bold text-white tabular-nums">
-            {milestone.type === "streak"
-              ? `${((milestone as unknown as Record<string, unknown>)._displayStreak as number) ?? milestone.threshold}-day streak`
-              : milestone.type === "green_total" ? `${milestone.threshold} green days`
-              : "New personal best"}
+            {badgeText}
           </span>
         </div>
 
@@ -162,9 +140,8 @@ export function MilestoneModal({
             onClick={(e) => {
               e.stopPropagation();
               hapticMedium();
-              const streakCount = ((milestone as unknown as Record<string, unknown>)._displayStreak as number) ?? milestone.threshold;
               const text = milestone.type === "streak"
-                ? `🔥 ${streakCount}-day streak on Routines365! ${milestone.message}`
+                ? `🔥 ${milestone.threshold}-day streak on Routines365! ${milestone.message}`
                 : milestone.type === "green_total"
                   ? `🏆 ${milestone.threshold} green days on Routines365! ${milestone.message}`
                   : `⭐ New personal best on Routines365! ${milestone.message}`;

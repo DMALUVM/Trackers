@@ -257,12 +257,12 @@ export default function TodayPage() {
     milestoneCheckedForDate.current = dateKey;
 
     // ── Effective streak calculation ──
-    // At the moment of completion, Supabase may not include today yet.
-    // activeStreak = consecutive streak going INTO today (not including today).
-    // currentStreak = from Supabase, may or may not include today.
-    // Since today IS green (allCoreDone), actual streak = activeStreak + 1
-    // Use max with currentStreak in case Supabase already updated.
-    const effectiveStreak = Math.max(streaks.currentStreak, streaks.activeStreak + 1);
+    // currentStreak from useStreaks is the most accurate value once loaded.
+    // Only fall back to activeStreak + 1 if currentStreak is still 0
+    // (meaning Supabase hasn't persisted today's completion yet).
+    const effectiveStreak = streaks.currentStreak > 0
+      ? streaks.currentStreak
+      : streaks.activeStreak + 1;
     const effectiveTotal = Math.max(streaks.totalGreenDays, effectiveStreak);
     const result = checkMilestones({
       currentStreak: effectiveStreak,
@@ -272,16 +272,9 @@ export default function TodayPage() {
     });
     if (result) {
       // Clear the pending storage since we're showing it directly
-      // (LS_PENDING is only for cross-session recovery if user closes before seeing)
       try { localStorage.removeItem("routines365:milestones:pending"); } catch { /* ignore */ }
-      // For streak milestones, show actual current streak in the badge
-      // (the milestone threshold might be lower than current streak, e.g. "3-day"
-      // milestone triggering when user has a 4-day streak)
-      const display = result.type === "streak" && effectiveStreak > result.threshold
-        ? { ...result, _displayStreak: effectiveStreak }
-        : result;
       // Delay briefly so confetti plays, then show milestone
-      setTimeout(() => setMilestoneToShow(display), 400);
+      setTimeout(() => setMilestoneToShow(result), 400);
       // Trigger rating prompt at key streak milestones
       if (result.type === "streak") ratingOnStreakMilestone(result.threshold);
     }
@@ -293,17 +286,6 @@ export default function TodayPage() {
   useEffect(() => {
     if (!allCoreDone) milestoneCheckedForDate.current = null;
   }, [allCoreDone]);
-
-  // Listen for queued milestones from MilestoneModal (after user dismisses one,
-  // the modal checks for additional pending milestones and dispatches this event)
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const milestone = (e as CustomEvent).detail as Milestone;
-      if (milestone) setMilestoneToShow(milestone);
-    };
-    window.addEventListener("routines365:showMilestone", handler);
-    return () => window.removeEventListener("routines365:showMilestone", handler);
-  }, []);
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
@@ -616,11 +598,10 @@ export default function TodayPage() {
 
       {/* ─── GREEN DAY CELEBRATION ─── */}
       {allCoreDone && (() => {
-        // Use effective streak: currentStreak from Supabase may not include today yet
-        const effectiveStreak = Math.max(
-          streaks.currentStreak,
-          streaks.activeStreak + (streaks.currentStreak === 0 ? 1 : 0)
-        );
+        // Use effective streak: same logic as milestone check
+        const effectiveStreak = streaks.currentStreak > 0
+          ? streaks.currentStreak
+          : streaks.activeStreak + 1;
         return (
         <section className="rounded-2xl p-5 text-center animate-celebrate-in"
           style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
