@@ -29,7 +29,7 @@ const sections = [
   {
     title: "Data",
     items: [
-      { href: "/app/settings/backup", label: "Backup", desc: "Cloud sync status and data export", icon: Download },
+      { href: "/app/settings/backup", label: "Backup & Restore", desc: "Export, import, and protect your data", icon: Download },
     ],
   },
   {
