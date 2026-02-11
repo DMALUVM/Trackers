@@ -28,9 +28,8 @@ export function SettingsGear() {
       onClick={() => { hapticLight(); router.push("/app/settings"); }}
       className="tap-btn fixed z-40 flex items-center justify-center rounded-full"
       style={{
-        top: "env(safe-area-inset-top, 12px)",
+        top: "calc(env(safe-area-inset-top, 52px) + 12px)",
         right: 16,
-        marginTop: 12,
         width: 40,
         height: 40,
         background: "var(--bg-card)",

@@ -185,7 +185,7 @@ a, img, button { -webkit-touch-callout: none; }
   -webkit-overflow-scrolling: touch;
 }
 /* Safe area for top notch/dynamic island */
-.pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }
+.pt-safe { padding-top: calc(env(safe-area-inset-top, 52px) + 8px); }
 
 /* ============================================================
    ANIMATION KEYFRAMES
