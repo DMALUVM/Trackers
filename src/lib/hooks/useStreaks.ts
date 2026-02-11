@@ -8,10 +8,14 @@ import type { RoutineItemRow } from "@/lib/types";
 import { CATEGORY_KEYWORDS, STREAK_LOOKBACK_DAYS } from "@/lib/constants";
 
 function shouldShow(item: RoutineItemRow, date: Date, dateKey?: string): boolean {
-  // Don't show routines that didn't exist yet on this day
-  if (dateKey && item.created_at) {
-    const createdDate = item.created_at.slice(0, 10);
-    if (createdDate > dateKey) return false;
+  try {
+    // Don't show routines that didn't exist yet on this day
+    if (dateKey && item.created_at) {
+      const createdDate = item.created_at.slice(0, 10);
+      if (createdDate > dateKey) return false;
+    }
+  } catch {
+    // If created_at check fails, include the item
   }
   const dow = tzIsoDow(date);
   const allowed = item.days_of_week;

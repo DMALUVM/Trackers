@@ -49,9 +49,13 @@ export function computeDayColor(opts: {
   // ── Filter out routines that didn't exist yet on this day ──
   // A routine added on Feb 11 should NOT count as missed on Feb 8.
   const routineItems = opts.routineItems.filter((ri) => {
-    if (!ri.created_at) return true; // legacy items without timestamp
-    const createdDate = ri.created_at.slice(0, 10); // "2026-02-11T..." → "2026-02-11"
-    return createdDate <= dateKey;
+    try {
+      if (!ri.created_at) return true; // legacy items without timestamp
+      const createdDate = ri.created_at.slice(0, 10);
+      return createdDate <= dateKey;
+    } catch {
+      return true; // if anything goes wrong, include the item
+    }
   });
 
   // ── Guard: future days are always empty ──

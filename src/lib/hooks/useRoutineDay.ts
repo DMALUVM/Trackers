@@ -32,12 +32,7 @@ export type RoutineDayState = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-function shouldShow(item: RoutineItemRow, date: Date, dateKey?: string): boolean {
-  // Don't show routines that didn't exist yet on this day
-  if (dateKey && item.created_at) {
-    const createdDate = item.created_at.slice(0, 10);
-    if (createdDate > dateKey) return false;
-  }
+function shouldShow(item: RoutineItemRow, date: Date): boolean {
   const dow = tzIsoDow(date);
   const allowed = item.days_of_week;
   if (!allowed || allowed.length === 0) return true;
@@ -108,8 +103,8 @@ export function useRoutineDay(dateKey: string) {
       }
 
       // Build baseline (done=false) UI items
-      const scheduled = routineItems.filter((ri) => shouldShow(ri, today, dateKey));
-      const core = routineItems.filter((ri) => ri.is_non_negotiable && shouldShow(ri, today, dateKey));
+      const scheduled = routineItems.filter((ri) => shouldShow(ri, today));
+      const core = routineItems.filter((ri) => ri.is_non_negotiable);
       const isFallback = scheduled.length === 0 && core.length > 0;
       const baseItems = (scheduled.length > 0 ? scheduled : core).map((ri) =>
         toUiItem(ri, false)
@@ -130,7 +125,7 @@ export function useRoutineDay(dateKey: string) {
           if (!Number.isNaN(ms)) snoozeMap[s.routine_item_id] = ms;
         }
 
-        const activeItems = routineItems.filter((ri) => shouldShow(ri, today, dateKey));
+        const activeItems = routineItems.filter((ri) => shouldShow(ri, today));
         const color = computeDayColor({
           dateKey,
           routineItems: activeItems.length > 0 ? activeItems : core,

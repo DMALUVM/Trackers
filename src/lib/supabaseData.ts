@@ -179,7 +179,7 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   const cached = cacheGet<RoutineItemRow[]>(cacheKey);
   if (cached) return cached;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("routine_items")
     .select(
       "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order,created_at"
@@ -188,7 +188,22 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
     .eq("is_active", true)
     .order("sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
-  if (error) throw error;
+
+  // Fallback: if created_at in select causes issues, retry without it
+  if (error) {
+    const fallback = await supabase
+      .from("routine_items")
+      .select(
+        "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
+      )
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true });
+    if (fallback.error) throw fallback.error;
+    data = fallback.data;
+    error = null;
+  }
 
   const res = data ?? [];
   cacheSet(cacheKey, res, 5 * 60 * 1000); // 5 min (was 60s)
