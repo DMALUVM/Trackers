@@ -152,6 +152,15 @@ export default function BackupPage() {
     try {
       const userId = await getUserId();
 
+      // ── Wipe existing data so restore is a clean replacement ──
+      await Promise.all([
+        supabase.from("day_snoozes").delete().eq("user_id", userId),
+        supabase.from("daily_checks").delete().eq("user_id", userId),
+        supabase.from("daily_logs").delete().eq("user_id", userId),
+        supabase.from("activity_logs").delete().eq("user_id", userId),
+        supabase.from("routine_items").delete().eq("user_id", userId),
+      ]);
+
       // Helper: stamp user_id, strip old id so Supabase generates new ones
       const stamp = (rows: Record<string, unknown>[]) =>
         rows.map((r) => {
@@ -174,7 +183,10 @@ export default function BackupPage() {
             .insert(row)
             .select("id")
             .single();
-          if (error) throw error;
+          if (error) {
+            console.warn("Skipping routine_item (may already exist):", (row.label as string), error.message);
+            continue;
+          }
           idMap.set(oldId, data.id);
         }
       }
@@ -182,31 +194,55 @@ export default function BackupPage() {
       // 2. Restore daily_checks — remap routine_item_id
       const checks = pendingFile.daily_checks ?? [];
       if (checks.length > 0) {
-        const mapped = checks.map((c) => {
-          const row: Record<string, unknown> = { ...c, user_id: userId };
-          delete row.id;
-          const oldRiId = row.routine_item_id as string;
-          if (idMap.has(oldRiId)) {
-            row.routine_item_id = idMap.get(oldRiId)!;
-          }
-          return row;
-        });
-        // Insert in batches of 500
+        const mapped = checks
+          .map((c) => {
+            const row: Record<string, unknown> = { ...c, user_id: userId };
+            delete row.id;
+            const oldRiId = row.routine_item_id as string;
+            if (idMap.has(oldRiId)) {
+              row.routine_item_id = idMap.get(oldRiId)!;
+            } else {
+              // Old ID not remapped — skip this check (routine wasn't imported)
+              return null;
+            }
+            return row;
+          })
+          .filter((r): r is Record<string, unknown> => r !== null);
+
+        // Insert in batches of 500, ignore conflicts
         for (let i = 0; i < mapped.length; i += 500) {
           const batch = mapped.slice(i, i + 500);
           const { error } = await supabase.from("daily_checks").insert(batch);
-          if (error) throw error;
+          if (error) {
+            console.warn(`daily_checks batch ${i}: ${error.message}`);
+            // Try one-by-one for this batch to skip just the conflicting rows
+            for (const row of batch) {
+              await supabase.from("daily_checks").insert(row).then(({ error: e }) => {
+                if (e) console.warn("Skipping check:", e.message);
+              });
+            }
+          }
         }
       }
 
-      // 3. Restore daily_logs
+      // 3. Restore daily_logs — use upsert on (user_id, date) to avoid conflicts
       const logs = pendingFile.daily_logs ?? [];
       if (logs.length > 0) {
         const stamped = stamp(logs);
         for (let i = 0; i < stamped.length; i += 500) {
           const batch = stamped.slice(i, i + 500);
-          const { error } = await supabase.from("daily_logs").insert(batch);
-          if (error) throw error;
+          const { error } = await supabase
+            .from("daily_logs")
+            .upsert(batch, { onConflict: "user_id,date" });
+          if (error) {
+            console.warn(`daily_logs batch ${i}: ${error.message}`);
+            // Fallback: insert one-by-one, skip conflicts
+            for (const row of batch) {
+              await supabase.from("daily_logs").upsert(row, { onConflict: "user_id,date" }).then(({ error: e }) => {
+                if (e) console.warn("Skipping log:", e.message);
+              });
+            }
+          }
         }
       }
 
@@ -217,7 +253,14 @@ export default function BackupPage() {
         for (let i = 0; i < stamped.length; i += 500) {
           const batch = stamped.slice(i, i + 500);
           const { error } = await supabase.from("activity_logs").insert(batch);
-          if (error) throw error;
+          if (error) {
+            console.warn(`activity_logs batch ${i}: ${error.message}`);
+            for (const row of batch) {
+              await supabase.from("activity_logs").insert(row).then(({ error: e }) => {
+                if (e) console.warn("Skipping activity:", e.message);
+              });
+            }
+          }
         }
       }
 
@@ -301,7 +344,7 @@ export default function BackupPage() {
         <div>
           <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Restore from backup</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Import a JSON backup file. Data will be added to your account (existing data is not deleted).
+            Import a JSON backup file. This will replace all your current data with the contents of the backup.
           </p>
         </div>
         <input
@@ -327,11 +370,11 @@ export default function BackupPage() {
           <div className="rounded-2xl p-5 max-w-sm w-full space-y-4" style={{ background: "var(--bg-card)" }}>
             <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>Confirm restore</p>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              This will add the following data to your account:
+              This will <strong style={{ color: "var(--accent-red-text, #ef4444)" }}>replace all your current data</strong> with:
             </p>
             <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{pendingStats}</p>
             <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-              Existing data will not be deleted. If you want a clean restore, delete your account first and create a new one.
+              Your existing routines, checks, logs, and activity data will be deleted first. Your account and settings will be preserved.
             </p>
             <div className="flex gap-3">
               <button type="button" className="btn-secondary flex-1 text-sm" onClick={() => { setConfirmRestore(false); setPendingFile(null); }}>
