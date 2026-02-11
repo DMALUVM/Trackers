@@ -324,16 +324,22 @@ export default function PremiumPage() {
           <p className="text-sm font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
             &ldquo;The insights alone are worth it. Knowing my Wednesdays are weak changed how I plan my week.&rdquo;
           </p>
-          <p className="text-xs" style={{ color: "var(--text-faint)" }}>— Beta tester</p>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>— Early user</p>
         </div>
       </section>
 
       {/* Terms */}
-      <footer className="text-center px-6">
+      <footer className="text-center px-6 space-y-2">
         <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
           Payment will be charged to your Apple ID account at confirmation of purchase.
           Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.
+          You can manage and cancel subscriptions in your Apple ID account settings.
         </p>
+        <div className="flex items-center justify-center gap-3 text-[10px]" style={{ color: "var(--text-faint)" }}>
+          <a href="/terms" className="underline underline-offset-2">Terms of Use</a>
+          <span>·</span>
+          <a href="/privacy" className="underline underline-offset-2">Privacy Policy</a>
+        </div>
       </footer>
     </div>
   );

@@ -48,7 +48,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Routines365 reads your steps, sleep, and workout data to auto-track your daily habits.</string>
+	<string>Routines365 reads your steps, active energy, sleep, workouts, heart rate variability (HRV), resting heart rate, respiratory rate, and blood oxygen from Apple Health to display wellness insights and auto-track your daily habits.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Routines365 does not write data to Apple Health.</string>
 	<key>NSFaceIDUsageDescription</key>

@@ -617,7 +617,7 @@ export default function Home() {
           <div className="flex items-center gap-4 text-[11px] text-neutral-500">
             <a className="hover:text-neutral-300 transition-colors" href="/privacy">Privacy</a>
             <a className="hover:text-neutral-300 transition-colors" href="/terms">Terms</a>
-            <a className="hover:text-neutral-300 transition-colors" href="mailto:support@routines365.com">Contact</a>
+            <a className="hover:text-neutral-300 transition-colors" href="/support">Support</a>
           </div>
         </div>
       </footer>
