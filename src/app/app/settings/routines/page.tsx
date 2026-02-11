@@ -110,12 +110,11 @@ export default function RoutinesSettingsPage() {
   }, [reminders]);
 
   const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = search.trim();
     if (!q) return items;
-    // Use smart search with synonyms for consistency with library search
-    const results = smartSearchFn(items.map((i) => ({ ...i, label: i.label ?? "", section: i.section })), q);
-    const resultLabels = new Set(results.map((r) => r.label));
-    return items.filter((i) => resultLabels.has(i.label ?? ""));
+    const results = smartSearchFn(items, q);
+    const ids = new Set(results.map((r) => r.id));
+    return items.filter((i) => ids.has(i.id));
   }, [items, search]);
 
   const refresh = async () => {
