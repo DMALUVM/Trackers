@@ -8,6 +8,8 @@
 
 // ── Types ──
 
+import { tzDateKey } from "@/lib/time";
+
 export interface HealthKitSteps {
   date: string; // YYYY-MM-DD
   steps: number;
@@ -210,7 +212,7 @@ export async function getDaySummary(date?: string): Promise<HealthKitDaySummary 
   const plugin = getPlugin();
   if (!plugin) return null;
   try {
-    const result = await plugin.getDaySummary({ date: date ?? new Date().toISOString().slice(0, 10) }) as { data: HealthKitDaySummary };
+    const result = await plugin.getDaySummary({ date: date ?? tzDateKey(new Date()) }) as { data: HealthKitDaySummary };
     return result.data ?? null;
   } catch (e) {
     console.error("HealthKit getDaySummary error:", e);

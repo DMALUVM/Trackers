@@ -17,6 +17,7 @@ import {
   type ActivityUnit,
   type ActivityLogRow,
 } from "@/lib/activity";
+import { toDateKey } from "@/lib/supabaseData";
 
 const ACTIVITIES = [
   { key: "walking",     label: "Steps",       emoji: "🚶", unit: "steps"    as ActivityUnit, inputMode: "numeric"  as const, placeholder: "8500" },
@@ -148,7 +149,7 @@ export default function EditDayPage() {
   let dateLabel = dateKey;
   try { dateLabel = format(parseISO(dateKey), "EEEE, MMM d"); } catch { /* keep raw */ }
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = toDateKey(new Date());
   const isFuture = dateKey > todayKey;
 
   // Block editing future dates

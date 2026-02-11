@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { DayColor } from "@/lib/progress";
+import { toDateKey } from "@/lib/supabaseData";
 import { hapticLight } from "@/lib/haptics";
 
 interface WeekStripProps {
@@ -44,7 +45,7 @@ export function WeekStrip({ days, className = "" }: WeekStripProps) {
 
   const firstDate = new Date(days[0].dateKey + "T12:00:00");
   const firstDow = (firstDate.getDay() + 6) % 7;
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = toDateKey(new Date());
 
   return (
     <div className={`flex items-center justify-between w-full max-w-xs ${className}`}>

@@ -73,9 +73,10 @@ export const METRIC_ACTIVITIES: Record<
 /** Map a routine label to a metric activity key (if any). */
 export function labelToMetricKey(label: string): string | null {
   const l = label.toLowerCase();
-  if (l.includes("rowing") || l.includes("row")) return "rowing";
-  if (l.includes("run")) return "running";
-  if (l.includes("walk")) return "walking";
+  const word = (w: string) => new RegExp(`\\b${w}\\b`).test(l);
+  if (l.includes("rowing") || word("row")) return "rowing";
+  if (word("run") || l.includes("running")) return "running";
+  if (word("walk") || l.includes("walking")) return "walking";
   if (l.includes("sauna")) return "sauna";
   if (l.includes("cold")) return "cold";
   if (l.includes("sleep")) return "sleep";

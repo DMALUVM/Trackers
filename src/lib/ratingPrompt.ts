@@ -17,6 +17,8 @@
  *  - Native iOS further limits to 3 actual displays per 365 days
  */
 
+import { tzDateKey } from "@/lib/time";
+
 const LS_KEY = "routines365:ratingPrompt";
 
 interface RatingState {
@@ -176,7 +178,7 @@ export function ratingOnStreakMilestone(streak: number) {
 export function ratingOnGreenDay(dateKey?: string) {
   const state = load();
   // Deduplicate: only count once per calendar day
-  const today = dateKey || new Date().toISOString().slice(0, 10);
+  const today = dateKey || tzDateKey(new Date());
   if (state.lastGreenDate === today) return;
   state.lastGreenDate = today;
   state.greenDayCount++;

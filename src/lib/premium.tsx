@@ -140,7 +140,9 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     // Listen for subscription changes (renewals, cancellations)
     const cleanup = onSubscriptionChange((isPremium) => {
       setState((prev) => {
-        const next = { ...prev, isPremium, storeKitActive: isPremium };
+        // If StoreKit says not premium but user has a redeemed code, keep premium
+        const effectivePremium = isPremium || !!prev.redeemedCode;
+        const next = { ...prev, isPremium: effectivePremium, storeKitActive: isPremium };
         saveState(next);
         return next;
       });

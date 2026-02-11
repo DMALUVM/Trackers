@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getBiometricSummary, isHealthKitAvailable, type BiometricReading, type BiometricSummary } from "@/lib/healthKit";
+import { tzDateKey } from "@/lib/time";
 
 export interface BiometricTrend {
   current: number | null;
@@ -33,7 +34,7 @@ function computeTrend(data: BiometricReading[], higherIsBetter: boolean): Biomet
 
   const now = new Date();
   const d7 = new Date(now); d7.setDate(d7.getDate() - 7);
-  const d7Key = d7.toISOString().slice(0, 10);
+  const d7Key = tzDateKey(d7);
 
   const last7 = sorted.filter(d => d.date >= d7Key);
   const avg7d = last7.length > 0 ? Math.round((last7.reduce((s, d) => s + d.value, 0) / last7.length) * 10) / 10 : null;

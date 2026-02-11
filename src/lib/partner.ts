@@ -11,6 +11,7 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { getUserId } from "@/lib/supabaseData";
+import { tzDateKey } from "@/lib/time";
 
 export interface Partnership {
   id: string;
@@ -104,7 +105,7 @@ export async function createInvite(displayName: string): Promise<string> {
     best_streak: 0,
     today_done: 0,
     today_total: 0,
-    last_active: new Date().toISOString().slice(0, 10),
+    last_active: tzDateKey(new Date()),
   });
 
   // Create partnership with invite code
@@ -142,7 +143,7 @@ export async function acceptInvite(code: string, displayName: string): Promise<b
     best_streak: 0,
     today_done: 0,
     today_total: 0,
-    last_active: new Date().toISOString().slice(0, 10),
+    last_active: tzDateKey(new Date()),
   });
 
   // Activate the partnership
@@ -170,7 +171,7 @@ export async function updateMyPartnerStats(stats: {
     best_streak: stats.bestStreak,
     today_done: stats.todayDone,
     today_total: stats.todayTotal,
-    last_active: new Date().toISOString().slice(0, 10),
+    last_active: tzDateKey(new Date()),
   });
 }
 

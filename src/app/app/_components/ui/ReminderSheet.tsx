@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell, BellOff, Trash2, X } from "lucide-react";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 import { upsertReminder, deleteReminder, subscribeToPush, getPushPermission, isPushSupported } from "@/lib/reminders";
+import { scheduleDailyReminder, cancelReminder as cancelNativeReminder, requestNotifyPermission, isNativeNotifyAvailable } from "@/lib/nativeNotify";
 import type { Reminder } from "@/lib/reminders";
 
 const DAYS = [
@@ -84,6 +85,26 @@ export function ReminderSheet({
         daysOfWeek: days,
         enabled,
       });
+
+      // Schedule native local notification on iOS
+      if (isNativeNotifyAvailable() && enabled) {
+        const granted = await requestNotifyPermission();
+        if (granted) {
+          const [h, m] = time.split(":").map(Number);
+          await scheduleDailyReminder({
+            id: `habit_${routineItemId}`,
+            title: `${routineEmoji ?? "⏰"} ${routineLabel}`,
+            body: "Time for your habit!",
+            hour: h,
+            minute: m,
+            weekdays: days,
+          });
+        }
+      } else if (isNativeNotifyAvailable() && !enabled) {
+        // Reminder paused — cancel native notification
+        await cancelNativeReminder(`habit_${routineItemId}`);
+      }
+
       onSaved?.();
       onClose();
     } catch (e) {
@@ -99,6 +120,10 @@ export function ReminderSheet({
     hapticMedium();
     try {
       await deleteReminder(routineItemId);
+      // Cancel native local notification on iOS
+      if (isNativeNotifyAvailable()) {
+        await cancelNativeReminder(`habit_${routineItemId}`);
+      }
       onSaved?.();
       onClose();
     } catch (e) {
