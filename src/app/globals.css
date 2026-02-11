@@ -168,6 +168,7 @@ a, img, button { -webkit-touch-callout: none; }
 /* Safe area for PWA bottom nav */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 /* Centered modal overlay — accounts for iPhone safe areas (notch + home bar) */
+/* Bottom-anchored on mobile (native iOS sheet pattern), centered on desktop */
 .modal-center {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -175,14 +176,17 @@ a, img, button { -webkit-touch-callout: none; }
   height: 100dvh;
   height: 100vh; /* fallback */
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 20px;
-  padding-top: calc(20px + env(safe-area-inset-top, 0px));
-  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 200;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 640px) {
+  .modal-center { align-items: center; padding: 20px; }
 }
 /* Safe area for top notch/dynamic island */
 .pt-safe { padding-top: calc(env(safe-area-inset-top, 52px) + 8px); }

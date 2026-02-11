@@ -138,14 +138,19 @@ export function ReminderSheet({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      <div className="fixed inset-0 z-[199] bg-black/60 backdrop-blur-sm"
         onClick={onClose} />
 
       {/* Modal — centered accounting for iPhone safe areas */}
       <div className="modal-center" onClick={onClose}>
         <div className="w-full max-w-sm rounded-2xl p-5 animate-fade-in-up"
-          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 8px 40px rgba(0,0,0,0.4)" }}
+          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 40px rgba(0,0,0,0.4)" }}
           onClick={(e) => e.stopPropagation()}>
+
+          {/* Drag handle */}
+          <div className="flex justify-center mb-3">
+            <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-primary)" }} />
+          </div>
 
           {/* Handle + close */}
           <div className="flex items-center justify-between mb-4">

@@ -80,9 +80,14 @@ export function GettingStartedTips() {
       onClick={dismiss}>
       <div
         className="w-full max-w-sm rounded-2xl p-6 animate-fade-in-up relative"
-        style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)" }}
+        style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 40px rgba(0,0,0,0.4)" }}
         onClick={(e) => e.stopPropagation()}>
         
+        {/* Drag handle */}
+        <div className="flex justify-center mb-3">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-primary)" }} />
+        </div>
+
         {/* Close button */}
         <button type="button" onClick={dismiss}
           className="absolute top-3 right-3 p-2 rounded-full"
