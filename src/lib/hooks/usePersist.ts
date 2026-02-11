@@ -14,19 +14,11 @@ interface UsePersistOpts {
 export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
   const [saveState, setSaveState] = useState<ToastState>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inflightRef = useRef(false);
-  const pendingRef = useRef(false);
-  const pendingDayModeRef = useRef<DayMode | null>(null);
   const dirtyRef = useRef(false);
+  // Track the current inflight save so flushNow can wait for it
+  const inflightPromiseRef = useRef<Promise<void> | null>(null);
 
-  const persistNow = useCallback(async (dayMode: DayMode) => {
-    if (inflightRef.current) {
-      pendingRef.current = true;
-      return;
-    }
-
-    inflightRef.current = true;
-    pendingRef.current = false;
+  const doSave = useCallback(async (dayMode: DayMode) => {
     setSaveState("saving");
 
     const items = itemsRef.current;
@@ -45,6 +37,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
         upsertDailyChecks(checksPayload),
       ]);
 
+      dirtyRef.current = false;
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
       // Notify other pages (calendar, week strip) that data changed
@@ -55,10 +48,10 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
       const isOffline = !navigator.onLine || msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
 
       if (isOffline) {
-        // Queue for later sync
         enqueue({ type: "dailyLog", payload: logPayload as unknown as Record<string, unknown> });
         enqueue({ type: "dailyChecks", payload: checksPayload as unknown as Record<string, unknown> });
-        setSaveState("saved"); // Show saved — user's checks are preserved locally
+        dirtyRef.current = false;
+        setSaveState("saved");
         setTimeout(() => setSaveState("idle"), 1500);
       } else {
         console.error("Save failed:", msg);
@@ -66,33 +59,50 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
         setTimeout(() => setSaveState("idle"), 3000);
       }
     } finally {
-      inflightRef.current = false;
-      if (pendingRef.current) {
-        const dm = pendingDayModeRef.current ?? dayMode;
-        pendingDayModeRef.current = null;
-        void persistNow(dm);
-      }
+      inflightPromiseRef.current = null;
     }
   }, [dateKey, itemsRef]);
 
   const debouncedPersist = useCallback((dayMode: DayMode) => {
     dirtyRef.current = true;
-    pendingDayModeRef.current = dayMode;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      void persistNow(dayMode);
+      const p = doSave(dayMode);
+      inflightPromiseRef.current = p;
     }, AUTOSAVE_DELAY_MS);
-  }, [persistNow]);
+  }, [doSave]);
 
-  const flushNow = useCallback((dayMode: DayMode) => {
+  /**
+   * Flush any pending save immediately and return a promise that resolves
+   * when the save is complete. Safe to call before navigation.
+   */
+  const flushNow = useCallback(async (dayMode: DayMode) => {
+    // Cancel any pending debounce timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (!dirtyRef.current) return Promise.resolve();
-    return persistNow(dayMode);
-  }, [persistNow]);
+
+    // If a save is already in-flight, wait for it
+    if (inflightPromiseRef.current) {
+      await inflightPromiseRef.current;
+      // If still dirty after that save (shouldn't happen, but be safe)
+      if (dirtyRef.current) {
+        const p = doSave(dayMode);
+        inflightPromiseRef.current = p;
+        await p;
+      }
+      return;
+    }
+
+    // If dirty but no save in-flight, save now
+    if (dirtyRef.current) {
+      const p = doSave(dayMode);
+      inflightPromiseRef.current = p;
+      await p;
+    }
+  }, [doSave]);
 
   /** Save a single-item snooze to Supabase. */
   const persistSnooze = useCallback(async (routineItemId: string) => {
