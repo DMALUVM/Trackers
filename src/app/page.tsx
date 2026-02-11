@@ -168,7 +168,7 @@ export default function Home() {
                   </CTAButton>
                 </div>
                 <p className="mt-3 text-xs text-neutral-500 lg:text-left text-center">
-                  Free forever · No credit card · Founding member pricing available
+                  Free forever · No credit card · Launch pricing available
                 </p>
               </Reveal>
 
@@ -195,7 +195,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Founding member banner ── */}
+      {/* ── Launch pricing banner ── */}
       <Reveal>
         <section
           className="border-y border-emerald-800/30 py-3 px-4 sm:px-6"
@@ -203,10 +203,10 @@ export default function Home() {
         >
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs sm:text-sm font-semibold text-emerald-400">
-              🚀 Founding Member Launch — $2.99/mo locked in for life
+              🚀 Launch Special — Premium from $0.99/mo for your first 3 months
             </p>
             <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5">
-              Price increases to $3.99/mo after launch. Early members keep their rate forever.
+              7-day free trial included. Standard price is $3.99/mo after the intro period.
             </p>
           </div>
         </section>
@@ -498,17 +498,17 @@ export default function Home() {
               >
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <span className="inline-block rounded-full bg-emerald-500 px-3 py-0.5 text-[10px] sm:text-[11px] font-bold text-black uppercase tracking-wider whitespace-nowrap">
-                    🚀 Founding Member
+                    🚀 Launch Special
                   </span>
                 </div>
                 <p className="text-[11px] font-bold tracking-wider uppercase text-emerald-400 mt-1">Premium</p>
                 <div className="flex items-baseline justify-center gap-1.5 mt-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold">$2.99</span>
+                  <span className="text-3xl sm:text-4xl font-extrabold">$0.99</span>
                   <span className="text-sm text-neutral-400">/mo</span>
                   <span className="ml-1 text-sm text-neutral-600 line-through">$3.99</span>
                 </div>
                 <p className="text-xs text-emerald-400/80 mt-1">
-                  or $24.99/yr <span className="text-neutral-600 line-through">$39.99</span> · Locked in forever
+                  or $14.99/yr <span className="text-neutral-600 line-through">$29.99</span> · First 3 months
                 </p>
 
                 <div className="mt-5 space-y-2.5 text-left">

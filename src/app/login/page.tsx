@@ -217,13 +217,13 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Founding member nudge */}
+          {/* Launch pricing nudge */}
           {mode === "create" && (
             <div className="mt-8 rounded-xl border border-emerald-800/30 px-4 py-3 text-center"
               style={{ background: "rgba(16,185,129,0.04)" }}>
-              <p className="text-xs text-emerald-400 font-semibold">🚀 Founding Member Pricing</p>
+              <p className="text-xs text-emerald-400 font-semibold">🚀 Launch Special</p>
               <p className="text-[11px] text-neutral-500 mt-1">
-                Lock in $2.99/mo for life · Price goes to $3.99 after launch
+                Premium from $0.99/mo for your first 3 months · 7-day free trial included
               </p>
             </div>
           )}
