@@ -95,7 +95,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const fullPath = typeof window !== "undefined"
         ? window.location.pathname + window.location.search
         : pathname ?? "/";
-      router.replace(`/?next=${encodeURIComponent(fullPath)}`);
+      router.replace(`/login?next=${encodeURIComponent(fullPath)}`);
     }
   }, [ready, hasSession, router, pathname]);
 

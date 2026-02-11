@@ -25,6 +25,16 @@ export default function LoginPage() {
     return !!(window as unknown as Record<string, unknown>).Capacitor;
   });
 
+  /* ── Get redirect target from ?next= param ── */
+  const getRedirectTarget = useCallback(() => {
+    if (typeof window === "undefined") return "/app/today";
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    // Only allow internal /app/ paths
+    if (next && next.startsWith("/app/")) return next;
+    return "/app/today";
+  }, []);
+
   /* ── Redirect if already signed in (silent, non-blocking) ── */
   useEffect(() => {
     if (!hasSessionCookie()) return;
@@ -32,12 +42,12 @@ export default function LoginPage() {
     const check = async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        if (!cancelled && data.session) router.replace("/app/today");
+        if (!cancelled && data.session) router.replace(getRedirectTarget());
       } catch {}
     };
     void check();
     return () => { cancelled = true; };
-  }, [router]);
+  }, [router, getRedirectTarget]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
@@ -48,11 +58,11 @@ export default function LoginPage() {
             .filter(k => k.startsWith("routines365:") && k !== "routines365:userId")
             .forEach(k => localStorage.removeItem(k));
         localStorage.setItem("routines365:userId", session.user.id);
-        router.replace("/app/today");
+        router.replace(getRedirectTarget());
       }
     });
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, getRedirectTarget]);
 
   const getSiteUrl = useCallback(
     () => process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || (typeof window !== "undefined" ? window.location.origin : ""),
@@ -75,7 +85,7 @@ export default function LoginPage() {
           options: { emailRedirectTo: `${getSiteUrl()}/login` },
         });
         if (error) throw error;
-        if (data.session) { router.replace("/app/today"); return; }
+        if (data.session) { router.replace(getRedirectTarget()); return; }
         setStatus("Account created! Check your inbox to confirm.");
       } else if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
