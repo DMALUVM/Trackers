@@ -11,12 +11,15 @@ import { PageTint } from "@/app/app/_components/PageTint";
 import { PremiumProvider } from "@/lib/premium";
 import { OfflineBanner } from "@/app/app/_components/OfflineBanner";
 
+import { ScrollToTop } from "@/app/app/_components/ScrollToTop";
+
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <PasskeyGate>
       <AuthGate>
         <ThemeGate>
           <PremiumProvider>
+            <ScrollToTop />
             <PageTint />
             <div id="app-shell" className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
               <IosInstallPrompt />
