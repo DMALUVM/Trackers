@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { Reveal } from "@/app/_components/landing/Reveal";
 import { CTAButton } from "@/app/_components/landing/CTAButton";
@@ -5,13 +6,6 @@ import { ScrollCarousel } from "@/app/_components/landing/ScrollCarousel";
 import { AuthOverlay } from "@/app/_components/landing/AuthOverlay";
 import {
   MockToday,
-  MockProgress,
-  MockBreathwork,
-  MockMovement,
-  MockSleep,
-  MockTodayLight,
-  MockStreaksLight,
-  MockProgressLight,
 } from "@/app/_components/landing/PhoneMockups";
 
 /* ────────────────────────────────────────────
@@ -273,15 +267,20 @@ export default function Home() {
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <ScrollCarousel itemCount={8}>
-              <div className="snap-center shrink-0"><MockToday /></div>
-              <div className="snap-center shrink-0"><MockBreathwork /></div>
-              <div className="snap-center shrink-0"><MockMovement /></div>
-              <div className="snap-center shrink-0"><MockProgress /></div>
-              <div className="snap-center shrink-0"><MockSleep /></div>
-              <div className="snap-center shrink-0"><MockTodayLight /></div>
-              <div className="snap-center shrink-0"><MockStreaksLight /></div>
-              <div className="snap-center shrink-0"><MockProgressLight /></div>
+            <ScrollCarousel itemCount={10} itemWidth={290}>
+              {[1,2,3,4,5,6,7,8,9,10].map((n) => (
+                <div key={n} className="snap-center shrink-0">
+                  <Image
+                    src={`/screenshots/slide_${n}.png`}
+                    alt={`Routines365 screenshot ${n}`}
+                    width={290}
+                    height={627}
+                    className="rounded-2xl"
+                    style={{ width: 290, height: "auto" }}
+                    priority={n <= 3}
+                  />
+                </div>
+              ))}
             </ScrollCarousel>
           </Reveal>
         </div>

@@ -6,15 +6,18 @@ export function ScrollCarousel({
   children,
   className = "",
   itemCount = 5,
+  itemWidth = 240,
 }: {
   children: React.ReactNode;
   className?: string;
   itemCount?: number;
+  itemWidth?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollStep = itemWidth + 24; // item + gap
 
   const check = useCallback(() => {
     const el = ref.current;
@@ -23,10 +26,9 @@ export function ScrollCarousel({
     setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
 
     // Calculate which item is centered
-    const itemWidth = 264; // 240px phone + 24px gap
-    const idx = Math.round(el.scrollLeft / itemWidth);
+    const idx = Math.round(el.scrollLeft / scrollStep);
     setActiveIndex(Math.min(idx, itemCount - 1));
-  }, [itemCount]);
+  }, [itemCount, scrollStep]);
 
   useEffect(() => {
     const el = ref.current;
@@ -43,13 +45,13 @@ export function ScrollCarousel({
   const scroll = (dir: "left" | "right") => {
     const el = ref.current;
     if (!el) return;
-    el.scrollBy({ left: dir === "left" ? -264 : 264, behavior: "smooth" });
+    el.scrollBy({ left: dir === "left" ? -scrollStep : scrollStep, behavior: "smooth" });
   };
 
   const scrollTo = (index: number) => {
     const el = ref.current;
     if (!el) return;
-    el.scrollTo({ left: index * 264, behavior: "smooth" });
+    el.scrollTo({ left: index * scrollStep, behavior: "smooth" });
   };
 
   return (
