@@ -45,29 +45,15 @@ export function computeDayColor(opts: {
   accountStartKey?: string | null;
 }): DayColor {
   const { dateKey, checks, log, todayKey, accountStartKey } = opts;
-
-  // ── Filter out routines that didn't exist yet on this day ──
-  // A routine added on Feb 11 should NOT count as missed on Feb 8.
-  const routineItems = opts.routineItems.filter((ri) => {
-    try {
-      if (!ri.created_at) return true; // legacy items without timestamp
-      const createdDate = ri.created_at.slice(0, 10);
-      return createdDate <= dateKey;
-    } catch {
-      return true; // if anything goes wrong, include the item
-    }
-  });
+  const routineItems = opts.routineItems;
 
   // ── Guard: future days are always empty ──
   if (todayKey && dateKey > todayKey) return "empty";
 
   // ── Guard: days before account creation are empty — UNLESS user saved data ──
-  // This prevents a wall of red on new accounts, but allows backfilled days to show color.
   if (accountStartKey && dateKey < accountStartKey && checks.length === 0) return "empty";
 
   // ── Travel / Sick day mode = automatic green ──
-  // The user explicitly set this day as travel or sick, meaning they
-  // chose to rest. This MUST count as green to protect their streak.
   if (log && (log.day_mode === "travel" || log.day_mode === "sick")) return "green";
 
   const checkMap = new Map(checks.map((c) => [c.routine_item_id, c.done]));
@@ -76,15 +62,22 @@ export function computeDayColor(opts: {
   if (checks.length === 0 && dateKey !== todayKey) return "empty";
 
   // ── Guard: if all checks are unchecked, treat as no data ──
-  // This prevents phantom records (e.g. from auto-save bugs) from coloring days
   if (!checks.some((c) => c.done) && dateKey !== todayKey) return "empty";
 
   // ── Filter routine items by day-of-week schedule ──
-  // A habit scheduled for M/W/F should NOT count as missed on Tuesday.
-  // This matches the Today page behavior (shouldShow filter).
   const scheduledItems = routineItems.filter((i) => isScheduledForDay(i, dateKey));
 
-  const nonnegs = scheduledItems.filter((i) => i.is_non_negotiable);
+  // ── CRITICAL: For past days, only evaluate routines that have a check record ──
+  // This prevents newly added routines from turning old green days red.
+  // A routine added today has no check records for past days, so it's excluded.
+  // For today, evaluate all scheduled routines (user needs to see what to do).
+  const isPast = todayKey && dateKey < todayKey;
+  const idsWithChecks = new Set(checks.map((c) => c.routine_item_id));
+  const evaluatable = isPast
+    ? scheduledItems.filter((i) => idsWithChecks.has(i.id))
+    : scheduledItems;
+
+  const nonnegs = evaluatable.filter((i) => i.is_non_negotiable);
   if (nonnegs.length === 0) return "empty";
 
   const didRowing = !!log?.did_rowing;

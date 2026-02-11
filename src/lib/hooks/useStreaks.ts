@@ -7,16 +7,7 @@ import { tzIsoDow } from "@/lib/time";
 import type { RoutineItemRow } from "@/lib/types";
 import { CATEGORY_KEYWORDS, STREAK_LOOKBACK_DAYS } from "@/lib/constants";
 
-function shouldShow(item: RoutineItemRow, date: Date, dateKey?: string): boolean {
-  try {
-    // Don't show routines that didn't exist yet on this day
-    if (dateKey && item.created_at) {
-      const createdDate = item.created_at.slice(0, 10);
-      if (createdDate > dateKey) return false;
-    }
-  } catch {
-    // If created_at check fails, include the item
-  }
+function shouldShow(item: RoutineItemRow, date: Date): boolean {
   const dow = tzIsoDow(date);
   const allowed = item.days_of_week;
   if (!allowed || allowed.length === 0) return true;
@@ -133,7 +124,7 @@ export function useStreaks(dateKey: string) {
           for (let i = STREAK_LOOKBACK_DAYS; i >= 0; i--) {
             const dk = format(subDays(today, i), "yyyy-MM-dd");
             const d = new Date(dk + "T12:00:00");
-            const active = routineItems.filter((ri) => shouldShow(ri, d, dk));
+            const active = routineItems.filter((ri) => shouldShow(ri, d));
             const color = computeDayColor({
               dateKey: dk,
               routineItems: active,
