@@ -15,12 +15,25 @@ export function toDateKey(d: Date) {
 // ---------------------------------------------------------------------------
 let _cachedUserId: string | null = null;
 
-export async function getUserId() {
+export async function getUserId(): Promise<string> {
   if (_cachedUserId) return _cachedUserId;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.user) throw new Error("Not signed in");
-  _cachedUserId = session.user.id;
-  return _cachedUserId;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      // Session expired — redirect to login if in browser
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/app/")) {
+        window.location.replace("/login?next=" + encodeURIComponent(window.location.pathname));
+      }
+      throw new Error("Not signed in");
+    }
+    _cachedUserId = session.user.id;
+    return _cachedUserId;
+  } catch (e) {
+    if (typeof window !== "undefined" && window.location.pathname.startsWith("/app/")) {
+      window.location.replace("/login");
+    }
+    throw e;
+  }
 }
 
 // Clear cached userId on sign-out, and flush per-user localStorage

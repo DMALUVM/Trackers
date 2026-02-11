@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getActiveSubscription, onSubscriptionChange, isStoreKitAvailable } from "@/lib/storeKit";
+import { supabase } from "@/lib/supabaseClient";
 
 // ────────────────────────────────────────────────────────────
 // Premium feature flags
@@ -45,13 +46,8 @@ export const FREE_LIMITS = {
 
 const LS_KEY = "routines365:premium";
 
-// ── Beta/promo codes that grant premium ──
-// Add codes here. When you're done with beta, just clear this array.
-const VALID_CODES = new Set([
-  "BETA2026",
-  "FOUNDER",
-  "EARLYBIRD",
-]);
+// ── Promo code validation ──
+// Codes are validated server-side via Supabase RPC. Never store codes client-side.
 
 interface PremiumState {
   isPremium: boolean;
@@ -88,10 +84,8 @@ interface PremiumContextValue {
   activate: () => void;
   /** Deactivate (for testing/cancellation) */
   deactivate: () => void;
-  /** Dev toggle for testing */
-  toggleDev: () => void;
-  /** Redeem a promo/beta code. Returns true if valid. */
-  redeemCode: (code: string) => boolean;
+  /** Redeem a promo/beta code. Returns a promise; true if valid. */
+  redeemCode: (code: string) => Promise<boolean>;
   /** The code used (if any) */
   redeemedCode: string | null;
 }
@@ -101,8 +95,7 @@ const PremiumContext = createContext<PremiumContextValue>({
   hasFeature: () => false,
   activate: () => {},
   deactivate: () => {},
-  toggleDev: () => {},
-  redeemCode: () => false,
+  redeemCode: async () => false,
   redeemedCode: null,
 });
 
@@ -156,7 +149,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     return cleanup;
   }, []);
 
-  const isPremium = state.isPremium || state.devOverride;
+  const isPremium = state.isPremium;
 
   const hasFeature = (feature: PremiumFeature): boolean => {
     if (isPremium) return true;
@@ -187,29 +180,29 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     setState(next);
   };
 
-  const toggleDev = () => {
-    const next = { ...state, devOverride: !state.devOverride };
-    saveState(next);
-    setState(next);
-  };
-
-  const redeemCode = (code: string): boolean => {
+  const redeemCode = async (code: string): Promise<boolean> => {
     const normalized = code.trim().toUpperCase();
-    if (!VALID_CODES.has(normalized)) return false;
-    const next: PremiumState = {
-      ...state,
-      isPremium: true,
-      activatedAt: new Date().toISOString(),
-      devOverride: false,
-      redeemedCode: normalized,
-    };
-    saveState(next);
-    setState(next);
-    return true;
+    if (normalized.length < 3) return false;
+    try {
+      const { data, error } = await supabase.rpc("redeem_promo_code", { code_input: normalized });
+      if (error || !data?.valid) return false;
+      const next: PremiumState = {
+        ...state,
+        isPremium: true,
+        activatedAt: new Date().toISOString(),
+        devOverride: false,
+        redeemedCode: normalized,
+      };
+      saveState(next);
+      setState(next);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (
-    <PremiumContext.Provider value={{ isPremium, hasFeature, activate, deactivate, toggleDev, redeemCode, redeemedCode: state.redeemedCode }}>
+    <PremiumContext.Provider value={{ isPremium, hasFeature, activate, deactivate, redeemCode, redeemedCode: state.redeemedCode }}>
       {children}
     </PremiumContext.Provider>
   );

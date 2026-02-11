@@ -25,7 +25,7 @@ import {
 import { MetricSheet, type MetricKind } from "@/app/app/_components/MetricSheet";
 import { QuestsCard } from "@/app/app/_components/QuestsCard";
 import { WaterTracker } from "@/app/app/_components/WaterTracker";
-import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES, isJournalLabel } from "@/lib/constants";
+import { SNOOZE_DURATION_MS, labelToMetricKey, METRIC_ACTIVITIES, isJournalLabel, isWorkoutLabel } from "@/lib/constants";
 import { addActivityLog, flushActivityQueue, getActivityQueueSize } from "@/lib/activity";
 import { hapticHeavy, hapticLight, hapticMedium } from "@/lib/haptics";
 import { isRestDay } from "@/lib/restDays";
@@ -198,21 +198,37 @@ export default function TodayPage() {
   useEffect(() => {
     const update = () => setSyncQueueCount(getActivityQueueSize());
     update();
+    const onOnline = () => void flushActivityQueue();
     window.addEventListener("routines365:activityQueueChanged", update);
-    window.addEventListener("online", () => void flushActivityQueue());
-    return () => window.removeEventListener("routines365:activityQueueChanged", update);
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("routines365:activityQueueChanged", update);
+      window.removeEventListener("online", onOnline);
+    };
   }, []);
 
-  // Derived
-  const now = Date.now();
+  // Derived — refresh `now` periodically so snoozed items unhide in real-time
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, []);
   const activeSnoozed = (id: string) => snoozedUntil[id] != null && snoozedUntil[id] > now;
-  const coreItems = useMemo(() => items.filter((i) => i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]); // eslint-disable-line
-  const optionalItems = useMemo(() => items.filter((i) => !i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil]); // eslint-disable-line
+  const coreItems = useMemo(() => items.filter((i) => i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil, now]); // eslint-disable-line
+  const optionalItems = useMemo(() => items.filter((i) => !i.isNonNegotiable && !activeSnoozed(i.id)), [items, snoozedUntil, now]); // eslint-disable-line
   const coreDone = coreItems.filter((i) => i.done).length;
   const coreTotal = coreItems.length;
   const optionalDone = optionalItems.filter((i) => i.done).length;
   const score = coreTotal === 0 ? 0 : Math.round((coreDone / coreTotal) * 100);
-  const allCoreDone = coreTotal > 0 && coreDone === coreTotal;
+
+  // Workout alias: rowing or weights can satisfy a "Workout" habit
+  const didRowing = items.some((i) => i.label.toLowerCase().includes("rowing") && i.done);
+  const didWeights = items.some((i) => i.label.toLowerCase().includes("weights") && i.done);
+  const missingCore = coreItems.filter((i) => {
+    if (isWorkoutLabel(i.label)) return !(i.done || didRowing || didWeights);
+    return !i.done;
+  });
+  const allCoreDone = coreTotal > 0 && missingCore.length === 0;
 
   // Week strip with live today color
   const last7WithToday = useMemo(() => {
@@ -257,12 +273,12 @@ export default function TodayPage() {
     milestoneCheckedForDate.current = dateKey;
 
     // ── Effective streak calculation ──
-    // currentStreak from useStreaks is the most accurate value once loaded.
-    // Only fall back to activeStreak + 1 if currentStreak is still 0
-    // (meaning Supabase hasn't persisted today's completion yet).
-    const effectiveStreak = streaks.currentStreak > 0
-      ? streaks.currentStreak
-      : streaks.activeStreak + 1;
+    // At the moment of completion, Supabase may not include today yet.
+    // activeStreak = consecutive streak going INTO today (not including today).
+    // currentStreak = from Supabase, may or may not include today.
+    // Since today IS green (allCoreDone), actual streak = activeStreak + 1
+    // Use max with currentStreak in case Supabase already updated.
+    const effectiveStreak = Math.max(streaks.currentStreak, streaks.activeStreak + 1);
     const effectiveTotal = Math.max(streaks.totalGreenDays, effectiveStreak);
     const result = checkMilestones({
       currentStreak: effectiveStreak,
@@ -272,20 +288,38 @@ export default function TodayPage() {
     });
     if (result) {
       // Clear the pending storage since we're showing it directly
+      // (LS_PENDING is only for cross-session recovery if user closes before seeing)
       try { localStorage.removeItem("routines365:milestones:pending"); } catch { /* ignore */ }
+      // For streak milestones, show actual current streak in the badge
+      // (the milestone threshold might be lower than current streak, e.g. "3-day"
+      // milestone triggering when user has a 4-day streak)
+      const display = result.type === "streak" && effectiveStreak > result.threshold
+        ? { ...result, _displayStreak: effectiveStreak }
+        : result;
       // Delay briefly so confetti plays, then show milestone
-      setTimeout(() => setMilestoneToShow(result), 400);
+      setTimeout(() => setMilestoneToShow(display), 400);
       // Trigger rating prompt at key streak milestones
       if (result.type === "streak") ratingOnStreakMilestone(result.threshold);
     }
     // Track green day for rating prompt (fires on 7th green day)
-    ratingOnGreenDay();
+    ratingOnGreenDay(dateKey);
   }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak, dateKey]);
 
   // Reset milestone guard when allCoreDone goes back to false (user unchecks a habit)
   useEffect(() => {
     if (!allCoreDone) milestoneCheckedForDate.current = null;
   }, [allCoreDone]);
+
+  // Listen for queued milestones from MilestoneModal (after user dismisses one,
+  // the modal checks for additional pending milestones and dispatches this event)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const milestone = (e as CustomEvent).detail as Milestone;
+      if (milestone) setMilestoneToShow(milestone);
+    };
+    window.addEventListener("routines365:showMilestone", handler);
+    return () => window.removeEventListener("routines365:showMilestone", handler);
+  }, []);
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
@@ -598,10 +632,11 @@ export default function TodayPage() {
 
       {/* ─── GREEN DAY CELEBRATION ─── */}
       {allCoreDone && (() => {
-        // Use effective streak: same logic as milestone check
-        const effectiveStreak = streaks.currentStreak > 0
-          ? streaks.currentStreak
-          : streaks.activeStreak + 1;
+        // Use effective streak: currentStreak from Supabase may not include today yet
+        const effectiveStreak = Math.max(
+          streaks.currentStreak,
+          streaks.activeStreak + (streaks.currentStreak === 0 ? 1 : 0)
+        );
         return (
         <section className="rounded-2xl p-5 text-center animate-celebrate-in"
           style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>

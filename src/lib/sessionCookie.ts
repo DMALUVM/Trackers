@@ -11,7 +11,11 @@ const CK_EXP = "r365_exp";
 function setCookie(name: string, value: string, maxAgeSec: number) {
   if (typeof document === "undefined") return;
   const safe = encodeURIComponent(value);
-  document.cookie = `${name}=${safe}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax`;
+  const secure =
+    typeof location !== "undefined" && location.protocol === "https:"
+      ? "; Secure"
+      : "";
+  document.cookie = `${name}=${safe}; Max-Age=${maxAgeSec}; Path=/; SameSite=Lax${secure}`;
 }
 
 function getCookie(name: string) {

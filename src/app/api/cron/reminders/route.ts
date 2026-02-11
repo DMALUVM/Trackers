@@ -37,38 +37,55 @@ export async function GET(request: Request) {
     global: { headers: { Authorization: `Bearer ${supabaseServiceKey}` } },
   });
 
-  // Current time in HH:MM (24h) and ISO day-of-week in ET
+  // Current UTC time — we'll match against each user's local time
   const now = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/New_York",
-  });
-  const parts = formatter.formatToParts(now);
-  const hour = parts.find(p => p.type === "hour")?.value ?? "00";
-  const minute = parts.find(p => p.type === "minute")?.value ?? "00";
-  const timeStr = `${hour}:${minute}`;
 
-  const etNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  const jsDay = etNow.getDay();
-  const isoDay = jsDay === 0 ? 7 : jsDay;
-
-  // Find enabled reminders matching this exact time + day
-  const { data: reminders, error: remErr } = await supabase
+  // Get all enabled reminders with the user's timezone
+  const { data: remindersWithTz, error: remErr } = await supabase
     .from("reminders")
-    .select("id, user_id, routine_item_id, time, days_of_week")
-    .eq("enabled", true)
-    .eq("time", timeStr)
-    .contains("days_of_week", [isoDay]);
+    .select(`
+      id, user_id, routine_item_id, time, days_of_week,
+      user_settings!inner(timezone)
+    `)
+    .eq("enabled", true);
 
   if (remErr) {
     return NextResponse.json({ error: remErr.message }, { status: 500 });
   }
 
-  if (!reminders || reminders.length === 0) {
-    return NextResponse.json({ sent: 0, time: timeStr, day: isoDay });
+  if (!remindersWithTz || remindersWithTz.length === 0) {
+    return NextResponse.json({ sent: 0, checked: 0 });
   }
+
+  // Filter reminders to those due right now in the user's local timezone
+  const dueReminders = remindersWithTz.filter((r: any) => {
+    const tz = r.user_settings?.timezone || "America/New_York";
+    try {
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: tz,
+      });
+      const parts = formatter.formatToParts(now);
+      const hour = parts.find((p: any) => p.type === "hour")?.value ?? "00";
+      const minute = parts.find((p: any) => p.type === "minute")?.value ?? "00";
+      const userTimeStr = `${hour}:${minute}`;
+
+      if (r.time !== userTimeStr) return false;
+
+      // Check day-of-week in user's local timezone
+      const localNow = new Date(now.toLocaleString("en-US", { timeZone: tz }));
+      const jsDay = localNow.getDay();
+      const isoDay = jsDay === 0 ? 7 : jsDay;
+
+      return r.days_of_week.includes(isoDay);
+    } catch {
+      return false;
+    }
+  });
+
+  const reminders = dueReminders;
 
   // Get routine item labels
   const routineItemIds = [...new Set(reminders.map((r: any) => r.routine_item_id))];
@@ -138,5 +155,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ sent, failed, time: timeStr, day: isoDay });
+  return NextResponse.json({ sent, failed, remindersChecked: remindersWithTz.length, remindersDue: dueReminders.length });
 }

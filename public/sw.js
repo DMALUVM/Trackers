@@ -10,8 +10,8 @@
 // - Pass through Supabase writes (queued client-side when offline)
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v6";
-const DATA_CACHE = "routines365-data-v1";
+const CACHE_NAME = "routines365-v7";
+const DATA_CACHE = "routines365-data-v2";
 
 // ---------------------------------------------------------------------------
 // Push Notifications
@@ -113,8 +113,8 @@ self.addEventListener("fetch", (event) => {
         .catch(() => {
           const cacheKey = new Request(url.pathname + url.search);
           return caches.match(cacheKey, { cacheName: DATA_CACHE })
-            .then((cached) => cached || new Response("[]", {
-              status: 200,
+            .then((cached) => cached || new Response(JSON.stringify({ offline: true, data: [] }), {
+              status: 503,
               headers: { "Content-Type": "application/json" },
             }));
         })

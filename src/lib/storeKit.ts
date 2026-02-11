@@ -61,7 +61,10 @@ function getPlugin(): Record<string, (...args: unknown[]) => Promise<unknown>> |
 export function isStoreKitAvailable(): boolean {
   if (typeof window === "undefined") return false;
   // @ts-expect-error - Capacitor global
-  return !!window.Capacitor;
+  const cap = window.Capacitor;
+  if (!cap) return false;
+  // Must be iOS specifically — StoreKit doesn't exist on Android or web Capacitor
+  return cap.getPlatform?.() === "ios";
 }
 
 /** Product IDs */

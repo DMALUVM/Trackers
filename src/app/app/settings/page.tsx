@@ -42,7 +42,7 @@ const sections = [
 ];
 
 export default function SettingsPage() {
-  const { isPremium, toggleDev } = usePremium();
+  const { isPremium } = usePremium();
 
   return (
     <div className="space-y-6 stagger-sections">
@@ -129,12 +129,7 @@ export default function SettingsPage() {
         <p className="text-[10px]" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
           Made with ❤️ · Build better habits, one day at a time
         </p>
-        {/* Dev toggle — remove before App Store submission */}
-        <button type="button" onClick={toggleDev}
-          className="text-[10px] mt-3 px-3 py-1.5 rounded-lg"
-          style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
-          {isPremium ? "🔓 Dev: Premium ON" : "🔒 Dev: Premium OFF"}
-        </button>
+
       </footer>
     </div>
   );

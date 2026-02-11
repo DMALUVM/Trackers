@@ -90,14 +90,23 @@ export default function SecurityPage() {
         supabase.from("daily_checks").delete().eq("user_id", uid),
         supabase.from("daily_logs").delete().eq("user_id", uid),
         supabase.from("activity_logs").delete().eq("user_id", uid),
+        supabase.from("reminders").delete().eq("user_id", uid),
+        supabase.from("push_subscriptions").delete().eq("user_id", uid),
+        supabase.from("weekly_goals").delete().eq("user_id", uid),
         supabase.from("routine_items").delete().eq("user_id", uid),
         supabase.from("user_settings").delete().eq("user_id", uid),
         supabase.from("partner_stats").delete().eq("user_id", uid),
         supabase.from("partnerships").delete().or(`user_a.eq.${uid},user_b.eq.${uid}`),
+        supabase.from("profiles").delete().eq("id", uid),
       ]);
 
-      // Try RPC-based auth deletion (if Supabase function exists)
-      try { await supabase.rpc("delete_own_account"); } catch { /* not set up yet — OK */ }
+      // Delete auth.users record via server-side RPC (Apple Guideline 5.1.1v)
+      const { error: rpcError } = await supabase.rpc("delete_own_account");
+      if (rpcError) {
+        console.error("delete_own_account RPC failed:", rpcError.message);
+        // Don't throw — data is already deleted above, auth record may already
+        // be gone from CASCADE. Continue with sign-out.
+      }
 
       // Clear local data and sign out
       clearPasskey();

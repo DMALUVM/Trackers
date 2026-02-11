@@ -170,6 +170,6 @@ Test account available on request. The app reads HealthKit data (steps, sleep, H
 
 Breathwork exercises use audio (Om drone) which plays during sessions. The app handles silent mode.
 
-Premium features can be tested with promo code BETA2026 in Settings → Premium.
+Premium features can be tested with a demo account — contact Routines365.app@gmail.com for credentials.
 
 Journal entries are stored server-side in Supabase (encrypted at rest). No journal content is shared or analyzed.

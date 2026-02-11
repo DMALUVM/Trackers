@@ -26,6 +26,8 @@ interface RatingState {
   promptCount: number;
   /** Total green days tracked (for timing first prompt) */
   greenDayCount: number;
+  /** Last dateKey we counted as a green day (prevents double-counting) */
+  lastGreenDate: string | null;
   /** Per-trigger flags — once true, that trigger never fires again */
   prompted7: boolean;
   prompted14: boolean;
@@ -59,6 +61,7 @@ function defaultState(): RatingState {
     lastPrompted: null,
     promptCount: 0,
     greenDayCount: 0,
+    lastGreenDate: null,
     prompted7: false,
     prompted14: false,
     prompted30: false,
@@ -170,8 +173,12 @@ export function ratingOnStreakMilestone(streak: number) {
 }
 
 /** Call when user completes all core habits (green day). Prompts after 7th green day. */
-export function ratingOnGreenDay() {
+export function ratingOnGreenDay(dateKey?: string) {
   const state = load();
+  // Deduplicate: only count once per calendar day
+  const today = dateKey || new Date().toISOString().slice(0, 10);
+  if (state.lastGreenDate === today) return;
+  state.lastGreenDate = today;
   state.greenDayCount++;
   save(state);
   if (state.greenDayCount === 7 && !state.promptedGreen7) {

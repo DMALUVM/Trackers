@@ -218,7 +218,7 @@ export default function PremiumPage() {
       {/* CTA */}
       <section className="px-4 space-y-3">
         <button type="button"
-          disabled={purchasing}
+          disabled={purchasing || !hasStoreKit}
           onClick={async () => {
             hapticHeavy();
             const productId = selectedPlan === "yearly" ? PRODUCT_IDS.yearly : PRODUCT_IDS.monthly;
@@ -233,20 +233,18 @@ export default function PremiumPage() {
                 }
               } catch { /* ignore */ }
               finally { setPurchasing(false); }
-            } else {
-              // Web fallback: just activate (for dev/testing)
-              activate();
             }
+            // No web fallback — purchases only available in native iOS app
           }}
           className="w-full py-4 rounded-2xl text-center font-bold text-base"
           style={{
-            background: purchasing
+            background: (purchasing || !hasStoreKit)
               ? "var(--bg-card-hover)"
               : "linear-gradient(135deg, var(--accent-green), var(--accent-green-text))",
-            color: purchasing ? "var(--text-faint)" : "white",
-            boxShadow: purchasing ? "none" : "0 4px 24px rgba(16, 185, 129, 0.3)",
+            color: (purchasing || !hasStoreKit) ? "var(--text-faint)" : "white",
+            boxShadow: (purchasing || !hasStoreKit) ? "none" : "0 4px 24px rgba(16, 185, 129, 0.3)",
           }}>
-          {purchasing ? "Processing..." : `Start ${trialDays}-Day Free Trial`}
+          {!hasStoreKit ? "Available in the iOS app" : purchasing ? "Processing..." : `Start ${trialDays}-Day Free Trial`}
         </button>
 
         <p className="text-center text-[11px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
@@ -295,9 +293,9 @@ export default function PremiumPage() {
                 spellCheck={false}
               />
               <button type="button"
-                onClick={() => {
+                onClick={async () => {
                   hapticMedium();
-                  const ok = redeemCode(codeInput);
+                  const ok = await redeemCode(codeInput);
                   if (!ok) setCodeError(true);
                 }}
                 disabled={codeInput.length < 3}
