@@ -205,87 +205,75 @@ const SYNONYMS: Record<string, string[]> = {
 };
 
 function smartSearch(items: LibraryItem[], query: string): LibraryItem[] {
-  const terms = query.split(/\s+/).filter(Boolean);
-  const scored: Array<{ item: LibraryItem; score: number }> = [];
+  const terms = query.toLowerCase().trim().split(" ").filter(function(t) { return t.length > 0; });
+  if (terms.length === 0) return [];
 
-  for (const item of items) {
-    const label = (item.label ?? "").toLowerCase();
-    const section = (item.section ?? "").toLowerCase();
-    let score = 0;
+  var scored: Array<{ item: LibraryItem; score: number }> = [];
 
-    for (const term of terms) {
-      // Exact substring match (strongest)
-      if (label.includes(term)) {
+  for (var idx = 0; idx < items.length; idx++) {
+    var item = items[idx];
+    var label = (item.label || "").toLowerCase();
+    var section = (item.section || "").toLowerCase();
+    var score = 0;
+
+    for (var ti = 0; ti < terms.length; ti++) {
+      var term = terms[ti];
+      var found = false;
+
+      // 1. Direct substring match
+      if (label.indexOf(term) !== -1) {
         score += term.length >= 4 ? 10 : 6;
-        // Bonus for starting with the term
-        if (label.startsWith(term)) score += 3;
-        continue;
+        if (label.indexOf(term) === 0) score += 3;
+        found = true;
       }
 
-      // Section match
-      if (section.includes(term)) {
+      // 2. Section match
+      if (!found && section.indexOf(term) !== -1) {
         score += 2;
-        continue;
+        found = true;
       }
 
-      // Synonym match
-      const synonymHit = Object.entries(SYNONYMS).some(([key, vals]) => {
-        if (term.length >= 3 && (key.startsWith(term) || term.startsWith(key))) {
-          return vals.some((v) => label.includes(v));
+      // 3. Synonym match
+      if (!found) {
+        var synKeys = Object.keys(SYNONYMS);
+        for (var si = 0; si < synKeys.length; si++) {
+          var key = synKeys[si];
+          var isMatch = (key === term) ||
+            (term.length >= 3 && key.indexOf(term) === 0) ||
+            (term.length >= 3 && term.indexOf(key) === 0);
+          if (isMatch) {
+            var vals = SYNONYMS[key];
+            for (var vi = 0; vi < vals.length; vi++) {
+              if (label.indexOf(vals[vi]) !== -1) {
+                score += 5;
+                found = true;
+                break;
+              }
+            }
+          }
+          if (found) break;
         }
-        if (key === term) {
-          return vals.some((v) => label.includes(v));
+      }
+
+      // 4. Prefix match - check if any word in label starts with term
+      if (!found && term.length >= 2) {
+        var words = label.split(" ");
+        for (var wi = 0; wi < words.length; wi++) {
+          var w = words[wi].replace(/[^a-z0-9]/g, "");
+          if (w.indexOf(term) === 0) {
+            score += 4;
+            found = true;
+            break;
+          }
         }
-        return false;
-      });
-      if (synonymHit) {
-        score += 5;
-        continue;
-      }
-
-      // Fuzzy: word starts with term (prefix match)
-      const words = label.split(/[\s\/\-\(\)]+/);
-      if (words.some((w) => w.startsWith(term) && term.length >= 2)) {
-        score += 4;
-        continue;
-      }
-
-      // Fuzzy: term starts with a word (reverse prefix)
-      if (words.some((w) => term.startsWith(w) && w.length >= 3)) {
-        score += 3;
-        continue;
-      }
-
-      // Levenshtein for short terms (catch typos)
-      if (term.length >= 4 && words.some((w) => w.length >= 4 && levenshtein(term, w) <= 1)) {
-        score += 3;
-        continue;
       }
     }
 
-    if (score > 0) scored.push({ item, score });
+    if (score > 0) scored.push({ item: item, score: score });
   }
 
-  return scored.sort((a, b) => b.score - a.score).map((s) => s.item);
-}
-
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  if (Math.abs(m - n) > 2) return 3; // quick bail
-  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) => {
-    const row = new Array(n + 1).fill(0) as number[];
-    row[0] = i;
-    return row;
-  });
-  for (let j = 0; j <= n; j++) dp[0][j] = j;
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
-    }
-  }
-  return dp[m][n];
+  scored.sort(function(a, b) { return b.score - a.score; });
+  return scored.map(function(s) { return s.item; });
 }
 
 export default function RoutineLibraryPage() {
