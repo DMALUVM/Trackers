@@ -157,7 +157,7 @@ export default function EditDayPage() {
       <div className="space-y-6 animate-fade-in">
         <header className="space-y-2">
           <button className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-muted)" }}
-            onClick={() => { window.location.href = "/app/routines/progress"; }} type="button"><ArrowLeft size={16} /> Back</button>
+            onClick={() => { router.back(); }} type="button"><ArrowLeft size={16} /> Back</button>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Future date</h1>
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{dateLabel}</p>
         </header>
@@ -174,7 +174,7 @@ export default function EditDayPage() {
       <div className="space-y-6 animate-fade-in">
         <header className="space-y-2">
           <button className="flex items-center gap-2 text-sm font-medium" style={{ color: "var(--text-muted)" }}
-            onClick={async () => { await flushNow(dayMode); window.location.href = "/app/routines/progress"; }} type="button"><ArrowLeft size={16} /> Back</button>
+            onClick={async () => { await flushNow(dayMode); router.back(); }} type="button"><ArrowLeft size={16} /> Back</button>
           <SkeletonLine width="180px" height="28px" />
         </header>
         <SkeletonCard lines={5} />
@@ -192,7 +192,7 @@ export default function EditDayPage() {
       <header className="space-y-2">
         <button className="flex items-center gap-2 text-sm font-medium transition-colors"
           style={{ color: "var(--text-muted)" }}
-          onClick={async () => { hapticLight(); await flushNow(dayMode); window.location.href = "/app/routines/progress"; }} type="button">
+          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); }} type="button">
           <ArrowLeft size={16} /> Back
         </button>
         <div>
@@ -344,7 +344,7 @@ export default function EditDayPage() {
           <Check size={16} /> Save
         </button>
         <button type="button" className="btn-secondary text-sm"
-          onClick={async () => { hapticLight(); await flushNow(dayMode); window.location.href = "/app/routines/progress"; }}>
+          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); }}>
           Done
         </button>
       </div>
