@@ -50,6 +50,13 @@ export function useActivityTotals(activityKey: ActivityKey, unit: ActivityUnit):
 
   useEffect(() => { void load(); }, [load]);
 
+  // Reload when an activity is logged
+  useEffect(() => {
+    const onLogged = () => { void load(); };
+    window.addEventListener("routines365:activityLogged", onLogged);
+    return () => window.removeEventListener("routines365:activityLogged", onLogged);
+  }, [load]);
+
   return { totals, loading, reload: load };
 }
 
@@ -100,6 +107,13 @@ export function useMultiActivityTotals(entries: MultiTotalsEntry[]) {
   }, [stableKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { void load(); }, [load]);
+
+  // Reload when an activity is logged
+  useEffect(() => {
+    const onLogged = () => { void load(); };
+    window.addEventListener("routines365:activityLogged", onLogged);
+    return () => window.removeEventListener("routines365:activityLogged", onLogged);
+  }, [load]);
 
   return { data, loading, reload: load };
 }

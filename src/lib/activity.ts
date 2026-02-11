@@ -77,6 +77,7 @@ export async function flushActivityQueue() {
   }
 
   writeQueue([]);
+  try { window.dispatchEvent(new Event("routines365:activityLogged")); } catch { /* ignore */ }
   return { flushed, remaining: 0 };
 }
 
@@ -98,6 +99,9 @@ export async function addActivityLog(opts: {
       notes: opts.notes ?? null,
     });
     if (error) throw error;
+
+    // Notify listeners (QuestsCard) to refresh totals
+    try { window.dispatchEvent(new Event("routines365:activityLogged")); } catch { /* ignore */ }
 
     // opportunistic flush
     void flushActivityQueue();
