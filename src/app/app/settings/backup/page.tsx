@@ -155,8 +155,8 @@ export default function BackupPage() {
       // Helper: stamp user_id, strip old id so Supabase generates new ones
       const stamp = (rows: Record<string, unknown>[]) =>
         rows.map((r) => {
-          const row = { ...r, user_id: userId };
-          delete row.id; // let DB generate
+          const row: Record<string, unknown> = { ...r, user_id: userId };
+          delete row.id;
           return row;
         });
 
@@ -167,7 +167,7 @@ export default function BackupPage() {
       if (oldItems.length > 0) {
         for (const item of oldItems) {
           const oldId = item.id as string;
-          const row = { ...item, user_id: userId };
+          const row: Record<string, unknown> = { ...item, user_id: userId };
           delete row.id;
           const { data, error } = await supabase
             .from("routine_items")
@@ -183,7 +183,7 @@ export default function BackupPage() {
       const checks = pendingFile.daily_checks ?? [];
       if (checks.length > 0) {
         const mapped = checks.map((c) => {
-          const row = { ...c, user_id: userId };
+          const row: Record<string, unknown> = { ...c, user_id: userId };
           delete row.id;
           const oldRiId = row.routine_item_id as string;
           if (idMap.has(oldRiId)) {
@@ -223,7 +223,7 @@ export default function BackupPage() {
 
       // 5. Restore user_settings
       if (pendingFile.user_settings) {
-        const row = { ...pendingFile.user_settings, user_id: userId };
+        const row: Record<string, unknown> = { ...pendingFile.user_settings, user_id: userId };
         delete row.id;
         await supabase.from("user_settings").upsert(row, { onConflict: "user_id" });
       }

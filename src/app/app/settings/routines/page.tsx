@@ -11,6 +11,7 @@ import { listReminders, type Reminder } from "@/lib/reminders";
 import { hapticLight } from "@/lib/haptics";
 import { usePremium, FREE_LIMITS } from "@/lib/premium";
 import { useRouter } from "next/navigation";
+import { smartSearch as smartSearchFn } from "@/lib/smartSearch";
 
 /** Simple array reorder — replaces @dnd-kit/sortable dependency */
 function arrayMove<T>(arr: T[], from: number, to: number): T[] {
@@ -111,9 +112,10 @@ export default function RoutinesSettingsPage() {
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((i) =>
-      (i.label ?? "").toLowerCase().includes(q) || (i.emoji ?? "").toLowerCase().includes(q)
-    );
+    // Use smart search with synonyms for consistency with library search
+    const results = smartSearchFn(items.map((i) => ({ ...i, label: i.label ?? "", section: i.section })), q);
+    const resultLabels = new Set(results.map((r) => r.label));
+    return items.filter((i) => resultLabels.has(i.label ?? ""));
   }, [items, search]);
 
   const refresh = async () => {
@@ -218,7 +220,7 @@ export default function RoutinesSettingsPage() {
           <label className="text-xs font-medium" style={{ color: "var(--text-muted)" }}>Search</label>
           <input className="mt-2 w-full rounded-xl px-3 py-3 text-sm"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
-            value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search routines…" />
+            value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search routines… (e.g. morning, exercise, sleep)" />
         </div>
 
         <div className="flex gap-2">

@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, Check } from "lucide-react";
 import { createRoutineItem, createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
 import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
 import { usePremium, FREE_LIMITS } from "@/lib/premium";
+import { smartSearch } from "@/lib/smartSearch";
 
 type LibraryItem = { label: string; emoji?: string; section?: "morning" | "anytime" | "night"; suggestedCore?: boolean };
 
@@ -143,124 +144,6 @@ const LIBRARY: Array<{ title: string; items: LibraryItem[] }> = [
 
 // ── Smart search: synonyms, fuzzy matching, scoring ──
 
-const SYNONYMS: Record<string, string[]> = {
-  exercise: ["workout", "run", "walk", "yoga", "stretch", "mobility", "steps", "stairs", "movement", "gym", "fitness"],
-  gym: ["workout", "run", "yoga", "stretch", "fitness", "exercise"],
-  fitness: ["workout", "run", "walk", "yoga", "stretch", "steps", "exercise", "gym"],
-  meditate: ["meditation", "breathwork", "mindfulness", "pray", "gratitude", "mindful"],
-  meditation: ["breathwork", "meditate", "mindfulness", "pray"],
-  mindfulness: ["meditate", "meditation", "breathwork", "gratitude", "journal", "emotional"],
-  sleep: ["bed", "night", "screens", "wind", "shutdown", "evening"],
-  bedtime: ["sleep", "bed", "night", "screens", "shutdown"],
-  water: ["drink", "hydration", "glasses", "hydrate"],
-  hydration: ["water", "drink", "glasses"],
-  food: ["meal", "breakfast", "lunch", "protein", "vegetables", "greens", "nutrition", "eat", "sugar"],
-  eat: ["meal", "breakfast", "lunch", "protein", "vegetables", "nutrition", "food"],
-  nutrition: ["protein", "vegetables", "meal", "breakfast", "lunch", "food", "eat", "sugar", "greens"],
-  diet: ["protein", "vegetables", "meal", "food", "sugar", "nutrition", "eat", "greens"],
-  health: ["vitamins", "supplements", "omega", "magnesium", "probiotics", "creatine", "collagen"],
-  supplement: ["vitamins", "supplements", "omega", "magnesium", "probiotics", "creatine", "collagen"],
-  vitamin: ["vitamins", "supplements", "omega", "magnesium", "probiotics"],
-  morning: ["sunlight", "bed", "water", "stretch", "skincare", "shower", "breakfast"],
-  night: ["sleep", "screens", "shutdown", "stretch", "gratitude", "tidy", "evening", "wind"],
-  evening: ["sleep", "screens", "shutdown", "night", "wind", "bed"],
-  focus: ["deep work", "priorities", "single-task", "time-block", "goals"],
-  productivity: ["deep work", "priorities", "time-block", "goals", "calendar", "batch", "inbox", "focus"],
-  work: ["deep work", "priorities", "time-block", "goals", "calendar", "focus"],
-  read: ["reading", "book", "learn"],
-  reading: ["read", "book", "learn"],
-  book: ["read", "reading", "learn"],
-  phone: ["screens", "social media", "phone", "limit"],
-  screen: ["screens", "phone", "social media", "limit"],
-  social: ["social media", "friends", "family", "kindness", "connect", "call", "partner"],
-  family: ["kids", "partner", "connect", "quality time"],
-  friend: ["call", "text", "connect", "social"],
-  creative: ["instrument", "write", "art", "draw", "project", "creative"],
-  art: ["draw", "creative", "instrument", "write"],
-  music: ["instrument", "practice"],
-  learn: ["language", "read", "book", "something new"],
-  study: ["language", "learn", "read", "book"],
-  journal: ["reflect", "write", "gratitude", "journal"],
-  writing: ["journal", "write", "blog", "reflect"],
-  cold: ["cold shower", "cold plunge", "ice"],
-  ice: ["cold plunge", "cold shower"],
-  recovery: ["sauna", "cold plunge", "foam roll", "massage", "epsom", "compression", "red light", "rest"],
-  relax: ["sauna", "bath", "stretch", "foam roll", "massage", "yoga", "rest"],
-  self: ["skincare", "bath", "foam roll", "dry brushing", "floss"],
-  clean: ["tidy", "bed", "space"],
-  teeth: ["floss"],
-  dental: ["floss"],
-  walk: ["walking", "steps", "outside", "get outside"],
-  walking: ["walk", "steps", "outside"],
-  run: ["running", "jog"],
-  running: ["run", "jog"],
-  pray: ["prayer", "scripture", "devotional", "spiritual", "meditate"],
-  prayer: ["pray", "scripture", "devotional", "spiritual"],
-  spiritual: ["pray", "scripture", "devotional", "meditation"],
-  religion: ["pray", "scripture", "devotional", "spiritual"],
-  faith: ["pray", "scripture", "devotional", "spiritual"],
-  skin: ["skincare", "dry brushing"],
-  stretch: ["stretching", "mobility", "yoga", "foam roll"],
-  stretching: ["stretch", "mobility", "yoga"],
-};
-
-function smartSearch(items: LibraryItem[], q: string): LibraryItem[] {
-  const term = q.toLowerCase().trim();
-  if (!term) return [];
-
-  // Step 1: direct label or section substring match
-  const direct = items.filter(function(item) {
-    const label = (item.label || "").toLowerCase();
-    const section = (item.section || "").toLowerCase();
-    return label.indexOf(term) !== -1 || section.indexOf(term) !== -1;
-  });
-
-  // Step 2: synonym expansion
-  let expanded: LibraryItem[] = [];
-  const synKeys = Object.keys(SYNONYMS);
-  for (let i = 0; i < synKeys.length; i++) {
-    const key = synKeys[i];
-    if (key === term || (term.length >= 3 && key.indexOf(term) === 0) || (term.length >= 3 && term.indexOf(key) === 0)) {
-      const synonyms = SYNONYMS[key];
-      for (let j = 0; j < items.length; j++) {
-        const label = (items[j].label || "").toLowerCase();
-        for (let k = 0; k < synonyms.length; k++) {
-          if (label.indexOf(synonyms[k]) !== -1) {
-            expanded.push(items[j]);
-            break;
-          }
-        }
-      }
-    }
-  }
-
-  // Step 3: prefix match on individual words
-  let prefix: LibraryItem[] = [];
-  if (term.length >= 2) {
-    for (let i = 0; i < items.length; i++) {
-      const words = (items[i].label || "").toLowerCase().split(" ");
-      for (let w = 0; w < words.length; w++) {
-        if (words[w].indexOf(term) === 0) {
-          prefix.push(items[i]);
-          break;
-        }
-      }
-    }
-  }
-
-  // Deduplicate: direct first, then expanded, then prefix
-  let seen = new Set<string>();
-  let result: LibraryItem[] = [];
-  const all = direct.concat(expanded).concat(prefix);
-  for (let i = 0; i < all.length; i++) {
-    if (!seen.has(all[i].label)) {
-      seen.add(all[i].label);
-      result.push(all[i]);
-    }
-  }
-  return result;
-}
-
 export default function RoutineLibraryPage() {
   const [toast, setToast] = useState<ToastState>("idle");
   const [toastMsg, setToastMsg] = useState("");
@@ -269,6 +152,8 @@ export default function RoutineLibraryPage() {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [addedCount, setAddedCount] = useState(0);
   const [fromOnboarding, setFromOnboarding] = useState(false);
+  const [existingLabels, setExistingLabels] = useState<Set<string>>(new Set());
+  const [addedLabels, setAddedLabels] = useState<Set<string>>(new Set());
   const router = useRouter();
   const { isPremium } = usePremium();
 
@@ -278,6 +163,13 @@ export default function RoutineLibraryPage() {
       const params = new URLSearchParams(window.location.search);
       setFromOnboarding(params.get("from") === "onboarding");
     }
+  }, []);
+
+  // Load existing routine labels so we can grey out already-added items
+  useEffect(() => {
+    listRoutineItems().then((items) => {
+      setExistingLabels(new Set(items.map((i) => (i.label ?? "").trim().toLowerCase())));
+    }).catch(() => {});
   }, []);
 
   const flat = useMemo(() => {
@@ -306,6 +198,7 @@ export default function RoutineLibraryPage() {
       }
       await createRoutineItem({ label: it.label, emoji: it.emoji ?? null, section: it.section ?? "anytime", isNonNegotiable: !!it.suggestedCore });
       setAddedCount((c) => c + 1);
+      setAddedLabels((s) => new Set(s).add(it.label.trim().toLowerCase()));
       show("saved", "Added ✓");
     } catch { show("error", "Add failed"); }
     finally { setAddingKey(""); }
@@ -331,13 +224,22 @@ export default function RoutineLibraryPage() {
         })),
       });
       setAddedCount((c) => c + capped.length);
+      setAddedLabels((s) => {
+        const next = new Set(s);
+        capped.forEach((item) => next.add(item.label.trim().toLowerCase()));
+        return next;
+      });
       show("saved", `Added ${capped.length} routines ✓${capped.length < toAdd.length ? ` (${toAdd.length - capped.length} skipped — free limit)` : ""}`);
     } catch { show("error", "Add failed"); }
   };
 
-  const renderItem = (it: LibraryItem) => (
+  const renderItem = (it: LibraryItem) => {
+    const key = it.label.trim().toLowerCase();
+    const isAdded = existingLabels.has(key) || addedLabels.has(key);
+
+    return (
     <div key={it.label} className="flex items-center justify-between gap-3 py-2.5 px-1"
-      style={{ borderBottom: "1px solid var(--border-secondary)" }}>
+      style={{ borderBottom: "1px solid var(--border-secondary)", opacity: isAdded ? 0.5 : 1 }}>
       <div className="flex items-center gap-2.5 min-w-0">
         <span className="text-base shrink-0">{it.emoji ?? ""}</span>
         <div className="min-w-0">
@@ -347,12 +249,19 @@ export default function RoutineLibraryPage() {
           </p>
         </div>
       </div>
+      {isAdded ? (
+        <span className="text-xs py-1.5 px-2.5 flex items-center gap-1 shrink-0 font-medium" style={{ color: "var(--accent-green-text)" }}>
+          <Check size={14} /> Added
+        </span>
+      ) : (
       <button type="button" disabled={addingKey === it.label} onClick={() => void addOne(it)}
         className="btn-primary text-xs py-1.5 px-2.5 flex items-center gap-1 disabled:opacity-60 shrink-0">
         <Plus size={12} /> Add
       </button>
+      )}
     </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-5">
