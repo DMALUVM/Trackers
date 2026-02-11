@@ -112,17 +112,17 @@ function PhoneFrame({
    ═══════════════════════════════════════════ */
 export function MockToday() {
   const coreHabits = [
-    { emoji: "💊", label: "Nattokinase", done: true },
+    { emoji: "🚶", label: "Morning walk", done: true },
+    { emoji: "🧘", label: "Meditate", done: true },
     { emoji: "🏋️", label: "Workout", done: true },
-    { emoji: "🧃", label: "Creatine", done: true },
-    { emoji: "🦴", label: "Collagen", done: true },
-    { emoji: "🌀", label: "Lymphatic flow", done: true },
+    { emoji: "📚", label: "Read 20 min", done: true },
+    { emoji: "💧", label: "Drink 8 glasses", done: true },
     { emoji: "🍷", label: "No alcohol", done: true },
   ];
   const bonusHabits = [
     { emoji: "📓", label: "Journal", done: true },
-    { emoji: "🧊", label: "Cold exposure", done: false },
-    { emoji: "📚", label: "Read (10 min)", done: false },
+    { emoji: "🧊", label: "Cold shower", done: false },
+    { emoji: "🌙", label: "Screen off by 10", done: false },
   ];
   const weekDays = [
     { d: "W", n: "5", c: "green" },
@@ -831,12 +831,12 @@ export function MockTodayLight() {
 export function MockStreaksLight() {
   const t = { text: "#1a1a17", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.03)", border: "rgba(0,0,0,0.07)" };
   const habits = [
-    { emoji: "🧬", label: "Nattokinase", core: true, streak: 8, pct: "100%", best: "9d" },
-    { emoji: "🏋️", label: "Workout", core: true, streak: 5, pct: "67%", best: "5d" },
-    { emoji: "💤", label: "Magnesium", core: false, streak: 4, pct: "67%", best: "4d" },
-    { emoji: "🧪", label: "Creatine", core: true, streak: 4, pct: "100%", best: "4d" },
-    { emoji: "🔧", label: "Collagen", core: true, streak: 4, pct: "100%", best: "4d" },
-    { emoji: "🎯", label: "Lymphatic flow", core: true, streak: 3, pct: "44%", best: "3d" },
+    { emoji: "🚶", label: "Morning walk", core: true, streak: 14, pct: "100%", best: "14d" },
+    { emoji: "🏋️", label: "Workout", core: true, streak: 9, pct: "75%", best: "12d" },
+    { emoji: "🧘", label: "Meditate", core: true, streak: 7, pct: "88%", best: "7d" },
+    { emoji: "📚", label: "Read 20 min", core: false, streak: 5, pct: "67%", best: "8d" },
+    { emoji: "💧", label: "Drink 8 glasses", core: true, streak: 4, pct: "100%", best: "4d" },
+    { emoji: "🌙", label: "Screen off by 10", core: false, streak: 3, pct: "44%", best: "5d" },
   ];
 
   return (
@@ -846,7 +846,7 @@ export function MockStreaksLight() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[11px] font-bold" style={{ color: t.text }}>My Streaks</p>
-            <p className="text-[7px]" style={{ color: t.muted }}>13 habits tracked</p>
+            <p className="text-[7px]" style={{ color: t.muted }}>9 habits tracked</p>
           </div>
           <div className="rounded-full px-2 py-1 flex items-center gap-1" style={{ border: `1px solid ${t.border}` }}>
             <span style={{ fontSize: 7 }}>👥</span>
