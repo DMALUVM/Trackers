@@ -107,7 +107,7 @@ export default function SettingsPage() {
       ))}
 
       {/* Feedback */}
-      <a href="mailto:Routines365.app@gmail.com"
+      <a href="mailto:routines365.app@gmail.com"
         className="flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] active:opacity-80"
         style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
         onClick={() => hapticLight()}>

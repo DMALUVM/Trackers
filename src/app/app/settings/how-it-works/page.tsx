@@ -369,19 +369,22 @@ export default function HowItWorksPage() {
 
       <section className="card p-5 space-y-3">
         <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>💬 Questions or Feedback?</h2>
-        <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-          We&apos;d love to hear from you — whether it&apos;s a bug, a feature request, or just to say hi.
+        <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+          Bug reports, feature requests, or just say hi — we read every message.
         </p>
-        <a href="mailto:Routines365.app@gmail.com"
-          className="flex items-center justify-center gap-2 w-full rounded-2xl py-3.5 text-sm font-bold transition-all active:scale-[0.98]"
-          style={{ background: "var(--accent-green)", color: "var(--text-inverse)" }}>
-          ✉️ Email us at Routines365.app@gmail.com
+        <a href="mailto:routines365.app@gmail.com"
+          className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-[0.98]"
+          style={{
+            background: "var(--accent-green-soft)",
+            color: "var(--accent-green-text)",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+          }}>
+          ✉️ routines365.app@gmail.com
         </a>
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          We typically respond within 24 hours.
+        </p>
       </section>
-
-      <p className="text-center text-sm pb-4" style={{ color: "var(--text-faint)" }}>
-        Built with 💚 by the Routines365 team.
-      </p>
     </div>
   );
 }
