@@ -9,6 +9,9 @@ import {
   MockBreathwork,
   MockMovement,
   MockSleep,
+  MockTodayLight,
+  MockStreaksLight,
+  MockJournalLight,
 } from "@/app/_components/landing/PhoneMockups";
 
 /* ────────────────────────────────────────────
@@ -270,12 +273,15 @@ export default function Home() {
             </div>
           </Reveal>
           <Reveal delay={0.1}>
-            <ScrollCarousel>
+            <ScrollCarousel itemCount={8}>
               <div className="snap-center shrink-0"><MockToday /></div>
               <div className="snap-center shrink-0"><MockBreathwork /></div>
               <div className="snap-center shrink-0"><MockMovement /></div>
               <div className="snap-center shrink-0"><MockProgress /></div>
               <div className="snap-center shrink-0"><MockSleep /></div>
+              <div className="snap-center shrink-0"><MockTodayLight /></div>
+              <div className="snap-center shrink-0"><MockStreaksLight /></div>
+              <div className="snap-center shrink-0"><MockJournalLight /></div>
             </ScrollCarousel>
           </Reveal>
         </div>
