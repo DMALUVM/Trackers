@@ -101,14 +101,14 @@ export default function RoutinesProgressPage() {
 
   // Listen for pull-to-refresh events AND returning from edit page
   useEffect(() => {
-    const onPull = () => setRefreshKey((k) => k + 1);
+    const onRefresh = () => setRefreshKey((k) => k + 1);
     const onVisible = () => { if (document.visibilityState === "visible") setRefreshKey((k) => k + 1); };
-    window.addEventListener("routines365:pullRefresh", onPull);
-    window.addEventListener("routines365:routinesChanged", onPull);
+    window.addEventListener("routines365:pullRefresh", onRefresh);
+    window.addEventListener("routines365:routinesChanged", onRefresh);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
-      window.removeEventListener("routines365:pullRefresh", onPull);
-      window.removeEventListener("routines365:routinesChanged", onPull);
+      window.removeEventListener("routines365:pullRefresh", onRefresh);
+      window.removeEventListener("routines365:routinesChanged", onRefresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);

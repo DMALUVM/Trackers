@@ -59,6 +59,15 @@ export function useStreaks(dateKey: string) {
     loading: true,
   });
 
+  // Allow external triggers (edit page save, pull-to-refresh) to force re-fetch
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onChanged = () => setRefreshKey((k) => k + 1);
+    window.addEventListener("routines365:routinesChanged", onChanged);
+    return () => window.removeEventListener("routines365:routinesChanged", onChanged);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -261,7 +270,7 @@ export function useStreaks(dateKey: string) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [dateKey]);
+  }, [dateKey, refreshKey]);
 
   return data;
 }
