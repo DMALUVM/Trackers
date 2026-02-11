@@ -692,95 +692,135 @@ export function MockSleep() {
 }
 
 /* ────────────────────────────────────────────
-   Light theme mockups
+   Light theme mockups — matched to actual app UI
    ──────────────────────────────────────────── */
 
 export function MockTodayLight() {
-  const coreHabits = [
-    { label: "Morning walk", done: true },
-    { label: "Read 20 pages", done: true },
-    { label: "Meditate 10 min", done: true },
-    { label: "Cold shower", done: false },
+  const t = { text: "#1a1a17", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.03)", border: "rgba(0,0,0,0.07)" };
+  const score = 67;
+  const days = [
+    { d: "W", n: "5", c: "red" },
+    { d: "T", n: "6", c: "red" },
+    { d: "F", n: "7", c: "green" },
+    { d: "S", n: "8", c: "green" },
+    { d: "S", n: "9", c: "green" },
+    { d: "M", n: "10", c: "today" },
   ];
-  const bonusHabits = [
-    { label: "Journal entry", done: true },
-    { label: "No sugar", done: false },
-  ];
-  const coreDone = coreHabits.filter((h) => h.done).length;
-  const t = { text: "rgba(20,20,15,0.9)", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.04)", border: "rgba(0,0,0,0.06)" };
 
   return (
     <PhoneFrame label="Today · Light" theme="light">
       <div className="space-y-2">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[8px] font-medium" style={{ color: t.muted }}>Good morning 👋</p>
+            <p className="text-[8px] font-medium" style={{ color: t.muted }}>Good evening 👋</p>
             <p className="text-[11px] font-bold" style={{ color: t.text }}>
-              Tuesday <span className="text-[8px] font-normal" style={{ color: t.muted }}>Feb 11</span>
+              Tuesday <span className="text-[8px] font-normal" style={{ color: t.muted }}>Feb 10</span>
             </p>
           </div>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-            <span style={{ fontSize: 8 }}>🏆</span>
+          <div className="flex gap-1">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: t.card, border: `1px solid ${t.border}` }}>
+              <span style={{ fontSize: 8 }}>🏆</span>
+            </div>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center"
+              style={{ background: t.card, border: `1px solid ${t.border}` }}>
+              <span style={{ fontSize: 7, color: t.muted }}>•••</span>
+            </div>
           </div>
         </div>
 
-        {/* Score card */}
-        <div className="rounded-xl p-2.5" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-          <div className="flex items-center gap-2.5">
-            <div className="relative shrink-0" style={{ width: 44, height: 44 }}>
-              <svg viewBox="0 0 44 44" className="w-full h-full -rotate-90">
-                <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="3.5" />
-                <circle cx="22" cy="22" r="18" fill="none" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 18}`}
-                  strokeDashoffset={`${2 * Math.PI * 18 * (1 - coreDone / coreHabits.length)}`}
+        {/* Nudge banner */}
+        <div className="rounded-lg px-2.5 py-1.5" style={{ background: "rgba(250,204,21,0.12)" }}>
+          <p className="text-[7px] font-medium" style={{ color: "#b45309" }}>Still time to finish today. Don&apos;t let it slip.</p>
+        </div>
+
+        {/* Score card — orange ring */}
+        <div className="rounded-xl p-2.5" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+          <div className="flex items-center gap-3">
+            <div className="relative shrink-0" style={{ width: 48, height: 48 }}>
+              <svg viewBox="0 0 48 48" className="w-full h-full -rotate-90">
+                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="4" />
+                <circle cx="24" cy="24" r="20" fill="none" stroke="#d97706" strokeWidth="4" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 20}`}
+                  strokeDashoffset={`${2 * Math.PI * 20 * (1 - score / 100)}`}
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color: "#10b981" }}>
-                {Math.round((coreDone / coreHabits.length) * 100)}%
-              </span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-[11px] font-bold" style={{ color: t.text }}>{score}</span>
+                <span className="text-[5px]" style={{ color: t.muted }}>score</span>
+              </div>
             </div>
             <div className="flex-1">
-              <p className="text-[9px] font-semibold" style={{ color: "#059669" }}>Almost there! 💪</p>
-              <p className="text-[7px]" style={{ color: t.muted }}>{coreDone}/{coreHabits.length} core · 1 bonus</p>
+              <p className="text-[9px] font-bold" style={{ color: t.text }}>2 to go</p>
+              <p className="text-[7px]" style={{ color: t.muted }}>4/6 core</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span style={{ fontSize: 8 }}>🔥</span>
+                <span className="text-[8px] font-bold" style={{ color: "#f97316" }}>3</span>
+                <span className="text-[7px]" style={{ color: t.muted }}>day streak</span>
+              </div>
             </div>
           </div>
+
+          {/* Day strip */}
+          <div className="flex justify-between mt-2 px-1">
+            {days.map((day) => (
+              <div key={day.n} className="flex flex-col items-center gap-0.5">
+                <span className="text-[6px]" style={{ color: t.muted }}>{day.d}</span>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold"
+                  style={{
+                    background: day.c === "green" ? "#10b981" : day.c === "red" ? "#ef4444" : "transparent",
+                    color: day.c === "today" ? "#10b981" : "white",
+                    border: day.c === "today" ? "1.5px solid #10b981" : "none",
+                  }}>
+                  {day.n}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Next quest teaser */}
+          <div className="flex items-center justify-between mt-2 pt-1.5" style={{ borderTop: `1px solid ${t.border}` }}>
+            <div className="flex items-center gap-1">
+              <span className="text-[7px]" style={{ color: t.muted }}>Next:</span>
+              <span style={{ fontSize: 7 }}>⚡</span>
+              <span className="text-[7px] font-semibold" style={{ color: "#10b981" }}>One Week</span>
+            </div>
+            <span className="text-[7px]" style={{ color: t.muted }}>4 days away</span>
+          </div>
+        </div>
+
+        {/* Quests */}
+        <div>
+          <p className="text-[7px] font-bold uppercase tracking-wider mb-1" style={{ color: t.muted }}>Quests</p>
+          <div className="rounded-xl p-2.5 text-center" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+            <div className="w-4 h-4 rounded-full mx-auto mb-1" style={{ background: "#10b981" }} />
+            <p className="text-[8px] font-bold" style={{ color: t.text }}>Green days</p>
+            <p className="text-[7px]" style={{ color: t.muted }}>1 this week</p>
+          </div>
+        </div>
+
+        {/* Water tracker */}
+        <div className="rounded-xl p-2 flex items-center gap-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+          <span style={{ fontSize: 10 }}>💧</span>
+          <div className="flex gap-[3px] flex-1">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="w-3 h-3 rounded-full" style={{
+                background: i < 5 ? "#3b82f6" : "rgba(0,0,0,0.06)",
+              }} />
+            ))}
+          </div>
+          <span className="text-[8px] font-bold" style={{ color: t.text }}>5/8</span>
         </div>
 
         {/* Quote */}
-        <div className="rounded-lg px-2 py-1.5" style={{ background: t.card }}>
-          <p className="text-[7px] italic" style={{ color: t.muted }}>&ldquo;The impediment to action advances action.&rdquo;</p>
-          <p className="text-[6px] mt-0.5" style={{ color: "rgba(20,20,15,0.3)" }}>— Marcus Aurelius</p>
-        </div>
-
-        {/* Core habits */}
-        <div>
-          <p className="text-[7px] font-bold uppercase tracking-wider mb-1.5" style={{ color: t.muted }}>Core Habits</p>
-          <div className="space-y-1">
-            {coreHabits.map((h) => (
-              <div key={h.label} className="flex items-center gap-2 rounded-lg px-2 py-1.5" style={{ background: h.done ? "rgba(16,185,129,0.08)" : t.card }}>
-                <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: h.done ? "#10b981" : "transparent", border: h.done ? "none" : `1.5px solid ${t.border}` }}>
-                  {h.done && <span className="text-white text-[8px]">✓</span>}
-                </div>
-                <span className="text-[8px] font-medium" style={{ color: h.done ? "#059669" : t.text, textDecoration: h.done ? "line-through" : "none", opacity: h.done ? 0.7 : 1 }}>{h.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Bonus */}
-        <div>
-          <p className="text-[7px] font-bold uppercase tracking-wider mb-1.5" style={{ color: t.muted }}>Bonus</p>
-          <div className="space-y-1">
-            {bonusHabits.map((h) => (
-              <div key={h.label} className="flex items-center gap-2 rounded-lg px-2 py-1.5" style={{ background: h.done ? "rgba(16,185,129,0.08)" : t.card }}>
-                <div className="w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: h.done ? "#10b981" : "transparent", border: h.done ? "none" : `1.5px solid ${t.border}` }}>
-                  {h.done && <span className="text-white text-[8px]">✓</span>}
-                </div>
-                <span className="text-[8px] font-medium" style={{ color: h.done ? "#059669" : t.text, textDecoration: h.done ? "line-through" : "none", opacity: h.done ? 0.7 : 1 }}>{h.label}</span>
-              </div>
-            ))}
+        <div className="rounded-xl px-2.5 py-2" style={{ background: "rgba(250,204,21,0.06)", border: "1px solid rgba(250,204,21,0.1)" }}>
+          <div className="flex items-start gap-1.5">
+            <span style={{ fontSize: 9 }}>🏛</span>
+            <div>
+              <p className="text-[7px] italic leading-relaxed" style={{ color: t.muted }}>&ldquo;It&apos;s not what happens to you, but how you react to it that matters.&rdquo;</p>
+              <p className="text-[6px] mt-0.5" style={{ color: "rgba(20,20,15,0.3)" }}>— Epictetus</p>
+            </div>
           </div>
         </div>
       </div>
@@ -789,56 +829,58 @@ export function MockTodayLight() {
 }
 
 export function MockStreaksLight() {
-  const t = { text: "rgba(20,20,15,0.9)", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.04)", border: "rgba(0,0,0,0.06)" };
+  const t = { text: "#1a1a17", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.03)", border: "rgba(0,0,0,0.07)" };
   const habits = [
-    { label: "Morning walk", streak: 14, best: 21, color: "#10b981" },
-    { label: "Read 20 pages", streak: 9, best: 12, color: "#3b82f6" },
-    { label: "Meditate", streak: 7, best: 7, color: "#8b5cf6" },
-    { label: "Cold shower", streak: 3, best: 5, color: "#06b6d4" },
+    { emoji: "🧬", label: "Nattokinase", core: true, streak: 8, pct: "100%", best: "9d" },
+    { emoji: "🏋️", label: "Workout", core: true, streak: 5, pct: "67%", best: "5d" },
+    { emoji: "💤", label: "Magnesium", core: false, streak: 4, pct: "67%", best: "4d" },
+    { emoji: "🧪", label: "Creatine", core: true, streak: 4, pct: "100%", best: "4d" },
+    { emoji: "🔧", label: "Collagen", core: true, streak: 4, pct: "100%", best: "4d" },
+    { emoji: "🎯", label: "Lymphatic flow", core: true, streak: 3, pct: "44%", best: "3d" },
   ];
 
   return (
     <PhoneFrame label="Streaks · Light" theme="light">
       <div className="space-y-2">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold" style={{ color: t.text }}>Your Streaks</p>
-          <div className="flex items-center gap-1">
-            <span style={{ fontSize: 10 }}>🔥</span>
-            <span className="text-[10px] font-bold" style={{ color: "#f97316" }}>14 days</span>
+          <div>
+            <p className="text-[11px] font-bold" style={{ color: t.text }}>My Streaks</p>
+            <p className="text-[7px]" style={{ color: t.muted }}>13 habits tracked</p>
+          </div>
+          <div className="rounded-full px-2 py-1 flex items-center gap-1" style={{ border: `1px solid ${t.border}` }}>
+            <span style={{ fontSize: 7 }}>👥</span>
+            <span className="text-[7px] font-semibold" style={{ color: "#10b981" }}>Partner</span>
           </div>
         </div>
 
-        {/* Green day calendar strip */}
-        <div className="rounded-xl p-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-          <p className="text-[6px] font-bold uppercase tracking-wider mb-1.5" style={{ color: t.muted }}>Last 14 days</p>
-          <div className="flex gap-[3px] justify-between">
-            {Array.from({ length: 14 }, (_, i) => {
-              const green = i < 11 || i === 12;
-              return (
-                <div key={i}>
-                  <div className="rounded-[3px]" style={{
-                    width: 12, height: 12,
-                    background: green ? "#10b981" : i === 13 ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.15)",
-                    border: i === 13 ? "1.5px solid #10b981" : "none",
-                  }} />
-                </div>
-              );
-            })}
-          </div>
+        {/* Pin tip */}
+        <div className="rounded-xl p-2 text-center" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+          <p className="text-[7px] font-semibold" style={{ color: t.text }}>📌 Pin your most important habits</p>
+          <p className="text-[6px]" style={{ color: t.muted }}>Tap any habit below for a big streak counter</p>
         </div>
 
-        {/* Habit streaks */}
-        <div className="space-y-1.5">
+        {/* Habit list */}
+        <div className="space-y-1">
           {habits.map((h) => (
-            <div key={h.label} className="rounded-xl p-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[8px] font-semibold" style={{ color: t.text }}>{h.label}</span>
-                <span className="text-[8px] font-bold" style={{ color: h.color }}>{h.streak}d 🔥</span>
+            <div key={h.label} className="rounded-xl p-2 flex items-center gap-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+              <span style={{ fontSize: 10 }}>{h.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1">
+                  <span className="text-[8px] font-semibold" style={{ color: t.text }}>{h.label}</span>
+                  {h.core && (
+                    <span className="text-[5px] font-bold px-1 py-0.5 rounded" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}>CORE</span>
+                  )}
+                </div>
+                <p className="text-[6px]" style={{ color: t.muted }}>{h.pct} · Best: {h.best}</p>
               </div>
-              <div className="w-full rounded-full overflow-hidden" style={{ height: 4, background: "rgba(0,0,0,0.06)" }}>
-                <div className="h-full rounded-full" style={{ width: `${(h.streak / h.best) * 100}%`, background: h.color }} />
+              <div className="text-right">
+                <p className="text-[11px] font-bold" style={{ color: "#10b981" }}>{h.streak}</p>
+                <p className="text-[5px]" style={{ color: t.muted }}>days</p>
               </div>
-              <p className="text-[6px] mt-1" style={{ color: t.muted }}>Best: {h.best} days</p>
+              <svg width="6" height="10" viewBox="0 0 6 10" fill="none" stroke="rgba(0,0,0,0.2)" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M1 1l4 4-4 4" />
+              </svg>
             </div>
           ))}
         </div>
@@ -847,60 +889,99 @@ export function MockStreaksLight() {
   );
 }
 
-export function MockJournalLight() {
-  const t = { text: "rgba(20,20,15,0.9)", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.04)", border: "rgba(0,0,0,0.06)" };
-  const entries = [
-    { date: "Today", preview: "Had an amazing morning walk in the cold air. Felt energized all day...", mood: "😊" },
-    { date: "Yesterday", preview: "Skipped the cold shower but everything else was solid. Consistency over perfection...", mood: "😌" },
-    { date: "Feb 9", preview: "Green day! All habits checked. Started reading Atomic Habits...", mood: "🔥" },
+export function MockProgressLight() {
+  const t = { text: "#1a1a17", muted: "rgba(20,20,15,0.45)", card: "rgba(0,0,0,0.03)", border: "rgba(0,0,0,0.07)" };
+  // Calendar data: 1=green, 2=orange, 3=red, 0=future/empty
+  const calRows = [
+    [3, 3, 3, 3, 1, 1, 1],
+    [1, 1, 3, 0, 0, 0, 0],
   ];
+  const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
 
   return (
-    <PhoneFrame label="Journal · Light" theme="light">
+    <PhoneFrame label="Progress · Light" theme="light">
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold" style={{ color: t.text }}>Journal</p>
-          <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-            <span className="text-[10px]" style={{ color: "#10b981" }}>+</span>
+        {/* Header */}
+        <div>
+          <p className="text-[11px] font-bold" style={{ color: t.text }}>Progress</p>
+          <p className="text-[7px]" style={{ color: t.muted }}>Tap any day to see details</p>
+        </div>
+
+        {/* Calendar */}
+        <div className="rounded-xl p-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+          <div className="flex items-center justify-between mb-2">
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5"><path d="M5 1L2 4l3 3" /></svg>
+            <span className="text-[9px] font-bold" style={{ color: t.text }}>February 2026</span>
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5"><path d="M3 1l3 3-3 3" /></svg>
+          </div>
+
+          {/* Day headers */}
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {dayLabels.map((d) => (
+              <div key={d} className="text-center text-[6px] font-semibold" style={{ color: t.muted }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Week rows */}
+          {calRows.map((row, ri) => (
+            <div key={ri} className="grid grid-cols-7 gap-1 mb-1">
+              {row.map((v, ci) => {
+                const num = ri === 0 ? ci + 4 : ci + 9;
+                const isToday = ri === 1 && ci === 1;
+                const bg = v === 1 ? "#10b981" : v === 2 ? "#f59e0b" : v === 3 ? "#ef4444" : "rgba(0,0,0,0.04)";
+                return (
+                  <div key={ci} className="flex items-center justify-center">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold"
+                      style={{
+                        background: v > 0 ? bg : "transparent",
+                        color: v > 0 ? "white" : num > 10 ? "rgba(0,0,0,0.2)" : t.muted,
+                        border: isToday ? "1.5px solid #10b981" : "none",
+                      }}>
+                      {num}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-3 mt-1 pt-1" style={{ borderTop: `1px solid ${t.border}` }}>
+            {[
+              { c: "#10b981", l: "All core" },
+              { c: "#f59e0b", l: "Missed 1" },
+              { c: "#ef4444", l: "Missed 2+" },
+            ].map(({ c, l }) => (
+              <div key={l} className="flex items-center gap-1">
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />
+                <span className="text-[5px]" style={{ color: t.muted }}>{l}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Prompt card */}
-        <div className="rounded-xl p-2.5" style={{ background: "rgba(139,92,246,0.06)", border: "1px solid rgba(139,92,246,0.12)" }}>
-          <p className="text-[7px] font-semibold" style={{ color: "#7c3aed" }}>✨ Today&apos;s Prompt</p>
-          <p className="text-[7px] mt-0.5" style={{ color: t.muted }}>What&apos;s one small thing you&apos;re grateful for this morning?</p>
-        </div>
-
-        {/* Entries */}
-        <div className="space-y-1.5">
-          {entries.map((e) => (
-            <div key={e.date} className="rounded-xl p-2.5" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[7px] font-bold" style={{ color: t.text }}>{e.date}</span>
-                <span style={{ fontSize: 10 }}>{e.mood}</span>
+        {/* Streaks summary */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[7px] font-bold uppercase tracking-wider" style={{ color: t.muted }}>Streaks</p>
+            <div className="flex gap-2">
+              <span className="text-[6px] font-semibold" style={{ color: "#10b981" }}>↗ My Streaks</span>
+              <span className="text-[6px] font-semibold" style={{ color: t.muted }}>🏆 Trophies</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {[
+              { label: "CURRENT", value: "3", sub: "consecutive green days" },
+              { label: "BEST", value: "3", sub: "all-time record" },
+              { label: "CORE HIT-RATE", value: "83%", sub: "this week" },
+              { label: "GREEN DAYS", value: "3", sub: "this month" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-xl p-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
+                <p className="text-[5px] font-bold uppercase tracking-wider" style={{ color: t.muted }}>{s.label}</p>
+                <p className="text-[13px] font-bold mt-0.5" style={{ color: t.text }}>{s.value}</p>
+                <p className="text-[5px]" style={{ color: t.muted }}>{s.sub}</p>
               </div>
-              <p className="text-[7px] leading-relaxed" style={{ color: t.muted, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>
-                {e.preview}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Stats */}
-        <div className="rounded-xl p-2" style={{ background: t.card, border: `1px solid ${t.border}` }}>
-          <div className="flex justify-around text-center">
-            <div>
-              <p className="text-[10px] font-bold" style={{ color: "#10b981" }}>12</p>
-              <p className="text-[6px]" style={{ color: t.muted }}>Entries</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold" style={{ color: "#8b5cf6" }}>5</p>
-              <p className="text-[6px]" style={{ color: t.muted }}>Day streak</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-bold" style={{ color: "#f59e0b" }}>📊</p>
-              <p className="text-[6px]" style={{ color: t.muted }}>Insights</p>
-            </div>
+            ))}
           </div>
         </div>
       </div>

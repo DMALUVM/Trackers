@@ -11,7 +11,7 @@ import {
   MockSleep,
   MockTodayLight,
   MockStreaksLight,
-  MockJournalLight,
+  MockProgressLight,
 } from "@/app/_components/landing/PhoneMockups";
 
 /* ────────────────────────────────────────────
@@ -281,7 +281,7 @@ export default function Home() {
               <div className="snap-center shrink-0"><MockSleep /></div>
               <div className="snap-center shrink-0"><MockTodayLight /></div>
               <div className="snap-center shrink-0"><MockStreaksLight /></div>
-              <div className="snap-center shrink-0"><MockJournalLight /></div>
+              <div className="snap-center shrink-0"><MockProgressLight /></div>
             </ScrollCarousel>
           </Reveal>
         </div>
