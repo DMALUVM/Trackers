@@ -106,6 +106,19 @@ export async function clearBadge(): Promise<void> {
   }
 }
 
+/** List all pending (scheduled) notifications — useful for debugging */
+export async function listPendingNotifications(): Promise<Array<{ id: string; title: string; body: string; hour: number; minute: number; weekday: number }>> {
+  const plugin = getPlugin();
+  if (!plugin) return [];
+  try {
+    const result = await plugin.listPending() as { notifications: Array<{ id: string; title: string; body: string; hour: number; minute: number; weekday: number }> };
+    return result.notifications ?? [];
+  } catch (e) {
+    console.error("List pending error:", e);
+    return [];
+  }
+}
+
 /**
  * Schedule the main daily check-in reminder.
  * This is the key retention notification.

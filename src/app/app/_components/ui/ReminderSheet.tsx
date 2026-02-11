@@ -90,8 +90,10 @@ export function ReminderSheet({
       if (isNativeNotifyAvailable() && enabled) {
         const granted = await requestNotifyPermission();
         if (granted) {
+          // Cancel any existing notifications for this habit first
+          await cancelNativeReminder(`habit_${routineItemId}`);
           const [h, m] = time.split(":").map(Number);
-          await scheduleDailyReminder({
+          const scheduled = await scheduleDailyReminder({
             id: `habit_${routineItemId}`,
             title: `${routineEmoji ?? "⏰"} ${routineLabel}`,
             body: "Time for your habit!",
@@ -99,6 +101,9 @@ export function ReminderSheet({
             minute: m,
             weekdays: days,
           });
+          console.log(`[Reminder] Scheduled ${routineLabel} at ${h}:${String(m).padStart(2, "0")} on days [${days}]: ${scheduled}`);
+        } else {
+          console.warn("[Reminder] Notification permission not granted");
         }
       } else if (isNativeNotifyAvailable() && !enabled) {
         // Reminder paused — cancel native notification
