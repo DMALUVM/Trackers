@@ -1,10 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bell, BellOff, Trash2, X } from "lucide-react";
+import { Bell, BellOff, Trash2, X, CheckCircle, AlertTriangle } from "lucide-react";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 import { upsertReminder, deleteReminder, subscribeToPush, getPushPermission, isPushSupported } from "@/lib/reminders";
-import { scheduleDailyReminder, cancelReminder as cancelNativeReminder, requestNotifyPermission, isNativeNotifyAvailable } from "@/lib/nativeNotify";
+import {
+  scheduleDailyReminder,
+  cancelReminder as cancelNativeReminder,
+  requestNotifyPermission,
+  isNativeNotifyAvailable,
+  getNotifyPermissionStatus,
+  listPendingNotifications,
+} from "@/lib/nativeNotify";
 import type { Reminder } from "@/lib/reminders";
 
 const DAYS = [
@@ -31,20 +38,21 @@ export function ReminderSheet({
   open, onClose, routineItemId, routineLabel, routineEmoji, existing, onSaved,
 }: Props) {
   const [time, setTime] = useState(existing?.time ?? "09:00");
-  const [days, setDays] = useState<number[]>(existing?.days_of_week ?? [1, 2, 3, 4, 5]); // Default weekdays
+  const [days, setDays] = useState<number[]>(existing?.days_of_week ?? [1, 2, 3, 4, 5]);
   const [enabled, setEnabled] = useState(existing?.enabled ?? true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [pushSupported, setPushSupported] = useState(true);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
   const [isNative, setIsNative] = useState(false);
+  const [status, setStatus] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
 
   useEffect(() => {
     if (open) {
       setTime(existing?.time ?? "09:00");
       setDays(existing?.days_of_week ?? [1, 2, 3, 4, 5]);
       setEnabled(existing?.enabled ?? true);
-      // Check if running in native Capacitor app
+      setStatus(null);
       // @ts-expect-error - Capacitor global
       const native = !!window.Capacitor;
       setIsNative(native);
@@ -65,14 +73,15 @@ export function ReminderSheet({
   const handleSave = async () => {
     if (days.length === 0 || saving) return;
     setSaving(true);
+    setStatus(null);
     hapticMedium();
 
     try {
-      // In native app, skip web push — save reminder directly
-      // In web, try to get push permission first
+      // Web: get push permission first
       if (!isNative && pushPermission !== "granted") {
         const ok = await subscribeToPush();
         if (!ok) {
+          setStatus({ type: "error", msg: "Notification permission denied. Enable in Settings \u2192 Notifications." });
           setSaving(false);
           return;
         }
@@ -86,34 +95,69 @@ export function ReminderSheet({
         enabled,
       });
 
-      // Schedule native local notification on iOS
-      if (isNativeNotifyAvailable() && enabled) {
-        const granted = await requestNotifyPermission();
-        if (granted) {
-          // Cancel any existing notifications for this habit first
-          await cancelNativeReminder(`habit_${routineItemId}`);
-          const [h, m] = time.split(":").map(Number);
-          const scheduled = await scheduleDailyReminder({
-            id: `habit_${routineItemId}`,
-            title: `${routineEmoji ?? "⏰"} ${routineLabel}`,
-            body: "Time for your habit!",
-            hour: h,
-            minute: m,
-            weekdays: days,
-          });
-          console.log(`[Reminder] Scheduled ${routineLabel} at ${h}:${String(m).padStart(2, "0")} on days [${days}]: ${scheduled}`);
-        } else {
-          console.warn("[Reminder] Notification permission not granted");
+      // Native iOS: schedule local notification
+      if (isNative && enabled) {
+        const pluginAvailable = isNativeNotifyAvailable();
+        if (!pluginAvailable) {
+          setStatus({ type: "warning", msg: "Reminder saved but notifications unavailable. Try reinstalling the app." });
+          onSaved?.();
+          setTimeout(onClose, 2500);
+          setSaving(false);
+          return;
         }
-      } else if (isNativeNotifyAvailable() && !enabled) {
-        // Reminder paused — cancel native notification
+
+        const granted = await requestNotifyPermission();
+        if (!granted) {
+          const permStatus = await getNotifyPermissionStatus();
+          if (permStatus === "denied") {
+            setStatus({ type: "error", msg: "Notifications blocked. Go to iPhone Settings \u2192 Routines365 \u2192 Notifications \u2192 Allow." });
+          } else {
+            setStatus({ type: "warning", msg: "Notification permission not granted. Please allow when prompted." });
+          }
+          onSaved?.();
+          setSaving(false);
+          return;
+        }
+
+        // Cancel old, schedule new
         await cancelNativeReminder(`habit_${routineItemId}`);
+        const [h, m] = time.split(":").map(Number);
+        const scheduled = await scheduleDailyReminder({
+          id: `habit_${routineItemId}`,
+          title: `${routineEmoji ?? "\u23F0"} ${routineLabel}`,
+          body: "Time for your habit!",
+          hour: h,
+          minute: m,
+          weekdays: days,
+        });
+
+        if (scheduled) {
+          // Verify it actually queued
+          const pending = await listPendingNotifications();
+          const found = pending.some((n) => n.id.startsWith(`habit_${routineItemId}`));
+          if (found) {
+            setStatus({ type: "success", msg: `Reminder set for ${formatTime(h, m)}` });
+          } else {
+            setStatus({ type: "warning", msg: "Reminder saved but may not fire. Check iPhone Settings \u2192 Routines365 \u2192 Notifications." });
+          }
+        } else {
+          setStatus({ type: "error", msg: "Failed to schedule. Check iPhone Settings \u2192 Routines365 \u2192 Notifications." });
+          onSaved?.();
+          setSaving(false);
+          return;
+        }
+      } else if (isNative && !enabled) {
+        await cancelNativeReminder(`habit_${routineItemId}`);
+        setStatus({ type: "success", msg: "Reminder paused" });
+      } else {
+        setStatus({ type: "success", msg: "Reminder saved" });
       }
 
       onSaved?.();
-      onClose();
+      setTimeout(onClose, 1200);
     } catch (e) {
       console.error("Failed to save reminder:", e);
+      setStatus({ type: "error", msg: "Something went wrong. Please try again." });
     } finally {
       setSaving(false);
     }
@@ -125,7 +169,6 @@ export function ReminderSheet({
     hapticMedium();
     try {
       await deleteReminder(routineItemId);
-      // Cancel native local notification on iOS
       if (isNativeNotifyAvailable()) {
         await cancelNativeReminder(`habit_${routineItemId}`);
       }
@@ -143,21 +186,34 @@ export function ReminderSheet({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-[199] bg-black/60 backdrop-blur-sm"
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        style={{ zIndex: 9998 }}
         onClick={onClose} />
 
-      {/* Modal — centered accounting for iPhone safe areas */}
-      <div className="modal-center" onClick={onClose}>
-        <div className="w-full max-w-sm rounded-2xl p-5 animate-fade-in-up"
-          style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 40px rgba(0,0,0,0.4)" }}
-          onClick={(e) => e.stopPropagation()}>
+      {/* Bottom sheet \u2014 pinned to bottom of viewport */}
+      <div style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        background: "var(--bg-sheet)",
+        borderRadius: "20px 20px 0 0",
+        boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+        maxWidth: 480,
+        marginLeft: "auto",
+        marginRight: "auto",
+      }}
+        onClick={(e) => e.stopPropagation()}>
+        <div className="p-5">
 
           {/* Drag handle */}
           <div className="flex justify-center mb-3">
             <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-primary)" }} />
           </div>
 
-          {/* Handle + close */}
+          {/* Header + close */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Bell size={18} style={{ color: "var(--accent-green)" }} />
@@ -181,7 +237,29 @@ export function ReminderSheet({
             </p>
           </div>
 
-          {/* Push not supported warning — only on web, never in native app */}
+          {/* Status feedback */}
+          {status && (
+            <div className="rounded-xl px-3 py-2.5 mb-4 flex items-center gap-2 text-xs font-medium"
+              style={{
+                background: status.type === "success"
+                  ? "rgba(16,185,129,0.12)"
+                  : status.type === "warning"
+                  ? "rgba(245,158,11,0.12)"
+                  : "rgba(239,68,68,0.12)",
+                color: status.type === "success"
+                  ? "#34d399"
+                  : status.type === "warning"
+                  ? "#fbbf24"
+                  : "#fca5a5",
+              }}>
+              {status.type === "success"
+                ? <CheckCircle size={14} className="shrink-0" />
+                : <AlertTriangle size={14} className="shrink-0" />}
+              {status.msg}
+            </div>
+          )}
+
+          {/* Push not supported warning \u2014 web only */}
           {!isNative && !pushSupported && (
             <div className="rounded-xl px-3 py-2.5 mb-4 text-xs"
               style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
@@ -270,7 +348,7 @@ export function ReminderSheet({
                 color: days.length === 0 ? "var(--text-muted)" : "var(--text-inverse)",
                 opacity: saving ? 0.6 : 1,
               }}>
-              {saving ? "Saving…" : existing ? "Update Reminder" : "Set Reminder"}
+              {saving ? "Saving\u2026" : existing ? "Update Reminder" : "Set Reminder"}
             </button>
 
             {existing && (
@@ -291,4 +369,10 @@ export function ReminderSheet({
       </div>
     </>
   );
+}
+
+function formatTime(h: number, m: number): string {
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
