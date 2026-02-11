@@ -9,6 +9,8 @@ import type { RoutineItemRow } from "@/lib/types";
 import { Toast, SubPageHeader, ReminderSheet, type ToastState } from "@/app/app/_components/ui";
 import { listReminders, type Reminder } from "@/lib/reminders";
 import { hapticLight } from "@/lib/haptics";
+import { usePremium, FREE_LIMITS } from "@/lib/premium";
+import { useRouter } from "next/navigation";
 
 /** Simple array reorder — replaces @dnd-kit/sortable dependency */
 function arrayMove<T>(arr: T[], from: number, to: number): T[] {
@@ -93,6 +95,9 @@ export default function RoutinesSettingsPage() {
   const [search, setSearch] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [newEmoji, setNewEmoji] = useState("");
+  const { isPremium } = usePremium();
+  const router = useRouter();
+  const atHabitLimit = !isPremium && items.length >= FREE_LIMITS.maxHabits;
 
   // Reminders
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -155,6 +160,10 @@ export default function RoutinesSettingsPage() {
 
   const onAdd = async () => {
     if (!newLabel.trim()) return;
+    if (atHabitLimit) {
+      showToast("error", `Free plan allows ${FREE_LIMITS.maxHabits} habits. Upgrade for unlimited.`);
+      return;
+    }
     showToast("saving");
     try {
       const maxOrder = Math.max(...items.map((i) => i.sort_order ?? 0), 0);
@@ -219,10 +228,22 @@ export default function RoutinesSettingsPage() {
           <input className="w-12 shrink-0 rounded-xl px-2 py-3 text-sm text-center"
             style={{ background: "var(--bg-input)", border: "1px solid var(--border-primary)", color: "var(--text-primary)" }}
             value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} placeholder="📝" />
-          <button type="button" onClick={() => { hapticLight(); onAdd(); }} className="btn-primary shrink-0 px-3">
+          <button type="button" onClick={() => { hapticLight(); onAdd(); }} className="btn-primary shrink-0 px-3" disabled={atHabitLimit}>
             <Plus size={18} />
           </button>
         </div>
+        {!isPremium && (
+          <div className="flex items-center justify-between text-xs" style={{ color: atHabitLimit ? "var(--accent-red, #ef4444)" : "var(--text-faint)" }}>
+            <span>{items.length}/{FREE_LIMITS.maxHabits} habits{atHabitLimit ? " (limit reached)" : ""}</span>
+            {atHabitLimit && (
+              <button type="button" onClick={() => router.push("/app/settings/premium")}
+                className="font-semibold underline underline-offset-2"
+                style={{ color: "var(--accent-green-text)" }}>
+                Upgrade for unlimited
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       <div className="space-y-2">

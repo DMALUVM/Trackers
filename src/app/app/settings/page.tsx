@@ -122,7 +122,14 @@ export default function SettingsPage() {
         <ChevronRight size={16} style={{ color: "var(--text-faint)" }} />
       </a>
 
-      <footer className="text-center pt-4 pb-6 space-y-1">
+      <footer className="text-center pt-4 pb-6 space-y-2">
+        <div className="flex items-center justify-center gap-3 text-[11px]" style={{ color: "var(--text-faint)" }}>
+          <a href="/terms" className="underline underline-offset-2">Terms</a>
+          <span>·</span>
+          <a href="/privacy" className="underline underline-offset-2">Privacy</a>
+          <span>·</span>
+          <a href="/support" className="underline underline-offset-2">Support</a>
+        </div>
         <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
           Routines365 · v1.0.0
         </p>

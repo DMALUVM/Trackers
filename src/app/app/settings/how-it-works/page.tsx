@@ -273,7 +273,7 @@ export default function HowItWorksPage() {
           {[
             { title: "Biometric insights", desc: "HRV, resting heart rate, SpO2, respiratory rate, and sleep stages from Apple Health." },
             { title: "Health auto-complete", desc: "Habits auto-check when Apple Health data meets your targets." },
-            { title: "Unlimited habits", desc: "Free tier allows up to 10 habits. Premium removes the limit." },
+            { title: "Unlimited habits", desc: "Free tier allows up to 8 habits. Premium removes the limit." },
             { title: "Per-habit analytics", desc: "Completion rate, best/worst days, current and best streaks per habit." },
             { title: "Weekly reports", desc: "Detailed breakdown of your week with trends and insights." },
             { title: "Themes", desc: "Additional color themes beyond the defaults." },

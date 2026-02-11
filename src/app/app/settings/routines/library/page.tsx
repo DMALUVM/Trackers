@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { createRoutineItem, createRoutineItemsBulk, listRoutineItems } from "@/lib/supabaseData";
 import { Toast, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
+import { usePremium, FREE_LIMITS } from "@/lib/premium";
 
 type LibraryItem = { label: string; emoji?: string; section?: "morning" | "anytime" | "night"; suggestedCore?: boolean };
 
@@ -149,6 +150,7 @@ export default function RoutineLibraryPage() {
   const [addedCount, setAddedCount] = useState(0);
   const [fromOnboarding, setFromOnboarding] = useState(false);
   const router = useRouter();
+  const { isPremium } = usePremium();
 
   // Detect if user came from onboarding
   useEffect(() => {
@@ -174,6 +176,10 @@ export default function RoutineLibraryPage() {
     setAddingKey(it.label); show("saving");
     try {
       const existing = await listRoutineItems();
+      if (!isPremium && existing.length >= FREE_LIMITS.maxHabits) {
+        show("error", `Free plan allows ${FREE_LIMITS.maxHabits} habits. Upgrade for unlimited.`);
+        return;
+      }
       if (existing.some((e) => (e.label ?? "").trim().toLowerCase() === it.label.trim().toLowerCase())) {
         show("saved", "Already in your routines.");
         return;
@@ -193,15 +199,19 @@ export default function RoutineLibraryPage() {
       const starter = LIBRARY.flatMap((g) => g.items).filter((i) => i.suggestedCore);
       const toAdd = starter.filter((s) => !existingLabels.has(s.label.trim().toLowerCase()));
       if (toAdd.length === 0) { show("saved", "You already have the starter set."); return; }
+      // Enforce free-tier limit
+      const slotsLeft = isPremium ? Infinity : FREE_LIMITS.maxHabits - existing.length;
+      const capped = slotsLeft < toAdd.length ? toAdd.slice(0, Math.max(0, slotsLeft)) : toAdd;
+      if (capped.length === 0) { show("error", `Free plan allows ${FREE_LIMITS.maxHabits} habits. Upgrade for unlimited.`); return; }
       const maxOrder = Math.max(...existing.map((i) => i.sort_order ?? 0), 0);
       await createRoutineItemsBulk({
-        items: toAdd.map((s, idx) => ({
+        items: capped.map((s, idx) => ({
           label: s.label, emoji: s.emoji ?? null, section: s.section ?? "anytime",
           isNonNegotiable: true, sortOrder: maxOrder + idx + 1,
         })),
       });
-      setAddedCount((c) => c + toAdd.length);
-      show("saved", `Added ${toAdd.length} routines ✓`);
+      setAddedCount((c) => c + capped.length);
+      show("saved", `Added ${capped.length} routines ✓${capped.length < toAdd.length ? ` (${toAdd.length - capped.length} skipped — free limit)` : ""}`);
     } catch { show("error", "Add failed"); }
   };
 
