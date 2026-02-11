@@ -210,7 +210,7 @@ export default function PremiumPage() {
             <span className="text-xs" style={{ color: "var(--text-muted)" }}>/ month</span>
           </div>
           <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>
-            Cancel anytime
+            Less than a coffee · Cancel anytime
           </p>
         </button>
       </section>
