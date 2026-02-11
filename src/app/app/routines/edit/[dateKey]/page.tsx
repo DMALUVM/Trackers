@@ -171,7 +171,7 @@ export default function EditDayPage() {
       <header className="space-y-2">
         <button className="flex items-center gap-2 text-sm font-medium transition-colors"
           style={{ color: "var(--text-muted)" }}
-          onClick={() => { hapticLight(); flushNow(dayMode); router.back(); }} type="button">
+          onClick={async () => { hapticLight(); await flushNow(dayMode); router.back(); }} type="button">
           <ArrowLeft size={16} /> Back
         </button>
         <div>

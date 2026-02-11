@@ -99,14 +99,17 @@ export default function RoutinesProgressPage() {
   // Load everything together so calendar never renders without accountStartKey
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Listen for pull-to-refresh events
+  // Listen for pull-to-refresh events AND returning from edit page
   useEffect(() => {
     const onPull = () => setRefreshKey((k) => k + 1);
+    const onVisible = () => { if (document.visibilityState === "visible") setRefreshKey((k) => k + 1); };
     window.addEventListener("routines365:pullRefresh", onPull);
     window.addEventListener("routines365:routinesChanged", onPull);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("routines365:pullRefresh", onPull);
       window.removeEventListener("routines365:routinesChanged", onPull);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 

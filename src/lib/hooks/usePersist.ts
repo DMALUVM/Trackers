@@ -46,6 +46,8 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
 
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
+      // Notify other pages (calendar, week strip) that data changed
+      window.dispatchEvent(new Event("routines365:routinesChanged"));
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       const isOffline = !navigator.onLine || msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
@@ -85,7 +87,7 @@ export function usePersist({ dateKey, itemsRef }: UsePersistOpts) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    void persistNow(dayMode);
+    return persistNow(dayMode);
   }, [persistNow]);
 
   /** Save a single-item snooze to Supabase. */
