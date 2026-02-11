@@ -162,6 +162,9 @@ export default function TodayPage() {
   // user-initiated state changes.
   const initialLoadDone = useRef(false);
   const prevAllCoreDone = useRef<boolean | null>(null);
+  // Guard: only run milestone check ONCE per green day completion per dateKey.
+  // Prevents re-fire loop when streaks data refreshes from Supabase.
+  const milestoneCheckedForDate = useRef<string | null>(null);
 
   // Sync hook state → local
   useEffect(() => {
@@ -245,8 +248,14 @@ export default function TodayPage() {
   }, [streaks.activeStreak, streaks.bestStreak, coreDone, coreTotal, allCoreDone]);
 
   // ── Milestone check on green day completion ──
+  // Guarded: only runs ONCE per dateKey to prevent re-fire loop when
+  // streaks data refreshes from Supabase after persist.
   useEffect(() => {
     if (!allCoreDone || streaks.loading) return;
+    // Already checked milestones for this date — skip
+    if (milestoneCheckedForDate.current === dateKey) return;
+    milestoneCheckedForDate.current = dateKey;
+
     // totalGreenDays from useStreaks may not include today yet (data loads from
     // Supabase before today's checks are persisted). When allCoreDone is true,
     // today IS green, so ensure it's counted. Use activeStreak + 1 as a floor.
@@ -262,6 +271,9 @@ export default function TodayPage() {
       previousBestStreak: streaks.previousBestStreak,
     });
     if (result) {
+      // Clear the pending storage since we're showing it directly
+      // (LS_PENDING is only for cross-session recovery if user closes before seeing)
+      try { localStorage.removeItem("routines365:milestones:pending"); } catch { /* ignore */ }
       // Delay briefly so confetti plays, then show milestone
       setTimeout(() => setMilestoneToShow(result), 400);
       // Trigger rating prompt at key streak milestones
@@ -269,7 +281,23 @@ export default function TodayPage() {
     }
     // Track green day for rating prompt (fires on 7th green day)
     ratingOnGreenDay();
-  }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak]);
+  }, [allCoreDone, streaks.loading, streaks.currentStreak, streaks.activeStreak, streaks.bestStreak, streaks.totalGreenDays, streaks.previousBestStreak, dateKey]);
+
+  // Reset milestone guard when allCoreDone goes back to false (user unchecks a habit)
+  useEffect(() => {
+    if (!allCoreDone) milestoneCheckedForDate.current = null;
+  }, [allCoreDone]);
+
+  // Listen for queued milestones from MilestoneModal (after user dismisses one,
+  // the modal checks for additional pending milestones and dispatches this event)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const milestone = (e as CustomEvent).detail as Milestone;
+      if (milestone) setMilestoneToShow(milestone);
+    };
+    window.addEventListener("routines365:showMilestone", handler);
+    return () => window.removeEventListener("routines365:showMilestone", handler);
+  }, []);
 
   // ── Halfway micro-feedback ──
   useEffect(() => {
@@ -581,23 +609,30 @@ export default function TodayPage() {
       </section>
 
       {/* ─── GREEN DAY CELEBRATION ─── */}
-      {allCoreDone && (
+      {allCoreDone && (() => {
+        // Use effective streak: currentStreak from Supabase may not include today yet
+        const effectiveStreak = Math.max(
+          streaks.currentStreak,
+          streaks.activeStreak + (streaks.currentStreak === 0 ? 1 : 0)
+        );
+        return (
         <section className="rounded-2xl p-5 text-center animate-celebrate-in"
           style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
           <div className="text-3xl mb-2">🎉</div>
           <p className="text-base font-bold" style={{ color: "var(--accent-green-text)" }}>Green Day!</p>
           <p className="text-sm mt-1" style={{ color: "var(--accent-green-text)", opacity: 0.8 }}>
-            {streaks.currentStreak >= 7
-              ? `${streaks.currentStreak} days and counting. You're built different.`
-              : streaks.currentStreak >= 3
-                ? `${streaks.currentStreak}-day streak! The momentum is real.`
+            {effectiveStreak >= 7
+              ? `${effectiveStreak} days and counting. You're built different.`
+              : effectiveStreak >= 3
+                ? `${effectiveStreak}-day streak! The momentum is real.`
                 : optionalItems.length > 0 && optionalDone < optionalItems.length
                   ? "All core done. Check off some bonus habits?"
                   : "All core habits done. You earned this."
             }
           </p>
         </section>
-      )}
+        );
+      })()}
 
       {/* ─── QUESTS ─── */}
       {!streaks.loading && !questsHidden && (

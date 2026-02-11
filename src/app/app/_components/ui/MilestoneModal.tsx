@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Share2 } from "lucide-react";
 import type { Milestone } from "@/lib/milestones";
+import { popPendingMilestone } from "@/lib/milestones";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
 
 /**
@@ -11,6 +12,11 @@ import { hapticHeavy, hapticMedium } from "@/lib/haptics";
  * Psychology: "Peak-end rule" — people remember the most intense
  * moment and the end of an experience. This IS the peak moment.
  * Make it feel EARNED, not just informational.
+ * 
+ * Fixes applied:
+ * - Inline centering (no reliance on modal-center class)
+ * - Scroll lock uses overflow:hidden instead of position:fixed (prevents iOS lockup)
+ * - Queue support: after dismissing, checks for additional pending milestones
  */
 export function MilestoneModal({
   milestone,
@@ -32,25 +38,35 @@ export function MilestoneModal({
     return () => clearTimeout(t1);
   }, [milestone]);
 
-  const dismiss = () => {
+  const dismiss = useCallback(() => {
     setPhase("exit");
-    setTimeout(() => { setVisible(false); onDismiss(); }, 300);
-  };
+    setTimeout(() => {
+      setVisible(false);
+      onDismiss();
+      // Check for queued milestones after a brief pause
+      // (let the UI settle before showing the next one)
+      setTimeout(() => {
+        const next = popPendingMilestone();
+        if (next) {
+          // Re-trigger by calling the parent's milestone setter
+          // We dispatch a custom event that the Today page listens for
+          window.dispatchEvent(new CustomEvent("routines365:showMilestone", { detail: next }));
+        }
+      }, 600);
+    }, 300);
+  }, [onDismiss]);
 
-  // Lock body scroll when modal is visible
+  // Lock body scroll when modal is visible — use overflow:hidden instead of
+  // position:fixed to avoid iOS visual lockup and scroll position jumping
   useEffect(() => {
     if (!visible) return;
-    const scrollY = window.scrollY;
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
+    const prev = document.body.style.overflow;
+    const prevTouch = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
     return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      window.scrollTo(0, scrollY);
+      document.body.style.overflow = prev;
+      document.body.style.touchAction = prevTouch;
     };
   }, [visible]);
 
@@ -61,8 +77,14 @@ export function MilestoneModal({
       role="dialog"
       aria-modal="true"
       onClick={dismiss}
-      className="modal-center"
+      // ── FIX: Inline centering — no reliance on modal-center class ──
       style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
         zIndex: 9999,
         background: phase === "show" ? "rgba(0,0,0,0.8)" : "rgba(0,0,0,0)",
         backdropFilter: phase === "show" ? "blur(8px)" : "blur(0)",

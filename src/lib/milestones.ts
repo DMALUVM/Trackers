@@ -44,6 +44,7 @@ export const GREEN_TOTAL_MILESTONES: Milestone[] = [
 
 const LS_KEY = "routines365:milestones:achieved";
 const LS_PENDING = "routines365:milestones:pending";
+const LS_QUEUE = "routines365:milestones:queue";
 
 /** Get set of already-achieved milestone IDs */
 export function getAchievedMilestones(): Set<string> {
@@ -60,17 +61,41 @@ function saveAchieved(ids: Set<string>) {
 /** Get pending milestone to show (and clear it) */
 export function popPendingMilestone(): Milestone | null {
   try {
+    // First check single pending (legacy + primary)
     const raw = localStorage.getItem(LS_PENDING);
-    if (!raw) return null;
-    localStorage.removeItem(LS_PENDING);
-    const data = JSON.parse(raw);
-    return data as Milestone;
+    if (raw) {
+      localStorage.removeItem(LS_PENDING);
+      return JSON.parse(raw) as Milestone;
+    }
+    // Then check queue for additional milestones
+    const qRaw = localStorage.getItem(LS_QUEUE);
+    if (qRaw) {
+      const queue: Milestone[] = JSON.parse(qRaw);
+      if (queue.length > 0) {
+        const next = queue.shift()!;
+        if (queue.length > 0) {
+          localStorage.setItem(LS_QUEUE, JSON.stringify(queue));
+        } else {
+          localStorage.removeItem(LS_QUEUE);
+        }
+        return next;
+      }
+      localStorage.removeItem(LS_QUEUE);
+    }
+    return null;
   } catch { return null; }
 }
 
 /**
  * Check for newly earned milestones. Call after any green day.
- * Returns the HIGHEST new milestone earned (to show one at a time).
+ * 
+ * Returns the MOST IMPORTANT new milestone (highest streak > highest green_total > PB).
+ * Any additional new milestones are queued for later display.
+ * 
+ * Priority order:
+ *   1. Streak milestones (highest threshold first)
+ *   2. Green total milestones (highest threshold first)  
+ *   3. Personal best
  */
 export function checkMilestones(opts: {
   currentStreak: number;
@@ -79,21 +104,21 @@ export function checkMilestones(opts: {
   previousBestStreak: number;
 }): Milestone | null {
   const achieved = getAchievedMilestones();
-  let newMilestone: Milestone | null = null;
+  const newlyEarned: Milestone[] = [];
 
-  // Check streak milestones
+  // Collect ALL newly earned streak milestones
   for (const m of STREAK_MILESTONES) {
     if (opts.currentStreak >= m.threshold && !achieved.has(m.id)) {
       achieved.add(m.id);
-      newMilestone = m; // Keep overwriting — last match is highest
+      newlyEarned.push(m);
     }
   }
 
-  // Check green total milestones
+  // Collect ALL newly earned green total milestones
   for (const m of GREEN_TOTAL_MILESTONES) {
     if (opts.totalGreenDays >= m.threshold && !achieved.has(m.id)) {
       achieved.add(m.id);
-      newMilestone = m;
+      newlyEarned.push(m);
     }
   }
 
@@ -102,31 +127,53 @@ export function checkMilestones(opts: {
     const pbId = `pb-${opts.currentStreak}`;
     if (!achieved.has(pbId)) {
       achieved.add(pbId);
-      // Only show PB if it's not already a streak milestone
+      // Only add PB if it's not already a streak milestone threshold
       const isAlsoStreakMilestone = STREAK_MILESTONES.some(
         (m) => m.threshold === opts.currentStreak
       );
-      if (!isAlsoStreakMilestone && !newMilestone) {
-        newMilestone = {
+      if (!isAlsoStreakMilestone) {
+        newlyEarned.push({
           id: pbId,
           emoji: "🏆",
           title: "New Personal Best!",
           message: `${opts.currentStreak}-day streak. You just beat your previous record of ${opts.previousBestStreak}.`,
           threshold: opts.currentStreak,
           type: "personal_best",
-        };
+        });
       }
     }
   }
 
   saveAchieved(achieved);
 
-  // Store pending so it can be shown on next render
-  if (newMilestone) {
-    try { localStorage.setItem(LS_PENDING, JSON.stringify(newMilestone)); } catch { /* ignore */ }
+  if (newlyEarned.length === 0) return null;
+
+  // ── Priority sort: streak (desc) → green_total (desc) → personal_best ──
+  const typePriority = { streak: 0, green_total: 1, personal_best: 2 };
+  newlyEarned.sort((a, b) => {
+    const tp = typePriority[a.type] - typePriority[b.type];
+    if (tp !== 0) return tp;
+    return b.threshold - a.threshold; // Higher threshold = more important
+  });
+
+  // Show the top one immediately, queue the rest
+  const primary = newlyEarned[0];
+  const rest = newlyEarned.slice(1);
+
+  // Store primary as pending
+  try { localStorage.setItem(LS_PENDING, JSON.stringify(primary)); } catch { /* ignore */ }
+
+  // Queue additional milestones for later display
+  if (rest.length > 0) {
+    try {
+      const existingQueue: Milestone[] = (() => {
+        try { const r = localStorage.getItem(LS_QUEUE); return r ? JSON.parse(r) : []; } catch { return []; }
+      })();
+      localStorage.setItem(LS_QUEUE, JSON.stringify([...existingQueue, ...rest]));
+    } catch { /* ignore */ }
   }
 
-  return newMilestone;
+  return primary;
 }
 
 /** Get all earned milestones for display in a trophy case */
