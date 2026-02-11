@@ -10,6 +10,7 @@ export type RoutineItemRow = {
   is_non_negotiable: boolean;
   days_of_week: number[] | null;
   sort_order?: number | null;
+  created_at?: string | null;
 };
 
 export type DailyLogRow = {

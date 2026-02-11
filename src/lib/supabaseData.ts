@@ -182,7 +182,7 @@ export async function listRoutineItems(): Promise<RoutineItemRow[]> {
   const { data, error } = await supabase
     .from("routine_items")
     .select(
-      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
+      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order,created_at"
     )
     .eq("user_id", userId)
     .eq("is_active", true)
@@ -200,7 +200,7 @@ export async function getRoutineItem(id: string): Promise<RoutineItemRow | null>
   const { data, error } = await supabase
     .from("routine_items")
     .select(
-      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order"
+      "id,user_id,label,emoji,section,is_active,is_non_negotiable,days_of_week,sort_order,created_at"
     )
     .eq("id", id)
     .maybeSingle();
