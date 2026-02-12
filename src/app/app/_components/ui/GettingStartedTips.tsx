@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 
@@ -41,6 +42,9 @@ const LS_KEY = "routines365:tips:dismissed";
 export function GettingStartedTips() {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const dismissed = localStorage.getItem(LS_KEY) === "1";
@@ -74,13 +78,15 @@ export function GettingStartedTips() {
 
   const tip = TIPS[step];
 
-  return (
-    <div className="modal-center"
+  if (!mounted) return null;
+
+  const modal = (
+    <div className="fixed inset-0 z-[9999] flex items-end"
       style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
       onClick={dismiss}>
       <div
-        className="w-full max-w-sm rounded-2xl p-6 animate-fade-in-up relative"
-        style={{ background: "var(--bg-sheet)", border: "1px solid var(--border-primary)", boxShadow: "0 -4px 40px rgba(0,0,0,0.4)" }}
+        className="w-full max-w-md mx-auto rounded-t-2xl p-6 relative"
+        style={{ background: "var(--bg-sheet)", boxShadow: "0 -8px 40px rgba(0,0,0,0.5)", animation: "slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1)", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}
         onClick={(e) => e.stopPropagation()}>
         
         {/* Drag handle */}
@@ -136,4 +142,6 @@ export function GettingStartedTips() {
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

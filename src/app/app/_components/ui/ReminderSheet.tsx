@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Bell, BellOff, Trash2, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
+import { Bell, BellOff, Trash2, X, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
 import { upsertReminder, deleteReminder, subscribeToPush, getPushPermission, isPushSupported } from "@/lib/reminders";
 import {
@@ -46,6 +47,19 @@ export function ReminderSheet({
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
   const [isNative, setIsNative] = useState(false);
   const [status, setStatus] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  // Portal mount
+  useEffect(() => { setMounted(true); }, []);
+
+  // Scroll lock
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -77,7 +91,6 @@ export function ReminderSheet({
     hapticMedium();
 
     try {
-      // Web: get push permission first
       if (!isNative && pushPermission !== "granted") {
         const ok = await subscribeToPush();
         if (!ok) {
@@ -95,11 +108,10 @@ export function ReminderSheet({
         enabled,
       });
 
-      // Native iOS: schedule local notification
       if (isNative && enabled) {
         const pluginAvailable = isNativeNotifyAvailable();
         if (!pluginAvailable) {
-          setStatus({ type: "warning", msg: "Reminder saved but notifications unavailable. Try reinstalling the app." });
+          setStatus({ type: "warning", msg: "Reminder saved but notifications unavailable." });
           onSaved?.();
           setTimeout(onClose, 2500);
           setSaving(false);
@@ -119,7 +131,6 @@ export function ReminderSheet({
           return;
         }
 
-        // Cancel old, schedule new
         await cancelNativeReminder(`habit_${routineItemId}`);
         const [h, m] = time.split(":").map(Number);
         const scheduled = await scheduleDailyReminder({
@@ -132,14 +143,11 @@ export function ReminderSheet({
         });
 
         if (scheduled) {
-          // Verify it actually queued
           const pending = await listPendingNotifications();
           const found = pending.some((n) => n.id.startsWith(`habit_${routineItemId}`));
-          if (found) {
-            setStatus({ type: "success", msg: `Reminder set for ${formatTime(h, m)}` });
-          } else {
-            setStatus({ type: "warning", msg: "Reminder saved but may not fire. Check iPhone Settings \u2192 Routines365 \u2192 Notifications." });
-          }
+          setStatus({ type: "success", msg: found
+            ? `Reminder set for ${formatTime(h, m)}`
+            : "Reminder saved but may not fire. Check iPhone Settings." });
         } else {
           setStatus({ type: "error", msg: "Failed to schedule. Check iPhone Settings \u2192 Routines365 \u2192 Notifications." });
           onSaved?.();
@@ -181,38 +189,32 @@ export function ReminderSheet({
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        style={{ zIndex: 9998 }}
-        onClick={onClose} />
+  const sheet = (
+    <div
+      className="fixed inset-0 z-[9999] flex items-end"
+      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      onClick={onClose}
+    >
+      <div
+        ref={sheetRef}
+        className="w-full max-w-md mx-auto rounded-t-2xl"
+        style={{
+          background: "var(--bg-sheet)",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+          maxHeight: "85vh",
+          overflowY: "auto",
+          animation: "slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="h-1.5 w-10 rounded-full" style={{ background: "var(--border-primary)" }} />
+        </div>
 
-      {/* Bottom sheet \u2014 pinned to bottom of viewport */}
-      <div style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        background: "var(--bg-sheet)",
-        borderRadius: "20px 20px 0 0",
-        boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
-        maxWidth: 480,
-        marginLeft: "auto",
-        marginRight: "auto",
-      }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="p-5">
-
-          {/* Drag handle */}
-          <div className="flex justify-center mb-3">
-            <div className="w-10 h-1 rounded-full" style={{ background: "var(--border-primary)" }} />
-          </div>
-
+        <div className="px-5 pb-5" style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))" }}>
           {/* Header + close */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -259,7 +261,7 @@ export function ReminderSheet({
             </div>
           )}
 
-          {/* Push not supported warning \u2014 web only */}
+          {/* Push not supported warning */}
           {!isNative && !pushSupported && (
             <div className="rounded-xl px-3 py-2.5 mb-4 text-xs"
               style={{ background: "rgba(239,68,68,0.1)", color: "#fca5a5" }}>
@@ -278,11 +280,12 @@ export function ReminderSheet({
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full rounded-xl px-4 py-3 text-base font-medium outline-none transition"
+              className="w-full rounded-xl px-4 py-3 text-base font-medium outline-none"
               style={{
                 background: "var(--bg-primary)",
                 color: "var(--text-primary)",
                 border: "1px solid var(--border-primary)",
+                boxSizing: "border-box",
               }}
             />
           </div>
@@ -367,8 +370,11 @@ export function ReminderSheet({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
+
+  // Render via portal to escape any parent transforms
+  return createPortal(sheet, document.body);
 }
 
 function formatTime(h: number, m: number): string {
