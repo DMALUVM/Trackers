@@ -104,8 +104,9 @@ export default function SecurityPage() {
       const { error: rpcError } = await supabase.rpc("delete_own_account");
       if (rpcError) {
         console.error("delete_own_account RPC failed:", rpcError.message);
-        // Don't throw — data is already deleted above, auth record may already
-        // be gone from CASCADE. Continue with sign-out.
+        // Data is deleted but auth record remains — user can't re-register with same email
+        // Show error and abort so user knows to contact support
+        throw new Error("Your data was deleted, but we couldn't remove your login. Please contact support to fully remove your account, or try again.");
       }
 
       // Clear local data and sign out
@@ -115,10 +116,13 @@ export default function SecurityPage() {
       keys.forEach((k) => localStorage.removeItem(k));
       await supabase.auth.signOut();
       router.replace("/login");
-    } catch {
+    } catch (e) {
       setDeleteStep("confirm");
       setConfirmDelete(false);
       setToast("error");
+      if (e instanceof Error && e.message.length > 10) {
+        alert(e.message);
+      }
       setTimeout(() => setToast("idle"), 3000);
     }
   };
@@ -180,17 +184,17 @@ export default function SecurityPage() {
       <section>
         <p className="text-xs font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>Legal</p>
         <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-primary)" }}>
-          <a href="/privacy" target="_blank" rel="noopener"
+          <a href="/privacy"
             className="flex items-center justify-between px-4 py-3.5"
             style={{ background: "var(--bg-card)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Privacy Policy</p>
-            <span className="text-xs" style={{ color: "var(--text-faint)" }}>↗</span>
+            <span className="text-xs" style={{ color: "var(--text-faint)" }}>›</span>
           </a>
-          <a href="/terms" target="_blank" rel="noopener"
+          <a href="/terms"
             className="flex items-center justify-between px-4 py-3.5"
             style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border-secondary)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Terms of Service</p>
-            <span className="text-xs" style={{ color: "var(--text-faint)" }}>↗</span>
+            <span className="text-xs" style={{ color: "var(--text-faint)" }}>›</span>
           </a>
         </div>
       </section>

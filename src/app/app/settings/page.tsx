@@ -131,7 +131,7 @@ export default function SettingsPage() {
           <a href="/support" className="underline underline-offset-2">Support</a>
         </div>
         <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
-          Routines365 · v1.0 (16)
+          Routines365 · v1.0 (17)
         </p>
         <p className="text-[10px]" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
           Made with ❤️ · Build better habits, one day at a time
