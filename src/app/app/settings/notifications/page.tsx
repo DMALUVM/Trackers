@@ -140,7 +140,7 @@ export default function NotificationsPage() {
       )}
 
       {/* Morning check-in */}
-      <div className="rounded-2xl p-5"
+      <div className="rounded-2xl p-5 overflow-hidden"
         style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -188,8 +188,8 @@ export default function NotificationsPage() {
               }}
               className="mt-2 w-full rounded-xl px-4 py-3 text-base font-semibold"
               style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
+                background: "transparent",
+                border: "1.5px solid var(--border-primary)",
                 color: "var(--text-primary)",
               }}
             />
@@ -201,7 +201,7 @@ export default function NotificationsPage() {
       </div>
 
       {/* Streak reminder */}
-      <div className="rounded-2xl p-5"
+      <div className="rounded-2xl p-5 overflow-hidden"
         style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -249,8 +249,8 @@ export default function NotificationsPage() {
               }}
               className="mt-2 w-full rounded-xl px-4 py-3 text-base font-semibold"
               style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
+                background: "transparent",
+                border: "1.5px solid var(--border-primary)",
                 color: "var(--text-primary)",
               }}
             />
