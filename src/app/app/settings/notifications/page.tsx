@@ -119,7 +119,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ overflowX: "hidden" }}>
       <SubPageHeader title="Notifications" subtitle="Daily reminders" />
 
       {permission === "denied" && (
@@ -178,24 +178,34 @@ export default function NotificationsPage() {
             <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
               Remind at
             </label>
-            <input
-              type="time"
-              value={`${settings.checkInHour.toString().padStart(2, "0")}:${settings.checkInMinute.toString().padStart(2, "0")}`}
-              onChange={(e) => {
-                const [h, m] = e.target.value.split(":").map(Number);
-                updateSetting("checkInHour", h);
-                updateSetting("checkInMinute", m);
-              }}
-              className="mt-2 w-full rounded-xl px-4 py-3 text-base font-semibold"
-              style={{
-                background: "transparent",
-                border: "1.5px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <p className="mt-1.5 text-xs" style={{ color: "var(--text-faint)" }}>
-              Currently: {formatTime(settings.checkInHour, settings.checkInMinute)}
-            </p>
+            <div className="mt-2 relative rounded-xl overflow-hidden"
+              style={{ border: "1.5px solid var(--border-primary)" }}>
+              {/* Visible display */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {formatTime(settings.checkInHour, settings.checkInMinute)}
+                </span>
+                <Clock size={16} style={{ color: "var(--text-faint)" }} />
+              </div>
+              {/* Invisible native picker overlay */}
+              <input
+                type="time"
+                value={`${settings.checkInHour.toString().padStart(2, "0")}:${settings.checkInMinute.toString().padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(":").map(Number);
+                  updateSetting("checkInHour", h);
+                  updateSetting("checkInMinute", m);
+                }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  width: "100%",
+                  height: "100%",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -239,24 +249,34 @@ export default function NotificationsPage() {
             <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>
               Remind at
             </label>
-            <input
-              type="time"
-              value={`${settings.streakHour.toString().padStart(2, "0")}:${settings.streakMinute.toString().padStart(2, "0")}`}
-              onChange={(e) => {
-                const [h, m] = e.target.value.split(":").map(Number);
-                updateSetting("streakHour", h);
-                updateSetting("streakMinute", m);
-              }}
-              className="mt-2 w-full rounded-xl px-4 py-3 text-base font-semibold"
-              style={{
-                background: "transparent",
-                border: "1.5px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-            />
-            <p className="mt-1.5 text-xs" style={{ color: "var(--text-faint)" }}>
-              Evening nudge at {formatTime(settings.streakHour, settings.streakMinute)}
-            </p>
+            <div className="mt-2 relative rounded-xl overflow-hidden"
+              style={{ border: "1.5px solid var(--border-primary)" }}>
+              {/* Visible display */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {formatTime(settings.streakHour, settings.streakMinute)}
+                </span>
+                <Clock size={16} style={{ color: "var(--text-faint)" }} />
+              </div>
+              {/* Invisible native picker overlay */}
+              <input
+                type="time"
+                value={`${settings.streakHour.toString().padStart(2, "0")}:${settings.streakMinute.toString().padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(":").map(Number);
+                  updateSetting("streakHour", h);
+                  updateSetting("streakMinute", m);
+                }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  width: "100%",
+                  height: "100%",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
           </div>
         )}
       </div>

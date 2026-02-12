@@ -808,7 +808,7 @@ export default function TodayPage() {
               justCompleted={recentlyDoneId === item.id}
               autoCompletedBy={autoCompleted.get(item.id)}
               hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
-              hasReminder={reminderMap.has(item.id)}
+              hasReminder={!!(reminderMap.get(item.id)?.enabled)}
               onToggle={item.done ? toggleItem : markDone}
               onSkip={skipItem}
               onLogMetric={openMetric}
@@ -850,7 +850,7 @@ export default function TodayPage() {
                 justCompleted={recentlyDoneId === item.id}
                 autoCompletedBy={autoCompleted.get(item.id)}
                 hasMetric={!!labelToMetricKey(item.label) && labelToMetricKey(item.label) !== "hydration"}
-                hasReminder={reminderMap.has(item.id)}
+                hasReminder={!!(reminderMap.get(item.id)?.enabled)}
                 onToggle={item.done ? toggleItem : markDone}
                 onSkip={skipItem}
                 onLogMetric={openMetric}

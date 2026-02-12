@@ -167,6 +167,15 @@ a, img, button { -webkit-touch-callout: none; }
 
 /* Safe area for PWA bottom nav */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Fix iOS WebKit time/date inputs expanding beyond container */
+input[type="time"],
+input[type="date"] {
+  box-sizing: border-box;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
 /* Centered modal overlay — accounts for iPhone safe areas (notch + home bar) */
 /* Bottom-anchored on mobile (native iOS sheet pattern), centered on desktop */
 .modal-center {
