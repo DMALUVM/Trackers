@@ -326,16 +326,26 @@ export default function PremiumPage() {
         </div>
       </section>
 
-      {/* Terms */}
-      <footer className="text-center px-6 space-y-2">
-        <p className="text-[10px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
-          Payment will be charged to your Apple ID account at confirmation of purchase.
-          Subscription automatically renews unless cancelled at least 24 hours before the end of the current period.
-          You can manage and cancel subscriptions in your Apple ID account settings.
-        </p>
-        <div className="flex items-center justify-center gap-3 text-[10px]" style={{ color: "var(--text-faint)" }}>
-          <a href="/terms" className="underline underline-offset-2">Terms of Use</a>
-          <span>·</span>
+      {/* Apple-required subscription disclosure */}
+      <footer className="text-center px-6 space-y-3 pb-8">
+        <div className="rounded-xl p-4" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+          <p className="text-[11px] font-bold mb-2" style={{ color: "var(--text-muted)" }}>Subscription Details</p>
+          <div className="space-y-1.5 text-[11px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
+            <p><strong style={{ color: "var(--text-secondary)" }}>Routines365 Pro Monthly</strong> — $3.99/month</p>
+            <p><strong style={{ color: "var(--text-secondary)" }}>Routines365 Pro Yearly</strong> — $29.99/year ($2.49/month)</p>
+            <p>
+              Subscriptions include a {trialDays}-day free trial. Payment will be charged to your Apple ID account
+              at confirmation of purchase. Subscription automatically renews unless cancelled at
+              least 24 hours before the end of the current period. Your account will be charged for
+              renewal within 24 hours prior to the end of the current period. You can manage and
+              cancel subscriptions in your Apple ID account settings (Settings → [your name] →
+              Subscriptions). Any unused portion of a free trial will be forfeited upon purchase of a subscription.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-4 text-xs font-medium" style={{ color: "var(--accent-green-text)" }}>
+          <a href="/terms" className="underline underline-offset-2">Terms of Use (EULA)</a>
+          <span style={{ color: "var(--text-faint)" }}>·</span>
           <a href="/privacy" className="underline underline-offset-2">Privacy Policy</a>
         </div>
       </footer>
