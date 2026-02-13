@@ -108,10 +108,9 @@ export default function SettingsPage() {
       ))}
 
       {/* Feedback */}
-      <a href="mailto:routines365.app@gmail.com"
+      <ExternalLink href="mailto:routines365.app@gmail.com"
         className="flex items-center gap-4 rounded-2xl px-4 py-3.5 transition-all active:scale-[0.98] active:opacity-80"
-        style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}
-        onClick={() => hapticLight()}>
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
         <div className="shrink-0 flex items-center justify-center rounded-xl"
           style={{ width: 36, height: 36, background: "var(--bg-card-hover)" }}>
           <MessageCircle size={18} style={{ color: "var(--text-muted)" }} />
@@ -121,7 +120,7 @@ export default function SettingsPage() {
           <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Bugs, ideas, or just say hi</p>
         </div>
         <ChevronRight size={16} style={{ color: "var(--text-faint)" }} />
-      </a>
+      </ExternalLink>
 
       <footer className="text-center pt-4 pb-6 space-y-2">
         <div className="flex items-center justify-center gap-3 text-[11px]" style={{ color: "var(--text-faint)" }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { SubPageHeader } from "@/app/app/_components/ui";
+import { SubPageHeader, ExternalLink } from "@/app/app/_components/ui";
 
 export default function HowItWorksPage() {
   return (
@@ -372,7 +372,7 @@ export default function HowItWorksPage() {
         <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
           Bug reports, feature requests, or just say hi — we read every message.
         </p>
-        <a href="mailto:routines365.app@gmail.com"
+        <ExternalLink href="mailto:routines365.app@gmail.com"
           className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-all active:scale-[0.98]"
           style={{
             background: "var(--accent-green-soft)",
@@ -380,7 +380,7 @@ export default function HowItWorksPage() {
             border: "1px solid rgba(16, 185, 129, 0.2)",
           }}>
           ✉️ routines365.app@gmail.com
-        </a>
+        </ExternalLink>
         <p className="text-xs" style={{ color: "var(--text-faint)" }}>
           We typically respond within 24 hours.
         </p>
