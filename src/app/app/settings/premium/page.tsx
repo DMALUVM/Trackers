@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Crown, Lock, Shield, BarChart3, Zap, Heart, Activity, Wind, Dumbbell, Brain, Moon } from "lucide-react";
 import { usePremium } from "@/lib/premium";
 import { hapticHeavy, hapticMedium } from "@/lib/haptics";
+import { ExternalLink } from "@/app/app/_components/ui";
 import { isStoreKitAvailable, getProducts, purchase, restorePurchases, PRODUCT_IDS, type StoreProduct } from "@/lib/storeKit";
 
 const FEATURES = [
@@ -344,9 +345,9 @@ export default function PremiumPage() {
           </div>
         </div>
         <div className="flex items-center justify-center gap-4 text-xs font-medium" style={{ color: "var(--accent-green-text)" }}>
-          <a href="https://routines365.com/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms of Use (EULA)</a>
+          <ExternalLink href="https://routines365.com/terms" className="underline underline-offset-2">Terms of Use (EULA)</ExternalLink>
           <span style={{ color: "var(--text-faint)" }}>·</span>
-          <a href="https://routines365.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy Policy</a>
+          <ExternalLink href="https://routines365.com/privacy" className="underline underline-offset-2">Privacy Policy</ExternalLink>
         </div>
       </footer>
     </div>

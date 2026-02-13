@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Settings, Palette, Lock, Download, Trophy, Award, LayoutGrid, ChevronRight, HelpCircle, BookOpen, Moon, Crown, Heart, Bell, SlidersHorizontal, MessageCircle } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
+import { ExternalLink } from "@/app/app/_components/ui";
 import { usePremium } from "@/lib/premium";
 
 const sections = [
@@ -124,11 +125,11 @@ export default function SettingsPage() {
 
       <footer className="text-center pt-4 pb-6 space-y-2">
         <div className="flex items-center justify-center gap-3 text-[11px]" style={{ color: "var(--text-faint)" }}>
-          <a href="https://routines365.com/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</a>
+          <ExternalLink href="https://routines365.com/terms" className="underline underline-offset-2">Terms</ExternalLink>
           <span>·</span>
-          <a href="https://routines365.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy</a>
+          <ExternalLink href="https://routines365.com/privacy" className="underline underline-offset-2">Privacy</ExternalLink>
           <span>·</span>
-          <a href="https://routines365.com/support" target="_blank" rel="noopener" className="underline underline-offset-2">Support</a>
+          <ExternalLink href="https://routines365.com/support" className="underline underline-offset-2">Support</ExternalLink>
         </div>
         <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
           Routines365 · v1.0 (20)

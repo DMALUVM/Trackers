@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isPasskeyEnabled, registerPasskey, clearPasskey } from "@/lib/passkey";
 import { supabase } from "@/lib/supabaseClient";
-import { Toast, SubPageHeader, BottomSheet, type ToastState } from "@/app/app/_components/ui";
+import { Toast, SubPageHeader, BottomSheet, ExternalLink, type ToastState } from "@/app/app/_components/ui";
 import { clearSessionCookies } from "@/lib/sessionCookie";
 import { hapticLight, hapticHeavy, hapticWarning } from "@/lib/haptics";
 
@@ -184,18 +184,18 @@ export default function SecurityPage() {
       <section>
         <p className="text-xs font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>Legal</p>
         <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border-primary)" }}>
-          <a href="https://routines365.com/privacy" target="_blank" rel="noopener"
+          <ExternalLink href="https://routines365.com/privacy"
             className="flex items-center justify-between px-4 py-3.5"
             style={{ background: "var(--bg-card)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Privacy Policy</p>
             <span className="text-xs" style={{ color: "var(--text-faint)" }}>›</span>
-          </a>
-          <a href="https://routines365.com/terms" target="_blank" rel="noopener"
+          </ExternalLink>
+          <ExternalLink href="https://routines365.com/terms"
             className="flex items-center justify-between px-4 py-3.5"
             style={{ background: "var(--bg-card)", borderTop: "1px solid var(--border-secondary)" }}>
             <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>Terms of Service</p>
             <span className="text-xs" style={{ color: "var(--text-faint)" }}>›</span>
-          </a>
+          </ExternalLink>
         </div>
       </section>
 

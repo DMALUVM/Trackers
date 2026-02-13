@@ -12,6 +12,7 @@ export { NextMilestoneTeaser } from "./NextMilestoneTeaser";
 export { ComebackBanner } from "./ComebackBanner";
 export { PullToRefreshIndicator } from "./PullToRefresh";
 export { SubPageHeader } from "./SubPageHeader";
+export { ExternalLink } from "./ExternalLink";
 export { Spinner } from "./Spinner";
 export { GettingStartedTips } from "./GettingStartedTips";
 export { SetupPrompts } from "./SetupPrompts";
