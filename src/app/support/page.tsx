@@ -65,9 +65,10 @@ export default function SupportPage() {
 
           <FAQ q="What's included in Premium?">
             Premium unlocks biometric insights (HRV, resting heart rate trends),
-            Apple Health auto-complete, unlimited habits, detailed progress
-            reports, custom themes, and unlimited streak freezes. You can try it
-            free for 7 days.
+            sleep stage breakdown, Apple Health auto-complete, all 5 breathwork
+            techniques, all 6 movement routines, unlimited habits, share cards,
+            PDF progress reports, per-habit analytics, and unlimited streak
+            freezes. You can try it free for 7 days.
           </FAQ>
 
           <FAQ q="How do I cancel my subscription?">

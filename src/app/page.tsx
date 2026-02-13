@@ -8,6 +8,9 @@ import {
   MockToday,
 } from "@/app/_components/landing/PhoneMockups";
 
+/* ── App Store link — update this once approved ── */
+const APP_STORE_URL = "https://apps.apple.com/app/routines365/id0000000000";
+
 /* ────────────────────────────────────────────
    Verified feature data — every claim checked
    against the actual codebase
@@ -115,9 +118,14 @@ export default function Home() {
             >
               Sign in
             </a>
-            <CTAButton className="rounded-lg bg-emerald-500 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-black transition hover:bg-emerald-400 whitespace-nowrap">
-              Get started free
-            </CTAButton>
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="rounded-lg bg-emerald-500 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-black transition hover:bg-emerald-400 whitespace-nowrap"
+            >
+              Download free
+            </a>
           </div>
         </div>
       </nav>
@@ -157,12 +165,27 @@ export default function Home() {
 
               <Reveal delay={0.15}>
                 <div className="mt-7 flex flex-col sm:flex-row items-center gap-3 lg:justify-start justify-center">
-                  <CTAButton className="w-full sm:w-auto rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]">
-                    Start for free →
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener"
+                    className="transition hover:opacity-90 active:scale-[0.98]"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/app-store-badge.svg"
+                      alt="Download on the App Store"
+                      width={156}
+                      height={52}
+                      className="h-[52px] w-auto"
+                    />
+                  </a>
+                  <CTAButton className="w-full sm:w-auto rounded-xl border border-white/10 bg-white/5 px-8 py-3.5 text-base font-bold text-white transition hover:bg-white/10 active:scale-[0.98]">
+                    Or use on web →
                   </CTAButton>
                 </div>
                 <p className="mt-3 text-xs text-neutral-500 lg:text-left text-center">
-                  Free forever · No credit card · Launch pricing available
+                  Free on the App Store · No credit card · Premium unlocks everything
                 </p>
               </Reveal>
 
@@ -210,7 +233,7 @@ export default function Home() {
       <Reveal>
         <section className="border-b border-white/5 py-3.5 px-4 sm:px-6">
           <div className="mx-auto max-w-md flex items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-neutral-400 flex-wrap">
-            <span>📱 iOS App</span>
+            <span>📱 Free on App Store</span>
             <span className="text-neutral-700">·</span>
             <span>🍎 Apple Health</span>
             <span className="text-neutral-700">·</span>
@@ -469,7 +492,7 @@ export default function Home() {
                     "Streaks, green days, progress calendar",
                     "Guided journal with gratitude prompts",
                     "Box Breathing with animated guide",
-                    "Morning Mobility routine",
+                    "Morning Mobility + Qigong Foundations routines",
                     "1 streak freeze per month",
                     "Daily quotes",
                     "Accountability partner",
@@ -482,9 +505,14 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-6 flex justify-center">
-                  <CTAButton className="rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-                    Get started free
-                  </CTAButton>
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener"
+                    className="rounded-xl border border-white/10 bg-white/5 px-8 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+                  >
+                    Download free
+                  </a>
                 </div>
               </div>
             </Reveal>
@@ -502,7 +530,7 @@ export default function Home() {
                 </div>
                 <p className="text-[11px] font-bold tracking-wider uppercase text-emerald-400 mt-1">Premium</p>
                 <div className="flex items-baseline justify-center gap-1.5 mt-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold">$2.49</span>
+                  <span className="text-3xl sm:text-4xl font-extrabold">$2.50</span>
                   <span className="text-sm text-neutral-400">/mo</span>
                 </div>
                 <p className="text-xs text-emerald-400/80 mt-1">
@@ -517,7 +545,7 @@ export default function Home() {
                     "Health auto-complete — habits check off automatically",
                     "All 5 breathwork techniques + all 6 movement routines",
                     "Unlimited habits, streak freezes, and detailed reports",
-                    "Themes, share cards, and per-habit analytics",
+                    "Share cards, per-habit analytics, and PDF reports",
                   ].map((p, i) => (
                     <div key={p} className="flex items-start gap-2">
                       <span className="text-emerald-400 shrink-0 text-xs mt-0.5">{i === 0 ? "★" : "✦"}</span>
@@ -528,9 +556,14 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-6 flex justify-center">
-                  <CTAButton className="rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition hover:bg-emerald-400">
+                  <a
+                    href={APP_STORE_URL}
+                    target="_blank"
+                    rel="noopener"
+                    className="rounded-xl bg-emerald-500 px-8 py-3 text-sm font-bold text-black transition hover:bg-emerald-400"
+                  >
                     Start 7-day free trial →
-                  </CTAButton>
+                  </a>
                 </div>
                 <p className="text-[11px] text-neutral-500 mt-2.5">
                   7-day free trial · Cancel anytime
@@ -549,15 +582,27 @@ export default function Home() {
               Your first green day is waiting.
             </h2>
             <p className="text-sm text-neutral-400 mb-6">
-              Free forever plan. No credit card. Set up in under a minute.
+              Free on the App Store. No credit card. Set up in under a minute.
             </p>
-            <CTAButton className="inline-block rounded-xl bg-emerald-500 px-10 py-4 text-base font-bold text-black transition hover:bg-emerald-400 active:scale-[0.98]">
-              Start for free →
-            </CTAButton>
-            <p className="mt-3 text-xs text-neutral-500">
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener"
+              className="inline-block transition hover:opacity-90 active:scale-[0.98]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/app-store-badge.svg"
+                alt="Download on the App Store"
+                width={180}
+                height={60}
+                className="h-[60px] w-auto mx-auto"
+              />
+            </a>
+            <p className="mt-4 text-xs text-neutral-500">
               Already have an account?{" "}
               <a href="/login" className="text-emerald-400/70 underline underline-offset-2 hover:text-emerald-400 transition">
-                Sign in
+                Sign in on web
               </a>
             </p>
           </Reveal>
@@ -613,6 +658,7 @@ export default function Home() {
           </div>
           <p className="text-[11px] text-neutral-600">Stack your days. Change your life.</p>
           <div className="flex items-center gap-4 text-[11px] text-neutral-500">
+            <a className="hover:text-neutral-300 transition-colors" href={APP_STORE_URL} target="_blank" rel="noopener">App Store</a>
             <a className="hover:text-neutral-300 transition-colors" href="/privacy">Privacy</a>
             <a className="hover:text-neutral-300 transition-colors" href="/terms">Terms</a>
             <a className="hover:text-neutral-300 transition-colors" href="/support">Support</a>

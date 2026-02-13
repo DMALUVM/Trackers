@@ -37,7 +37,7 @@ import { StreakInsurance } from "@/app/app/_components/StreakInsurance";
 import Link from "next/link";
 import { updateWidgetData } from "@/lib/widgetData";
 import { checkAutoComplete } from "@/lib/healthAutoComplete";
-import { usePremium } from "@/lib/premium";
+import { usePremium, PREMIUM_FEATURES } from "@/lib/premium";
 import { todayModuleStatus, getTodaySessions, type ModuleKey } from "@/lib/sessionLog";
 import { canUseFreeze, useStreakFreeze, remainingFreezes } from "@/lib/streakFreeze";
 import { listReminders, type Reminder } from "@/lib/reminders";
@@ -137,7 +137,7 @@ export default function TodayPage() {
   const [todayIsRest, setTodayIsRest] = useState(false);
   const [habitDetailOpen, setHabitDetailOpen] = useState(false);
   const [habitDetailItem, setHabitDetailItem] = useState<{ id: string; label: string; emoji: string | null; isCore: boolean } | null>(null);
-  const { isPremium } = usePremium();
+  const { isPremium, hasFeature } = usePremium();
 
   // Auto-detect rest day and offer to apply
   useEffect(() => {
@@ -392,11 +392,12 @@ export default function TodayPage() {
     debouncedPersist(dayMode);
   }, [dayMode, debouncedPersist, routine.itemsRef, dateKey]);
 
-  // ── HealthKit auto-complete ──
+  // ── HealthKit auto-complete (Premium) ──
   // On first load, check if any habits match HealthKit data and auto-mark them done
   const autoCompleteRan = useRef(false);
   useEffect(() => {
     if (routine.loading || autoCompleteRan.current || items.length === 0) return;
+    if (!hasFeature(PREMIUM_FEATURES.healthAutoComplete)) return;
     autoCompleteRan.current = true;
 
     void (async () => {

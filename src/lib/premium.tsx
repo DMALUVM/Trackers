@@ -17,7 +17,7 @@ export const PREMIUM_FEATURES = {
   unlimitedStreakFreezes: "unlimited_streak_freezes",
   /** Free: basic weekly trend, Premium: full trend + export */
   advancedTrends: "advanced_trends",
-  /** Premium: custom themes beyond light/dark */
+  /** Premium: custom themes beyond light/dark (reserved for future use) */
   customThemes: "custom_themes",
   /** Premium: PDF progress reports */
   pdfReports: "pdf_reports",

@@ -18,14 +18,14 @@ const FEATURES = [
   {
     icon: Dumbbell,
     title: "Movement Routines",
-    desc: "Lymphatic drainage, desk stretches, evening wind-down with step-by-step timers",
-    free: "Morning mobility",
-    premium: "All 4 routines",
+    desc: "Eight Brocades Qigong, lymphatic drainage, desk stretches, and evening wind-down with step-by-step timers",
+    free: "2 routines",
+    premium: "All 6 routines",
   },
   {
     icon: Activity,
     title: "Biometric Insights",
-    desc: "See how your habits affect your body. HRV, resting heart rate, blood oxygen, and respiratory trends from your Oura Ring, Apple Watch, or Garmin",
+    desc: "See how your habits affect your body. HRV, resting heart rate, blood oxygen, and respiratory trends from Apple Watch, Oura Ring, and other HealthKit-compatible wearables",
     free: "—",
     premium: "Full dashboard",
   },
@@ -39,7 +39,7 @@ const FEATURES = [
   {
     icon: BarChart3,
     title: "Deep Insights",
-    desc: "Sleep correlation, day-of-week patterns, trend detection, and 6+ personalized insights that get smarter over time",
+    desc: "Sleep correlation, day-of-week patterns, trend detection, and 6+ personalized insights based on your last 60 days of data",
     free: "2 basic insights",
     premium: "All 6+ insights",
   },
@@ -53,14 +53,14 @@ const FEATURES = [
   {
     icon: Moon,
     title: "Sleep Stage Breakdown",
-    desc: "Deep, core, REM sleep charts with 7-day trends and personalized recommendations",
+    desc: "Deep, core, REM sleep charts with 7-day trends so you can see how your habits affect your rest",
     free: "Total sleep only",
     premium: "Full stage analysis",
   },
   {
     icon: Zap,
-    title: "Themes, Sharing & More",
-    desc: "Custom themes, share cards, unlimited habits, PDF reports, and per-habit analytics",
+    title: "Sharing, Reports & More",
+    desc: "Share cards, unlimited habits, PDF progress reports, and per-habit analytics",
     free: "8 habits, basic",
     premium: "Unlimited access",
   },
@@ -332,7 +332,7 @@ export default function PremiumPage() {
           <p className="text-[11px] font-bold mb-2" style={{ color: "var(--text-muted)" }}>Subscription Details</p>
           <div className="space-y-1.5 text-[11px] leading-relaxed" style={{ color: "var(--text-faint)" }}>
             <p><strong style={{ color: "var(--text-secondary)" }}>Routines365 Pro Monthly</strong> — $3.99/month</p>
-            <p><strong style={{ color: "var(--text-secondary)" }}>Routines365 Pro Yearly</strong> — $29.99/year ($2.49/month)</p>
+            <p><strong style={{ color: "var(--text-secondary)" }}>Routines365 Pro Yearly</strong> — $29.99/year ($2.50/month)</p>
             <p>
               Subscriptions include a {trialDays}-day free trial. Payment will be charged to your Apple ID account
               at confirmation of purchase. Subscription automatically renews unless cancelled at
