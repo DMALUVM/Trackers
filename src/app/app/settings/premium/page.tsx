@@ -344,9 +344,9 @@ export default function PremiumPage() {
           </div>
         </div>
         <div className="flex items-center justify-center gap-4 text-xs font-medium" style={{ color: "var(--accent-green-text)" }}>
-          <a href="/terms" className="underline underline-offset-2">Terms of Use (EULA)</a>
+          <a href="https://routines365.com/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms of Use (EULA)</a>
           <span style={{ color: "var(--text-faint)" }}>·</span>
-          <a href="/privacy" className="underline underline-offset-2">Privacy Policy</a>
+          <a href="https://routines365.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy Policy</a>
         </div>
       </footer>
     </div>

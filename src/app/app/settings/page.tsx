@@ -124,14 +124,14 @@ export default function SettingsPage() {
 
       <footer className="text-center pt-4 pb-6 space-y-2">
         <div className="flex items-center justify-center gap-3 text-[11px]" style={{ color: "var(--text-faint)" }}>
-          <a href="/terms" className="underline underline-offset-2">Terms</a>
+          <a href="https://routines365.com/terms" target="_blank" rel="noopener" className="underline underline-offset-2">Terms</a>
           <span>·</span>
-          <a href="/privacy" className="underline underline-offset-2">Privacy</a>
+          <a href="https://routines365.com/privacy" target="_blank" rel="noopener" className="underline underline-offset-2">Privacy</a>
           <span>·</span>
-          <a href="/support" className="underline underline-offset-2">Support</a>
+          <a href="https://routines365.com/support" target="_blank" rel="noopener" className="underline underline-offset-2">Support</a>
         </div>
         <p className="text-[11px] font-medium" style={{ color: "var(--text-faint)" }}>
-          Routines365 · v1.0 (19)
+          Routines365 · v1.0 (20)
         </p>
         <p className="text-[10px]" style={{ color: "var(--text-faint)", opacity: 0.6 }}>
           Made with ❤️ · Build better habits, one day at a time

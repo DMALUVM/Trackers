@@ -229,7 +229,7 @@ export default function LoginPage() {
               style={{ background: "rgba(16,185,129,0.04)" }}>
               <p className="text-xs text-emerald-400 font-semibold">🚀 Start Free</p>
               <p className="text-[11px] text-neutral-500 mt-1">
-                7-day free trial included with Premium · $29.99/yr ($2.49/mo)
+                7-day free trial included with Premium · $29.99/yr ($2.50/mo)
               </p>
             </div>
           )}
