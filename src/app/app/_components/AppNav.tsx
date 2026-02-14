@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Dumbbell, Brain, TrendingUp,
   Footprints, Home, Flame, Heart, Moon, Pill, Droplets, BookOpen,
+  Trophy, Flag,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { getUserSettings, getUserSettingsSync } from "@/lib/supabaseData";
@@ -23,6 +24,8 @@ const moduleItems = [
   { key: "journal", href: "/app/journal", label: "Journal", Icon: BookOpen },
   { key: "rowing", href: "/app/rowing", label: "Rowing", Icon: Dumbbell },
   { key: "neuro", href: "/app/neuro", label: "Neuro", Icon: Brain },
+  { key: "wod", href: "/app/wod", label: "WODs", Icon: Trophy },
+  { key: "race", href: "/app/race", label: "Race", Icon: Flag },
 ] as const;
 
 // These 2 are always visible — never removed
