@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { History, Check, Trophy, Timer, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { History, Check, Trophy, Timer, ChevronDown, ChevronUp, Plus, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useToday } from "@/lib/hooks";
 import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
@@ -439,6 +439,48 @@ function PRTab({ allPRs, reload }: { allPRs: ActivityLogRow[]; reload: () => voi
                   className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2">
                   <Trophy size={18} /> Log {scheme}
                 </button>
+
+                {/* Progression history */}
+                {(() => {
+                  const history = allPRs
+                    .map((row) => ({ row, data: parseJSON<PRData>(row.notes) }))
+                    .filter(({ data }) => data.lift === sheetLift.id && data.scheme === scheme)
+                    .sort((a, b) => b.row.date.localeCompare(a.row.date));
+                  if (history.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                        History ({history.length})
+                      </p>
+                      <div className="space-y-1.5" style={{ maxHeight: 200, overflowY: "auto" }}>
+                        {history.map(({ row, data }, i) => {
+                          const prev = i < history.length - 1 ? history[i + 1].data : null;
+                          const improved = prev && (data.weight ?? 0) > (prev.weight ?? 0);
+                          const declined = prev && (data.weight ?? 0) < (prev.weight ?? 0);
+                          return (
+                            <div key={row.id} className="flex items-center gap-2.5 rounded-lg px-3 py-2"
+                              style={{ background: "var(--bg-card)" }}>
+                              <p className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-faint)", width: 72 }}>
+                                {format(new Date(row.date), "MMM d")}
+                              </p>
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                                  {data.weight} {data.unit === "reps" ? "reps" : data.unit}
+                                </p>
+                                {improved && <TrendingUp size={12} style={{ color: "var(--accent-green)" }} />}
+                                {declined && <TrendingDown size={12} style={{ color: "var(--accent-red)" }} />}
+                              </div>
+                              {i === 0 && data.weight === currentBest?.weight && (
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                                  style={{ background: "var(--accent-green)", color: "white" }}>PR</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
@@ -674,6 +716,52 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
                   className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2">
                   <Timer size={18} /> Log Score
                 </button>
+
+                {/* WOD progression history */}
+                {(() => {
+                  const history = allWODs
+                    .map((row) => ({ row, data: parseJSON<WODData>(row.notes) }))
+                    .filter(({ data }) => data.wod === sheetWOD.id)
+                    .sort((a, b) => b.row.date.localeCompare(a.row.date));
+                  if (history.length === 0) return null;
+                  return (
+                    <div>
+                      <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                        History ({history.length})
+                      </p>
+                      <div className="space-y-1.5" style={{ maxHeight: 200, overflowY: "auto" }}>
+                        {history.map(({ row, data }, i) => {
+                          const prev = i < history.length - 1 ? history[i + 1].data : null;
+                          const isTime = data.type === "time";
+                          const curVal = isTime ? (data.timeSeconds ?? 0) : (data.rounds ?? 0);
+                          const prevVal = prev ? (isTime ? (prev.timeSeconds ?? 0) : (prev.rounds ?? 0)) : null;
+                          // For time: lower is better. For AMRAP: higher is better.
+                          const improved = prevVal !== null && (isTime ? curVal < prevVal : curVal > prevVal);
+                          const declined = prevVal !== null && (isTime ? curVal > prevVal : curVal < prevVal);
+                          return (
+                            <div key={row.id} className="flex items-center gap-2.5 rounded-lg px-3 py-2"
+                              style={{ background: "var(--bg-card)" }}>
+                              <p className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-faint)", width: 72 }}>
+                                {format(new Date(row.date), "MMM d")}
+                              </p>
+                              <div className="flex-1 flex items-center gap-1.5">
+                                <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                                  {isTime && data.timeSeconds ? fmtTime(data.timeSeconds) : `${data.rounds ?? 0}+${data.extraReps ?? 0}`}
+                                </p>
+                                {data.rx && (
+                                  <span className="text-[9px] font-bold px-1 py-0.5 rounded"
+                                    style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>Rx</span>
+                                )}
+                                {improved && <TrendingUp size={12} style={{ color: "var(--accent-green)" }} />}
+                                {declined && <TrendingDown size={12} style={{ color: "var(--accent-red)" }} />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
@@ -683,8 +771,6 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
   );
 }
 
-// ═══════════════════════════════════════════════
-// Main Page
 // ═══════════════════════════════════════════════
 
 export default function WODPage() {

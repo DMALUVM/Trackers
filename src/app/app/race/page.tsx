@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { History, Check, ChevronDown, ChevronUp, Flag, Zap, Timer } from "lucide-react";
+import { History, Check, ChevronDown, ChevronUp, Flag, Zap, Timer, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useToday } from "@/lib/hooks";
 import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
@@ -671,6 +671,54 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
                 ? <><Timer size={18} /> Save Time Trial {rxToggle ? "Rx" : "Scaled"}</>
                 : <><Zap size={18} /> Log {logSheet.name} {rxToggle ? "Rx" : "Scaled"}</>}
             </button>
+
+            {/* Time trial progression history */}
+            {logMode === "time_trial" && (() => {
+              const history = allTraining
+                .map((row) => ({ row, data: parseJSON<TrainLogData>(row.notes) }))
+                .filter(({ data }) => data.stationId === logSheet.stationId && data.mode === "time_trial" && data.timeSeconds)
+                .sort((a, b) => b.row.date.localeCompare(a.row.date));
+              if (history.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                    Time Trial History ({history.length})
+                  </p>
+                  <div className="space-y-1.5" style={{ maxHeight: 180, overflowY: "auto" }}>
+                    {history.map(({ row, data }, i) => {
+                      const prev = i < history.length - 1 ? history[i + 1].data : null;
+                      const curTime = data.timeSeconds ?? 0;
+                      const prevTime = prev?.timeSeconds ?? 0;
+                      const improved = prev && curTime < prevTime;
+                      const declined = prev && curTime > prevTime;
+                      return (
+                        <div key={row.id} className="flex items-center gap-2.5 rounded-lg px-3 py-2"
+                          style={{ background: "var(--bg-card)" }}>
+                          <p className="text-xs tabular-nums shrink-0" style={{ color: "var(--text-faint)", width: 72 }}>
+                            {format(new Date(row.date), "MMM d")}
+                          </p>
+                          <div className="flex-1 flex items-center gap-1.5">
+                            <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                              {fmtTime(curTime)}
+                            </p>
+                            {data.rx && (
+                              <span className="text-[9px] font-bold px-1 py-0.5 rounded"
+                                style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>Rx</span>
+                            )}
+                            {improved && <TrendingUp size={12} style={{ color: "var(--accent-green)" }} />}
+                            {declined && <TrendingDown size={12} style={{ color: "var(--accent-red)" }} />}
+                          </div>
+                          {i === 0 && curTime === bestTrials.get(logSheet.stationId) && (
+                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded"
+                              style={{ background: "var(--accent-blue)", color: "white" }}>Best</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </BottomSheet>
