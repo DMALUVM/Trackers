@@ -10,8 +10,8 @@
 // - Pass through Supabase writes (queued client-side when offline)
 // ===========================================================================
 
-const CACHE_NAME = "routines365-v7";
-const DATA_CACHE = "routines365-data-v2";
+const CACHE_NAME = "routines365-v8";
+const DATA_CACHE = "routines365-data-v3";
 
 // ---------------------------------------------------------------------------
 // Push Notifications
