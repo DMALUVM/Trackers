@@ -253,14 +253,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
   const [splitView, setSplitView] = useState<"stations" | "runs">("stations");
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // Body scroll lock + Escape key for overlay
-  useEffect(() => {
-    if (!sheetOpen) return;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheetOpen(false); };
-    document.addEventListener("keydown", onKey);
-    return () => { document.body.style.overflow = ""; document.removeEventListener("keydown", onKey); };
-  }, [sheetOpen]);
+  // BottomSheet handles scroll lock + Escape key
 
   const bestRace = useMemo(() => {
     let best: RaceLogData | null = null;
@@ -416,131 +409,97 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
       )}
 
       {/* ── Race Entry Full-Screen Overlay — no drag conflict ── */}
-      {sheetOpen && (
-        <div className="fixed inset-0 z-50" style={{ background: "rgba(0,0,0,0.5)" }}
-          onClick={() => setSheetOpen(false)}>
-          <div
-            className="absolute inset-x-0 bottom-0 w-full max-w-md mx-auto flex flex-col rounded-t-2xl"
-            style={{
-              background: "var(--bg-sheet)",
-              border: "1px solid var(--border-primary)",
-              borderBottom: "none",
-              maxHeight: "92vh",
-              animation: "slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Fixed header — drag handle + title + done */}
-            <div className="shrink-0 px-4 pt-3 pb-2">
-              <div className="flex justify-center mb-2">
-                <div className="h-1.5 w-10 rounded-full" style={{ background: "var(--border-primary)" }} />
-              </div>
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Log Race</h3>
-                <button type="button" onClick={() => setSheetOpen(false)}
-                  className="rounded-full px-3.5 py-2 text-xs font-semibold"
-                  style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
-                  Done
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Log Race">
+        <div className="space-y-4">
+          {/* Division selector */}
+          <div>
+            <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Division</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {DIVISIONS.map((d) => (
+                <button key={d.key} type="button"
+                  onClick={() => { hapticLight(); setDivision(d.key); }}
+                  className="rounded-xl py-2 text-[11px] font-bold text-center transition-all active:scale-95"
+                  style={{
+                    background: division === d.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
+                    color: division === d.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+                    border: `1.5px solid ${division === d.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
+                  }}>
+                  {d.short}
                 </button>
-              </div>
-            </div>
-
-            {/* Scrollable content — free scroll, no drag interference */}
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
-              style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", WebkitOverflowScrolling: "touch" as any }}>
-              <div className="space-y-4">
-                {/* Division selector */}
-                <div>
-                  <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Division</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {DIVISIONS.map((d) => (
-                      <button key={d.key} type="button"
-                        onClick={() => { hapticLight(); setDivision(d.key); }}
-                        className="rounded-xl py-2 text-[11px] font-bold text-center transition-all active:scale-95"
-                        style={{
-                          background: division === d.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
-                          color: division === d.key ? "var(--btn-primary-text)" : "var(--text-muted)",
-                          border: `1.5px solid ${division === d.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
-                        }}>
-                        {d.short}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Stations / Runs toggle */}
-                <div className="flex rounded-xl p-0.5" style={{ background: "var(--bg-card-hover)" }}>
-                  {(["stations", "runs"] as const).map((v) => (
-                    <button key={v} type="button"
-                      onClick={() => { hapticLight(); setSplitView(v); }}
-                      className="flex-1 rounded-lg py-2 text-xs font-bold text-center transition-all"
-                      style={{
-                        background: splitView === v ? "var(--bg-card)" : "transparent",
-                        color: splitView === v ? "var(--text-primary)" : "var(--text-faint)",
-                        boxShadow: splitView === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                      }}>
-                      {v === "stations" ? `Stations (${STATIONS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)` : `Runs (${RUNS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)`}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Split inputs — scrolls freely now */}
-                <div className="space-y-1.5">
-                  {visibleSegs.map((seg) => (
-                    <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
-                      style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
-                      <span className="text-base shrink-0">{seg.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
-                        <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
-                      </div>
-                      <input
-                        ref={(el) => { inputRefs.current[seg.id] = el; }}
-                        className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
-                        style={{
-                          width: 78,
-                          background: "var(--bg-input)",
-                          border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
-                          color: "var(--text-primary)",
-                        }}
-                        placeholder="0:00"
-                        inputMode="text"
-                        value={splits[seg.id] ?? ""}
-                        onChange={(e) => updateSplit(seg.id, e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Total */}
-                {filledCount > 0 && (
-                  <div className="rounded-xl px-4 py-3 flex items-center justify-between"
-                    style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
-                    <div>
-                      <p className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Total Time</p>
-                      <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{filledCount}/16 segments entered</p>
-                    </div>
-                    <p className="text-xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
-                      {fmtTime(totalSeconds)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Save */}
-                <button type="button" onClick={handleSave}
-                  disabled={filledCount === 0 || justSaved}
-                  className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
-                  style={(filledCount === 0 || justSaved) ? { opacity: 0.5 } : {}}>
-                  {justSaved
-                    ? <><Check size={18} /> Race Logged!</>
-                    : <><Flag size={18} /> Save Race ({filledCount}/16 splits)</>}
-                </button>
-              </div>
+              ))}
             </div>
           </div>
+
+          {/* Stations / Runs toggle */}
+          <div className="flex rounded-xl p-0.5" style={{ background: "var(--bg-card-hover)" }}>
+            {(["stations", "runs"] as const).map((v) => (
+              <button key={v} type="button"
+                onClick={() => { hapticLight(); setSplitView(v); }}
+                className="flex-1 rounded-lg py-2 text-xs font-bold text-center transition-all"
+                style={{
+                  background: splitView === v ? "var(--bg-card)" : "transparent",
+                  color: splitView === v ? "var(--text-primary)" : "var(--text-faint)",
+                  boxShadow: splitView === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                }}>
+                {v === "stations" ? `Stations (${STATIONS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)` : `Runs (${RUNS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)`}
+              </button>
+            ))}
+          </div>
+
+          {/* Split inputs */}
+          <div className="space-y-1.5">
+            {visibleSegs.map((seg) => (
+              <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
+                <span className="text-base shrink-0">{seg.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
+                  <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
+                </div>
+                <input
+                  ref={(el) => { inputRefs.current[seg.id] = el; }}
+                  className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
+                  style={{
+                    width: 78,
+                    background: "var(--bg-input)",
+                    border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
+                    color: "var(--text-primary)",
+                  }}
+                  placeholder="0:00"
+                  inputMode="text"
+                  value={splits[seg.id] ?? ""}
+                  onChange={(e) => updateSplit(seg.id, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Total */}
+          {filledCount > 0 && (
+            <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+              style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+              <div>
+                <p className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Total Time</p>
+                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{filledCount}/16 segments entered</p>
+              </div>
+              <p className="text-xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+                {fmtTime(totalSeconds)}
+              </p>
+            </div>
+          )}
+
+          {/* Save */}
+          <button type="button" onClick={handleSave}
+            disabled={filledCount === 0 || justSaved}
+            className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
+            style={(filledCount === 0 || justSaved) ? { opacity: 0.5 } : {}}>
+            {justSaved
+              ? <><Check size={18} /> Race Logged!</>
+              : <><Flag size={18} /> Save Race ({filledCount}/16 splits)</>}
+          </button>
         </div>
-      )}
+      </BottomSheet>
     </>
   );
 }
