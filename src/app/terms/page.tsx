@@ -16,7 +16,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Effective February 10, 2026 · Last updated February 10, 2026
+            Effective February 10, 2026 · Last updated February 14, 2026
           </p>
         </header>
 
@@ -92,14 +92,32 @@ export default function TermsPage() {
         </Section>
 
         {/* ── 5. Health Disclaimer ── */}
-        <Section title="5. Health Information Disclaimer">
+        <Section title="5. Health and Fitness Disclaimer">
           <p>
             Routines365 is a habit-tracking and wellness tool. It is{" "}
             <strong className="text-neutral-200">not</strong> a medical device
             and does not provide medical advice, diagnoses, or treatment. Health
-            data displayed in the app (including Apple Health metrics) is for
-            informational purposes only. Always consult a qualified healthcare
-            provider before making changes to your health routine.
+            data displayed in the app (including Apple Health metrics such as
+            heart rate variability, resting heart rate, sleep stages, blood
+            oxygen, and respiratory rate) is for informational and motivational
+            purposes only.
+          </p>
+          <p className="mt-2">
+            The app includes exercise-related features such as workout logging,
+            barbell personal record tracking, benchmark workout timing, and
+            race training workouts. These features are tools for recording your
+            own performance and do not constitute exercise programming,
+            coaching, or instruction. You are solely responsible for determining
+            whether any exercise is appropriate for your fitness level.
+          </p>
+          <p className="mt-2">
+            <strong className="text-neutral-200">Always consult a qualified
+            healthcare provider</strong> before beginning any new exercise
+            program or making changes to your health routine, particularly if
+            you have a pre-existing medical condition, are pregnant, or are
+            taking medication. By using the fitness and health features of the
+            app, you acknowledge that physical exercise carries inherent risks
+            and you assume full responsibility for your own safety.
           </p>
         </Section>
 
@@ -189,14 +207,30 @@ export default function TermsPage() {
         {/* ── 13. Governing Law ── */}
         <Section title="13. Governing Law">
           <p>
-            These Terms are governed by the laws of the United States. Any
-            disputes arising from these Terms will be resolved in accordance with
-            applicable law.
+            These Terms are governed by and construed in accordance with the laws
+            of the State of Maryland, United States, without regard to its
+            conflict of law principles. Any disputes arising from these Terms
+            will be resolved in the state or federal courts located in
+            Maryland.
           </p>
         </Section>
 
-        {/* ── 14. Contact ── */}
-        <Section title="14. Contact Us">
+        {/* ── 14. Third-Party Trademarks ── */}
+        <Section title="14. Third-Party Trademarks">
+          <p>
+            Apple, the Apple logo, App Store, Apple Health, HealthKit, Apple
+            Watch, iPhone, Face ID, and Touch ID are trademarks of Apple Inc.,
+            registered in the U.S. and other countries. Oura Ring is a trademark
+            of Oura Health Oy. WHOOP is a trademark of Whoop, Inc. Routines365
+            is not affiliated with, endorsed by, or sponsored by Apple Inc.,
+            Oura Health Oy, or Whoop, Inc. All third-party trademarks referenced
+            in the app or on this website are the property of their respective
+            owners and are used solely for identification purposes.
+          </p>
+        </Section>
+
+        {/* ── 15. Contact ── */}
+        <Section title="15. Contact Us">
           <p>
             If you have questions about these Terms, please contact us at{" "}
             <a

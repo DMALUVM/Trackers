@@ -14,7 +14,7 @@ export default function PrivacyPage() {
         <header>
           <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Effective February 10, 2026 · Last updated February 10, 2026
+            Effective February 10, 2026 · Last updated February 14, 2026
           </p>
         </header>
 
@@ -39,7 +39,9 @@ export default function PrivacyPage() {
           <SubSection title="Routine and activity data">
             <p>
               Your routines, daily check-ins, journal entries, activity logs,
-              streak history, quest progress, and settings are stored so the app
+              streak history, quest progress, personal records (such as barbell
+              lift weights and benchmark workout times), race results and split
+              times, training session logs, and settings are stored so the app
               can function and sync across devices.
             </p>
           </SubSection>

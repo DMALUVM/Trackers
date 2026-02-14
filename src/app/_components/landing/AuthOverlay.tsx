@@ -36,25 +36,40 @@ export function AuthOverlay() {
     }
     let cancelled = false;
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    // Safety timeout — never show splash for more than 3 seconds
+    const timeout = setTimeout(() => {
+      if (!cancelled) setAuthState((prev) => (prev === "checking" ? "signed-out" : prev));
+    }, 3000);
+
     const check = async () => {
       try {
-        let { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          for (const delay of [0, 250, 800]) {
-            if (delay) await sleep(delay);
-            try { await supabase.auth.refreshSession(); } catch {}
-            data = (await supabase.auth.getSession()).data;
-            if (data.session) break;
-          }
-        }
+        // Fast path: single check first
+        const { data } = await supabase.auth.getSession();
         if (cancelled) return;
-        setAuthState(data.session ? "signed-in" : "signed-out");
+        if (data.session) { setAuthState("signed-in"); return; }
+
+        // Only retry if this looks like a fresh OAuth/magic-link redirect
+        const isAuthRedirect = typeof window !== "undefined" &&
+          (window.location.hash.includes("access_token") ||
+           window.location.search.includes("code="));
+        if (!isAuthRedirect) { setAuthState("signed-out"); return; }
+
+        // Retry for auth redirects only
+        for (const delay of [250, 800]) {
+          await sleep(delay);
+          if (cancelled) return;
+          try { await supabase.auth.refreshSession(); } catch {}
+          const retry = await supabase.auth.getSession();
+          if (retry.data.session) { setAuthState("signed-in"); return; }
+        }
+        if (!cancelled) setAuthState("signed-out");
       } catch {
         if (!cancelled) setAuthState("signed-out");
       }
     };
     void check();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, []);
 
   useEffect(() => {

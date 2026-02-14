@@ -32,6 +32,16 @@ const FEATURES = [
     desc: "Step-by-step guided routines with timed instructions: Morning Mobility, Qigong Foundations, Eight Brocades, Lymphatic Flow, Desk Reset, and Evening Wind-Down. Just press play and follow along.",
   },
   {
+    emoji: "🏋️",
+    title: "Barbell & WODs",
+    desc: "Track personal records across 27 lifts organized by category — Olympic, Squat, Press, Pull, and Gymnastics. Log benchmark workouts like Fran, Murph, and Grace with Rx'd/Scaled tracking and automatic PR detection.",
+  },
+  {
+    emoji: "🏁",
+    title: "Hybrid Race training",
+    desc: "Train for 8-station fitness races with curated workouts targeting each station. Log race results with per-segment split times, track your personal best, and watch your total time drop.",
+  },
+  {
     emoji: "🎯",
     title: "Focus timer — 3 modes",
     desc: "Pomodoro (25/5), Deep Work (50/10), and Sprint (15/3). Track completed focus blocks alongside your habits. Built for people who need to get things done.",
@@ -44,7 +54,7 @@ const FEATURES = [
   {
     emoji: "❤️",
     title: "Apple Health integration",
-    desc: "Sleep stages, HRV, resting heart rate, steps, blood oxygen, and respiratory rate — pulled automatically from Apple Health. Compatible with any device that syncs to HealthKit: Apple Watch, Oura Ring, Whoop, and more.",
+    desc: "Sleep stages, HRV, resting heart rate, steps, blood oxygen, and respiratory rate — pulled automatically from Apple Health. Compatible with devices that sync to HealthKit, including Apple Watch, Oura Ring, and WHOOP.",
   },
   {
     emoji: "🔥",
@@ -59,7 +69,7 @@ const FEATURES = [
   {
     emoji: "👥",
     title: "Accountability partner",
-    desc: "Invite a friend and see each other's streaks and green days. Research shows having someone watching makes you 65% more likely to follow through.",
+    desc: "Invite a friend and see each other\u2019s streaks and green days. Having someone to check in with can help you stay committed to your goals.",
   },
   {
     emoji: "🧠",
@@ -80,10 +90,10 @@ const FEATURES = [
 
 const EXTRAS = [
   { emoji: "🔐", text: "Face ID & Touch ID — journal and health data stay private" },
-  { emoji: "📴", text: "Full offline mode — check habits on a plane, sync when you're back" },
+  { emoji: "📴", text: "Full offline mode — check habits on a plane, sync when you\u2019re back" },
   { emoji: "📖", text: "365 daily quotes from Stoic philosophers, scientists, and leaders" },
   { emoji: "🎨", text: "3 themes (Dark, Light, System) plus ambient page tints" },
-  { emoji: "🏋️", text: "Activity logs — workouts, cardio, rowing, and mindfulness sessions" },
+  { emoji: "🚣", text: "Activity logs — workouts, cardio, rowing, and mindfulness sessions" },
   { emoji: "📅", text: "Day-of-week scheduling — set which habits apply to which days" },
 ];
 
@@ -321,7 +331,7 @@ export default function Home() {
               </h2>
               <p className="mt-3 text-sm sm:text-base text-neutral-400 max-w-lg mx-auto">
                 Habit tracker, breathwork, journal, movement coach, focus timer,
-                health dashboard, and accountability — one app, 10 seconds.
+                health dashboard, barbell PRs, race training, and accountability — one app, 10 seconds.
               </p>
             </div>
           </Reveal>
@@ -371,17 +381,17 @@ export default function Home() {
               {
                 n: "1",
                 t: "Pick your habits",
-                d: "Choose from 75+ built-in habits across morning routines, fitness, nutrition, recovery, and mindfulness — or create your own. Enable the modules you want: breathwork, movement, focus, journal, water, supplements.",
+                d: "Choose from 75+ built-in habits across morning routines, fitness, nutrition, recovery, and mindfulness — or create your own. Enable the modules you want: breathwork, movement, focus, journal, water, supplements, barbell PRs, and race training.",
               },
               {
                 n: "2",
                 t: "Tag your non-negotiables",
-                d: "Mark your most important habits as Core. Complete all core habits = green day. Bonus habits are extra credit — they build momentum but won't break your streak.",
+                d: "Mark your most important habits as Core. Complete all core habits = green day. Bonus habits are extra credit — they build momentum but won\u2019t break your streak.",
               },
               {
                 n: "3",
                 t: "Show up daily",
-                d: "One tap per habit. Do a breathwork session, follow a movement routine, journal, log a workout. Quick check-in takes 10 seconds. Works offline.",
+                d: "One tap per habit. Do a breathwork session, follow a movement routine, journal, log a workout, hit a new PR. Quick check-in takes 10 seconds. Works offline.",
               },
               {
                 n: "4",
@@ -430,25 +440,28 @@ export default function Home() {
         </section>
       </Reveal>
 
-      {/* ── SOCIAL PROOF / PSYCHOLOGY ── */}
+      {/* ── SCIENCE-BACKED INSIGHTS ── */}
       <Reveal>
         <section className="py-8 sm:py-10 px-4 sm:px-6">
           <div className="mx-auto max-w-3xl">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 {
-                  stat: "66 days",
-                  body: "The average time to form a habit, according to UCL research. Routines365 makes those 66 days as frictionless as possible.",
+                  stat: "~66 days",
+                  body: "The average time to form a habit in a 2009 UCL study by Phillippa Lally et al., with individual results ranging from 18 to 254 days depending on the person and behavior.",
+                  cite: "Lally et al., European Journal of Social Psychology, 2010",
                 },
                 {
-                  stat: "91%",
-                  body: "of people who track habits daily are still going after 3 months. The ones who track weekly? 39%.",
+                  stat: "2\u20133\u00d7",
+                  body: "People who track their progress on goals are significantly more likely to achieve them, according to a meta-analysis of over 19,000 participants on self-monitoring and goal attainment.",
+                  cite: "Harkin et al., Psychological Bulletin, 2016",
                 },
                 {
-                  stat: "65%",
-                  body: "higher goal completion rate when you have an accountability partner. That's why we built it in.",
+                  stat: "76%",
+                  body: "In a Dominican University study, participants who wrote down goals and shared weekly updates with a friend completed 76% of them, vs. 43% for those who only thought about their goals.",
+                  cite: "Matthews, Dominican University of California, 2007",
                 },
-              ].map(({ stat, body }) => (
+              ].map(({ stat, body, cite }) => (
                 <div
                   key={stat}
                   className="rounded-2xl border border-white/[0.06] p-4 sm:p-5 text-center"
@@ -456,9 +469,13 @@ export default function Home() {
                 >
                   <p className="text-2xl font-extrabold text-emerald-400">{stat}</p>
                   <p className="mt-2 text-xs sm:text-sm text-neutral-400 leading-relaxed">{body}</p>
+                  <p className="mt-2 text-[10px] text-neutral-600 italic">{cite}</p>
                 </div>
               ))}
             </div>
+            <p className="mt-3 text-center text-[10px] text-neutral-600">
+              Individual results may vary. These statistics reflect published research findings and are not guarantees of specific outcomes.
+            </p>
           </div>
         </section>
       </Reveal>
@@ -488,7 +505,7 @@ export default function Home() {
 
                 <div className="mt-5 space-y-2.5 text-left">
                   {[
-                    "Up to 8 habits · Core/Bonus system",
+                    "Up to 8 habits \u00b7 Core/Bonus system",
                     "Streaks, green days, progress calendar",
                     "Guided journal with gratitude prompts",
                     "Box Breathing with animated guide",
@@ -540,10 +557,12 @@ export default function Home() {
                 <div className="mt-5 space-y-2.5 text-left">
                   {[
                     "Everything in Free, plus:",
-                    "Biometric insights — HRV and resting heart rate trends",
-                    "Sleep stages — Deep, Core, REM with 7-night history",
-                    "Health auto-complete — habits check off automatically",
+                    "Biometric insights \u2014 HRV and resting heart rate trends",
+                    "Sleep stages \u2014 Deep, Core, REM with 7-night history",
+                    "Health auto-complete \u2014 habits check off automatically",
                     "All 5 breathwork techniques + all 6 movement routines",
+                    "Barbell & WODs \u2014 PR tracking across 27 lifts + benchmarks",
+                    "Hybrid Race \u2014 split-time logging + 8 training workouts",
                     "Unlimited habits, streak freezes, and detailed reports",
                     "Share cards, per-habit analytics, and PDF reports",
                   ].map((p, i) => (
@@ -566,13 +585,41 @@ export default function Home() {
                   </a>
                 </div>
                 <p className="text-[11px] text-neutral-500 mt-2.5">
-                  7-day free trial · Cancel anytime
+                  7-day free trial · Cancel anytime · Billed through the App Store
                 </p>
               </div>
             </Reveal>
           </div>
         </div>
       </section>
+
+      {/* ── HEALTH DISCLAIMER ── */}
+      <Reveal>
+        <section className="py-5 px-4 sm:px-6">
+          <div className="mx-auto max-w-3xl">
+            <div
+              className="rounded-2xl border border-white/[0.06] p-4 sm:p-5"
+              style={{ background: "rgba(255,255,255,0.02)" }}
+            >
+              <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
+                ⚕️ Health information disclaimer
+              </h3>
+              <p className="text-xs text-neutral-500 leading-relaxed">
+                Routines365 is a habit-tracking and wellness tool designed to help you build
+                consistent daily routines. It is <strong className="text-neutral-400">not a medical device</strong> and
+                does not provide medical advice, diagnosis, or treatment. Health metrics displayed
+                in the app (including data from Apple Health such as heart rate variability, resting
+                heart rate, sleep stages, blood oxygen, and respiratory rate) are for{" "}
+                <strong className="text-neutral-400">general informational and motivational purposes only</strong> and
+                should not be used to make medical decisions. Always consult a qualified healthcare
+                provider before starting any new health or exercise program or making changes to
+                an existing one. If you have a medical condition or are taking medication, seek
+                professional medical advice before relying on any information displayed in this app.
+              </p>
+            </div>
+          </div>
+        </section>
+      </Reveal>
 
       {/* ── FINAL CTA ── */}
       <section className="py-8 sm:py-10 px-4 sm:px-6 border-t border-white/5" style={{ background: "rgba(16,185,129,0.03)" }}>
@@ -618,8 +665,10 @@ export default function Home() {
             fitness goals, practice breathwork, and journal with guided
             prompts. Whether you&apos;re building a Wim Hof breathing
             practice, following guided Qigong movement routines, tracking
-            supplements, logging water intake, or simply checking off habits,
-            Routines365 makes consistency simple with one 10-second check-in.
+            supplements, logging water intake, tracking barbell personal
+            records, training for hybrid fitness races, or simply checking
+            off habits, Routines365 makes consistency simple with one
+            10-second check-in.
           </p>
           <p>
             Features include streak tracking with milestones at 7, 14, 30,
@@ -631,18 +680,21 @@ export default function Home() {
             for sleep stages, HRV, heart rate, and steps; an accountability
             partner system; rest days and streak freezes; Face ID privacy
             lock; full offline mode; daily quotes; water and supplement
-            tracking; activity logging; a 13-article science-backed
-            knowledge base; and a progress calendar.
+            tracking; Barbell &amp; WODs with PR tracking across 27 lifts
+            and 19 benchmark workouts; Hybrid Race training with
+            split-time logging and curated station workouts; activity
+            logging; a 13-article science-backed knowledge base; and a
+            progress calendar.
           </p>
           <p>
             Available as a native iOS app. Free to start with core habits,
             Box Breathing, Morning Mobility, guided journal, streaks, and
             accountability partner. Optional premium for biometric insights,
             sleep stage analysis, health auto-complete, all breathwork
-            techniques, unlimited habits, and themes. Works offline and
-            reads health data from Apple Health, so it&apos;s compatible with
-            any device that syncs to HealthKit — including Apple Watch,
-            Oura Ring, Whoop, and other wearables.
+            techniques, barbell PR tracking, race training, unlimited habits,
+            and themes. Works offline and reads health data from Apple Health,
+            so it&apos;s compatible with any device that syncs to HealthKit —
+            including Apple Watch and other wearables.
           </p>
         </div>
       </section>
@@ -663,6 +715,29 @@ export default function Home() {
             <a className="hover:text-neutral-300 transition-colors" href="/terms">Terms</a>
             <a className="hover:text-neutral-300 transition-colors" href="/support">Support</a>
           </div>
+        </div>
+
+        {/* ── Trademark & Legal Notices ── */}
+        <div className="mx-auto max-w-5xl mt-4 pt-4 border-t border-white/5">
+          <p className="text-[10px] text-neutral-700 leading-relaxed text-center">
+            Apple, the Apple logo, App Store, Apple Health, HealthKit, Apple Watch, Face ID,
+            and Touch ID are trademarks of Apple Inc., registered in the U.S. and other
+            countries. Oura Ring is a trademark of Oura Health Oy. WHOOP is a trademark of
+            Whoop, Inc. Routines365 is not affiliated with, endorsed by, or sponsored by
+            Apple Inc., Oura Health Oy, or Whoop, Inc. All third-party trademarks are the
+            property of their respective owners.
+          </p>
+          <p className="text-[10px] text-neutral-700 leading-relaxed text-center mt-2">
+            Health data displayed in the app is for informational purposes only and is not
+            intended as medical advice. Consult a healthcare professional before making
+            changes to your health routine. Research statistics cited on this page are from
+            published academic studies and reflect averages — individual results may vary.
+            Subscription pricing is in USD and may vary by region. Subscriptions are billed
+            through the App Store and are subject to Apple&apos;s terms and conditions.
+          </p>
+          <p className="text-[10px] text-neutral-700 text-center mt-2">
+            © {new Date().getFullYear()} Routines365. All rights reserved.
+          </p>
         </div>
       </footer>
     </main>
