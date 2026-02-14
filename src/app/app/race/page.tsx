@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { History, Check, ChevronDown, ChevronUp, Flag, Zap, Timer, TrendingUp, TrendingDown } from "lucide-react";
 import Link from "next/link";
 import { useToday } from "@/lib/hooks";
-import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
+import { addActivityLog, deleteActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
 import { Toast, BottomSheet, type ToastState } from "@/app/app/_components/ui";
 import { hapticSuccess, hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { format, subDays } from "date-fns";
@@ -594,11 +594,11 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
   const [timeInput, setTimeInput] = useState("");
 
   const todayDone = useMemo(() => {
-    const map = new Map<string, TrainLogData>();
+    const map = new Map<string, TrainLogData & { _rowId: string }>();
     for (const row of allTraining) {
       if (row.date !== dateKey) continue;
       const d = parseJSON<TrainLogData>(row.notes);
-      if (d.workout) map.set(d.workout, d as TrainLogData);
+      if (d.workout) map.set(d.workout, { ...(d as TrainLogData), _rowId: row.id });
     }
     return map;
   }, [allTraining, dateKey]);
@@ -741,12 +741,23 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
                     </div>
                   </div>
 
-                  <button type="button" onClick={() => openLogSheet(drill, "drill")}
-                    disabled={done}
-                    className="btn-primary w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-                    style={done ? { opacity: 0.5 } : {}}>
+                  <button type="button" onClick={async () => {
+                      if (done) {
+                        const entry = todayDone.get(drill.id);
+                        if (!entry?._rowId) return;
+                        setToast("saving");
+                        try {
+                          await deleteActivityLog(entry._rowId);
+                          hapticLight(); setToast("saved"); reload();
+                          setTimeout(() => setToast("idle"), 1500);
+                        } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
+                        return;
+                      }
+                      openLogSheet(drill, "drill");
+                    }}
+                    className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 ${done ? "btn-secondary" : "btn-primary"}`}>
                     {done
-                      ? <><Check size={16} /> Drill Completed Today</>
+                      ? <><Check size={16} /> Drill Completed — tap to undo</>
                       : <><Zap size={16} /> Log Practice Drill</>}
                   </button>
                 </div>
@@ -812,7 +823,18 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
                     </div>
 
                     <button type="button" onClick={async () => {
-                        if (done) return;
+                        if (done) {
+                          // Undo — delete the activity log entry
+                          const entry = todayDone.get(w.id);
+                          if (!entry?._rowId) return;
+                          setToast("saving");
+                          try {
+                            await deleteActivityLog(entry._rowId);
+                            hapticLight(); setToast("saved"); reload();
+                            setTimeout(() => setToast("idle"), 1500);
+                          } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
+                          return;
+                        }
                         setToast("saving");
                         try {
                           await addActivityLog({
@@ -823,11 +845,9 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
                           setTimeout(() => setToast("idle"), 1500);
                         } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
                       }}
-                      disabled={done}
-                      className="btn-primary w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
-                      style={done ? { opacity: 0.5 } : {}}>
+                      className={`w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 ${done ? "btn-secondary" : "btn-primary"}`}>
                       {done
-                        ? <><Check size={16} /> Completed Today</>
+                        ? <><Check size={16} /> Completed Today — tap to undo</>
                         : <><Zap size={16} /> Log Workout</>}
                     </button>
                   </div>
