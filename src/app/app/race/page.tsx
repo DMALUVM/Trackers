@@ -253,7 +253,14 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
   const [splitView, setSplitView] = useState<"stations" | "runs">("stations");
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  // BottomSheet handles scroll lock + Escape key
+  // Body scroll lock + Escape key for race entry modal
+  useEffect(() => {
+    if (!sheetOpen) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheetOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = ""; document.removeEventListener("keydown", onKey); };
+  }, [sheetOpen]);
 
   const bestRace = useMemo(() => {
     let best: RaceLogData | null = null;
@@ -408,98 +415,147 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
         </div>
       )}
 
-      {/* ── Race Entry — uses fixed BottomSheet ── */}
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Log Race">
-        <div className="space-y-4">
-          {/* Division selector */}
-          <div>
-            <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Division</p>
-            <div className="grid grid-cols-4 gap-1.5">
-              {DIVISIONS.map((d) => (
-                <button key={d.key} type="button"
-                  onClick={() => { hapticLight(); setDivision(d.key); }}
-                  className="rounded-xl py-2 text-[11px] font-bold text-center transition-all active:scale-95"
-                  style={{
-                    background: division === d.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
-                    color: division === d.key ? "var(--btn-primary-text)" : "var(--text-muted)",
-                    border: `1.5px solid ${division === d.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
-                  }}>
-                  {d.short}
-                </button>
-              ))}
-            </div>
+      {/* ── Race Entry — Full-screen modal, NOT BottomSheet ── */}
+      {sheetOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            background: "var(--bg-base, #fff)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Fixed header */}
+          <div
+            style={{
+              flexShrink: 0,
+              paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
+              paddingLeft: 16,
+              paddingRight: 16,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border-primary)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "var(--bg-base, #fff)",
+            }}
+          >
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Log Race</h3>
+            <button type="button" onClick={() => setSheetOpen(false)}
+              className="rounded-full px-4 py-2 text-sm font-semibold"
+              style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
+              Done
+            </button>
           </div>
 
-          {/* Stations / Runs toggle */}
-          <div className="flex rounded-xl p-0.5" style={{ background: "var(--bg-card-hover)" }}>
-            {(["stations", "runs"] as const).map((v) => (
-              <button key={v} type="button"
-                onClick={() => { hapticLight(); setSplitView(v); }}
-                className="flex-1 rounded-lg py-2 text-xs font-bold text-center transition-all"
-                style={{
-                  background: splitView === v ? "var(--bg-card)" : "transparent",
-                  color: splitView === v ? "var(--text-primary)" : "var(--text-faint)",
-                  boxShadow: splitView === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                }}>
-                {v === "stations" ? `Stations (${STATIONS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)` : `Runs (${RUNS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)`}
-              </button>
-            ))}
-          </div>
-
-          {/* Split inputs */}
-          <div className="space-y-1.5">
-            {visibleSegs.map((seg) => (
-              <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
-                style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
-                <span className="text-base shrink-0">{seg.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
-                  <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
-                </div>
-                <input
-                  ref={(el) => { inputRefs.current[seg.id] = el; }}
-                  className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
-                  style={{
-                    width: 78,
-                    background: "var(--bg-input)",
-                    border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
-                    color: "var(--text-primary)",
-                  }}
-                  placeholder="0:00"
-                  inputMode="text"
-                  value={splits[seg.id] ?? ""}
-                  onChange={(e) => updateSplit(seg.id, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Total */}
-          {filledCount > 0 && (
-            <div className="rounded-xl px-4 py-3 flex items-center justify-between"
-              style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+          {/* Scrollable content */}
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
+              padding: "16px",
+              paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+            }}
+          >
+            <div className="space-y-4">
+              {/* Division selector */}
               <div>
-                <p className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Total Time</p>
-                <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{filledCount}/16 segments entered</p>
+                <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Division</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {DIVISIONS.map((d) => (
+                    <button key={d.key} type="button"
+                      onClick={() => { hapticLight(); setDivision(d.key); }}
+                      className="rounded-xl py-2 text-[11px] font-bold text-center transition-all active:scale-95"
+                      style={{
+                        background: division === d.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
+                        color: division === d.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+                        border: `1.5px solid ${division === d.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
+                      }}>
+                      {d.short}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <p className="text-xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
-                {fmtTime(totalSeconds)}
-              </p>
-            </div>
-          )}
 
-          {/* Save */}
-          <button type="button" onClick={handleSave}
-            disabled={filledCount === 0 || justSaved}
-            className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
-            style={(filledCount === 0 || justSaved) ? { opacity: 0.5 } : {}}>
-            {justSaved
-              ? <><Check size={18} /> Race Logged!</>
-              : <><Flag size={18} /> Save Race ({filledCount}/16 splits)</>}
-          </button>
+              {/* Stations / Runs toggle */}
+              <div className="flex rounded-xl p-0.5" style={{ background: "var(--bg-card-hover)" }}>
+                {(["stations", "runs"] as const).map((v) => (
+                  <button key={v} type="button"
+                    onClick={() => { hapticLight(); setSplitView(v); }}
+                    className="flex-1 rounded-lg py-2 text-xs font-bold text-center transition-all"
+                    style={{
+                      background: splitView === v ? "var(--bg-card)" : "transparent",
+                      color: splitView === v ? "var(--text-primary)" : "var(--text-faint)",
+                      boxShadow: splitView === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                    }}>
+                    {v === "stations" ? `Stations (${STATIONS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)` : `Runs (${RUNS_ONLY.filter((s) => parsedSplits[s.id]).length}/8)`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Split inputs */}
+              <div className="space-y-1.5">
+                {visibleSegs.map((seg) => (
+                  <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                    style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
+                    <span className="text-base shrink-0">{seg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
+                      <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
+                    </div>
+                    <input
+                      ref={(el) => { inputRefs.current[seg.id] = el; }}
+                      className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
+                      style={{
+                        width: 78,
+                        background: "var(--bg-input)",
+                        border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
+                        color: "var(--text-primary)",
+                      }}
+                      placeholder="0:00"
+                      inputMode="text"
+                      value={splits[seg.id] ?? ""}
+                      onChange={(e) => updateSplit(seg.id, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Total */}
+              {filledCount > 0 && (
+                <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+                  style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+                  <div>
+                    <p className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Total Time</p>
+                    <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{filledCount}/16 segments entered</p>
+                  </div>
+                  <p className="text-xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+                    {fmtTime(totalSeconds)}
+                  </p>
+                </div>
+              )}
+
+              {/* Save */}
+              <button type="button" onClick={handleSave}
+                disabled={filledCount === 0 || justSaved}
+                className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
+                style={(filledCount === 0 || justSaved) ? { opacity: 0.5 } : {}}>
+                {justSaved
+                  ? <><Check size={18} /> Race Logged!</>
+                  : <><Flag size={18} /> Save Race ({filledCount}/16 splits)</>}
+              </button>
+            </div>
+          </div>
         </div>
-      </BottomSheet>
+      )}
     </>
   );
 }
