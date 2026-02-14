@@ -426,7 +426,6 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
               border: "1px solid var(--border-primary)",
               borderBottom: "none",
               maxHeight: "92vh",
-              overflow: "hidden",
               animation: "slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
             }}
             onClick={(e) => e.stopPropagation()}
@@ -448,7 +447,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
 
             {/* Scrollable content — free scroll, no drag interference */}
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
-              style={{ maxHeight: "calc(92vh - 70px)", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", WebkitOverflowScrolling: "touch" as any }}>
+              style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", WebkitOverflowScrolling: "touch" as any }}>
               <div className="space-y-4">
                 {/* Division selector */}
                 <div>
