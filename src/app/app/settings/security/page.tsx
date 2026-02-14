@@ -65,7 +65,15 @@ export default function SecurityPage() {
       clearPasskey();
       clearSessionCookies();
       await supabase.auth.signOut();
-      const keys = Object.keys(localStorage).filter((k) => k.startsWith("routines365:"));
+      // Preserve user preferences (quests, theme, layout toggles) — only clear cached data
+      const PREFS = new Set([
+        "routines365:quests:v1", "routines365:theme", "routines365:pageTints",
+        "routines365:quests:hidden", "routines365:quickActions:hidden",
+        "routines365:dailyWisdom:hidden", "routines365:healthCard:hidden",
+        "routines365:waterTracker:hidden", "routines365:smartTips:hidden",
+        "routines365:journalMode", "routines365:breathwork:introduced",
+      ]);
+      const keys = Object.keys(localStorage).filter((k) => k.startsWith("routines365:") && !PREFS.has(k));
       keys.forEach((k) => localStorage.removeItem(k));
       router.replace("/login");
     } catch {
