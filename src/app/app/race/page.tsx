@@ -421,6 +421,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
           style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)" }}
           onClick={() => setSheetOpen(false)}
         >
+          {/* Sheet container — absolute positioned, explicit height, NO flex */}
           <div
             style={{
               position: "absolute",
@@ -430,10 +431,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
               maxWidth: 448,
               margin: "0 auto",
               height: "92vh",
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
-              overscrollBehavior: "contain",
-              background: "var(--bg-sheet)",
+              background: "var(--bg-sheet, #ffffff)",
               borderRadius: "16px 16px 0 0",
               border: "1px solid var(--border-primary)",
               borderBottom: "none",
@@ -441,21 +439,27 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Sticky header */}
+            {/* Header — absolute top, fixed 56px tall */}
             <div
               style={{
-                position: "sticky",
+                position: "absolute",
                 top: 0,
-                zIndex: 10,
-                background: "var(--bg-sheet)",
+                left: 0,
+                right: 0,
+                height: 56,
+                background: "var(--bg-sheet, #ffffff)",
+                borderRadius: "16px 16px 0 0",
                 padding: "12px 16px 8px",
+                boxSizing: "border-box",
+                zIndex: 2,
+                borderBottom: "1px solid var(--border-primary)",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
-                <div style={{ height: 6, width: 40, borderRadius: 999, background: "var(--border-primary)" }} />
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
+                <div style={{ height: 5, width: 40, borderRadius: 999, background: "var(--border-primary)" }} />
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Log Race</h3>
+                <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Log Race <span style={{ fontSize: 9, color: "red" }}>v6</span></h3>
                 <button type="button" onClick={() => setSheetOpen(false)}
                   className="rounded-full px-3.5 py-2 text-xs font-semibold"
                   style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
@@ -464,8 +468,21 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
               </div>
             </div>
 
-            {/* Content — flows naturally, scrolls with sheet */}
-            <div style={{ padding: "0 16px 16px", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
+            {/* Scrollable content — absolute position, top below header, bottom 0 */}
+            <div
+              style={{
+                position: "absolute",
+                top: 56,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                overscrollBehavior: "contain",
+                padding: "12px 16px 16px",
+                paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+              }}
+            >
               <div className="space-y-4">
                 {/* Division selector */}
                 <div>
