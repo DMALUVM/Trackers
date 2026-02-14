@@ -415,7 +415,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
         </div>
       )}
 
-      {/* ── Race Entry — Full-screen modal, NOT BottomSheet ── */}
+      {/* ── Race Entry — Full-screen modal, sticky header, single scroll ── */}
       {sheetOpen && (
         <div
           style={{
@@ -426,23 +426,25 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
             bottom: 0,
             zIndex: 9999,
             background: "var(--bg-base, #fff)",
-            display: "flex",
-            flexDirection: "column",
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
           }}
         >
-          {/* Fixed header */}
+          {/* Sticky header */}
           <div
             style={{
-              flexShrink: 0,
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
               paddingTop: "calc(12px + env(safe-area-inset-top, 0px))",
               paddingLeft: 16,
               paddingRight: 16,
               paddingBottom: 12,
               borderBottom: "1px solid var(--border-primary)",
+              background: "var(--bg-base, #fff)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              background: "var(--bg-base, #fff)",
             }}
           >
             <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Log Race</h3>
@@ -453,17 +455,8 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
             </button>
           </div>
 
-          {/* Scrollable content */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              WebkitOverflowScrolling: "touch",
-              overscrollBehavior: "contain",
-              padding: "16px",
-              paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
-            }}
-          >
+          {/* Content — just a normal div, scrolls with the page */}
+          <div style={{ padding: 16, paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
             <div className="space-y-4">
               {/* Division selector */}
               <div>
@@ -501,33 +494,31 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
               </div>
 
               {/* Split inputs */}
-              <div className="space-y-1.5">
-                {visibleSegs.map((seg) => (
-                  <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
-                    style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
-                    <span className="text-base shrink-0">{seg.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
-                      <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
-                    </div>
-                    <input
-                      ref={(el) => { inputRefs.current[seg.id] = el; }}
-                      className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
-                      style={{
-                        width: 78,
-                        background: "var(--bg-input)",
-                        border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
-                        color: "var(--text-primary)",
-                      }}
-                      placeholder="0:00"
-                      inputMode="text"
-                      value={splits[seg.id] ?? ""}
-                      onChange={(e) => updateSplit(seg.id, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
-                    />
+              {visibleSegs.map((seg) => (
+                <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
+                  style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
+                  <span className="text-base shrink-0">{seg.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
+                    <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
                   </div>
-                ))}
-              </div>
+                  <input
+                    ref={(el) => { inputRefs.current[seg.id] = el; }}
+                    className="shrink-0 rounded-lg px-2.5 py-2 text-right text-sm font-bold tabular-nums"
+                    style={{
+                      width: 78,
+                      background: "var(--bg-input)",
+                      border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
+                      color: "var(--text-primary)",
+                    }}
+                    placeholder="0:00"
+                    inputMode="text"
+                    value={splits[seg.id] ?? ""}
+                    onChange={(e) => updateSplit(seg.id, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(seg.id, visibleSegs, e)}
+                  />
+                </div>
+              ))}
 
               {/* Total */}
               {filledCount > 0 && (
