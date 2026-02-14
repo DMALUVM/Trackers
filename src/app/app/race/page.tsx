@@ -119,6 +119,71 @@ const STATION_DRILLS: StationDrill[] = [
 ];
 
 // ═══════════════════════════════════════════════
+// General Training Workouts (multi-station combos)
+// ═══════════════════════════════════════════════
+
+interface GeneralWorkout {
+  id: string;
+  name: string;
+  focus: string;
+  emoji: string;
+  stations: string[];
+  exercises: string[];
+  duration: string;
+}
+
+const GENERAL_WORKOUTS: GeneralWorkout[] = [
+  {
+    id: "erg_endurance", name: "Erg Endurance", focus: "Aerobic Base",
+    emoji: "⛷️", stations: ["SkiErg", "Row"],
+    exercises: ["4 × 500m SkiErg (90s rest)", "4 × 500m Row (90s rest)", "2 × 1000m alternating (2min rest)"],
+    duration: "35 min",
+  },
+  {
+    id: "sled_power", name: "Sled Power", focus: "Strength Endurance",
+    emoji: "🛷", stations: ["Sled Push", "Sled Pull"],
+    exercises: ["6 × 25m Sled Push (heavy)", "6 × 25m Sled Pull (heavy)", "3 × 50m Push-Pull combo (race weight)"],
+    duration: "25 min",
+  },
+  {
+    id: "carry_lunge", name: "Carry & Lunge Grind", focus: "Lower Body",
+    emoji: "🏋️", stations: ["Farmers Carry", "Lunges"],
+    exercises: ["4 × 100m Farmers Carry (race weight)", "4 × 50m Sandbag Lunges", "2 × 200m Carry + 100m Lunge combo"],
+    duration: "30 min",
+  },
+  {
+    id: "wall_ball_blast", name: "Wall Ball Blast", focus: "Stamina",
+    emoji: "🎯", stations: ["Wall Balls"],
+    exercises: ["5 × 20 Wall Balls (30s rest)", "3 × 30 Wall Balls (60s rest)", "1 × 75 Wall Balls (time trial)"],
+    duration: "20 min",
+  },
+  {
+    id: "bbj_condition", name: "BBJ Conditioning", focus: "Full Body",
+    emoji: "💥", stations: ["Burpee BJ"],
+    exercises: ["5 × 20m Burpee Broad Jumps", "10 Burpees + 20m BBJ × 4 rounds", "80m BBJ time trial"],
+    duration: "20 min",
+  },
+  {
+    id: "running_base", name: "Running Base Builder", focus: "Cardio",
+    emoji: "🏃", stations: ["Running"],
+    exercises: ["8 × 1km intervals (target: race pace)", "Rest 60s between intervals", "Final km: all-out effort"],
+    duration: "45 min",
+  },
+  {
+    id: "station_sandwich", name: "Station Sandwich", focus: "Transitions",
+    emoji: "🥪", stations: ["Mixed"],
+    exercises: ["1km Run → 500m SkiErg → 1km Run", "1km Run → 25m Sled Push → 25m Sled Pull → 1km Run", "1km Run → 50 Wall Balls → 1km Run"],
+    duration: "40 min",
+  },
+  {
+    id: "full_sim", name: "Full Race Simulation", focus: "Race Prep",
+    emoji: "🏁", stations: ["All Stations"],
+    exercises: ["Complete all 8 runs (1km each)", "All 8 stations at race standards", "Record total time and splits"],
+    duration: "60–90 min",
+  },
+];
+
+// ═══════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════
 
@@ -379,15 +444,15 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
             ))}
           </div>
 
-          {/* Split inputs — scrollable area */}
-          <div className="space-y-2" style={{ maxHeight: 280, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+          {/* Split inputs — no inner scroll, BottomSheet handles overflow */}
+          <div className="space-y-1.5">
             {visibleSegs.map((seg, idx) => (
-              <div key={seg.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+              <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
                 style={{ background: parsedSplits[seg.id] ? (seg.type === "station" ? "var(--accent-blue-soft)" : "var(--accent-green-soft)") : "var(--bg-card)" }}>
-                <span className="text-lg shrink-0">{seg.icon}</span>
+                <span className="text-base shrink-0">{seg.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</p>
-                  <p className="text-[10px]" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
+                  <p className="text-[10px] -mt-0.5" style={{ color: "var(--text-faint)" }}>{seg.detail}</p>
                 </div>
                 <input
                   ref={(el) => { inputRefs.current[seg.id] = el; }}
@@ -611,6 +676,88 @@ function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; r
             </div>
           );
         })}
+      </div>
+
+      {/* ── General / Combo Workouts ── */}
+      <div>
+        <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
+          General Training
+        </p>
+        <div className="space-y-3">
+          {GENERAL_WORKOUTS.map((w) => {
+            const isOpen = expanded === w.id;
+            const done = todayDone.has(w.id);
+
+            return (
+              <div key={w.id} className="rounded-2xl overflow-hidden transition-all"
+                style={{
+                  background: done ? "var(--accent-green-soft)" : "var(--bg-card)",
+                  border: `1px solid ${done ? "var(--accent-green)" : "var(--border-primary)"}`,
+                }}>
+                <button type="button" onClick={() => toggle(w.id)}
+                  className="w-full p-4 text-left flex items-center gap-3">
+                  <span className="text-2xl shrink-0">{w.emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{w.name}</p>
+                      {done && <Check size={14} style={{ color: "var(--accent-green)" }} />}
+                    </div>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{w.focus}</p>
+                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                        {w.duration}
+                      </span>
+                      {w.stations.map((s) => (
+                        <span key={s} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "var(--accent-blue-soft)", color: "var(--accent-blue)" }}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="shrink-0" style={{ color: "var(--text-faint)" }}>
+                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="px-4 pb-4 pt-0 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
+                    <div className="pt-3 space-y-2">
+                      {w.exercises.map((ex, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <div className="shrink-0 mt-1.5 rounded-full"
+                            style={{ width: 5, height: 5, background: "var(--accent-blue)" }} />
+                          <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{ex}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button type="button" onClick={async () => {
+                        if (done) return;
+                        setToast("saving");
+                        try {
+                          await addActivityLog({
+                            dateKey, activityKey: "race_train" as any, value: 1, unit: "count" as any,
+                            notes: JSON.stringify({ workout: w.id, workoutName: w.name } as TrainLogData),
+                          });
+                          hapticSuccess(); setToast("saved"); reload();
+                          setTimeout(() => setToast("idle"), 1500);
+                        } catch { setToast("error"); setTimeout(() => setToast("idle"), 3000); }
+                      }}
+                      disabled={done}
+                      className="btn-primary w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                      style={done ? { opacity: 0.5 } : {}}>
+                      {done
+                        ? <><Check size={16} /> Completed Today</>
+                        : <><Zap size={16} /> Log Workout</>}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Log station sheet — supports time trial + drill modes */}
