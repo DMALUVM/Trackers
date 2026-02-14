@@ -78,11 +78,11 @@ self.addEventListener("install", (event) => {
 // Activate: clean old caches
 // ---------------------------------------------------------------------------
 self.addEventListener("activate", (event) => {
-  const keep = new Set([CACHE_NAME, DATA_CACHE]);
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)))
-    )
+      Promise.all(keys.map((k) => caches.delete(k)))
+    ).then(() => caches.open(CACHE_NAME))
+      .then((cache) => cache.addAll(SHELL_ASSETS).catch(() => {}))
   );
   self.clients.claim();
 });
