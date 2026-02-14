@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { History, Check, ChevronDown, Trophy, Timer, Repeat, Crown } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { History, Check, Trophy, Timer, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useToday } from "@/lib/hooks";
 import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
-import { hapticSuccess, hapticLight, hapticSelection } from "@/lib/haptics";
+import { Toast, BottomSheet, type ToastState } from "@/app/app/_components/ui";
+import { hapticSuccess, hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { format, subDays } from "date-fns";
 
 // ═══════════════════════════════════════════════
-// Lift definitions
+// Data — Lifts
 // ═══════════════════════════════════════════════
 
 type LiftCategory = "olympic" | "squat" | "press" | "pull" | "gymnastics";
@@ -19,56 +19,53 @@ interface Lift {
   id: string;
   name: string;
   category: LiftCategory;
-  repSchemes: string[]; // e.g. ["1RM","3RM","5RM"]
+  repSchemes: string[];
 }
 
+const CATEGORY_META: Record<LiftCategory, { label: string; color: string; softBg: string }> = {
+  olympic:    { label: "Olympic",     color: "var(--accent-red)",    softBg: "var(--accent-red-soft)" },
+  squat:      { label: "Squat",       color: "var(--accent-blue)",   softBg: "var(--accent-blue-soft)" },
+  press:      { label: "Press",       color: "var(--accent-yellow)", softBg: "var(--accent-yellow-soft)" },
+  pull:       { label: "Pull",        color: "var(--accent-green)",  softBg: "var(--accent-green-soft)" },
+  gymnastics: { label: "Gymnastics",  color: "#a78bfa",             softBg: "rgba(167,139,250,0.15)" },
+};
+
 const LIFTS: Lift[] = [
-  // Olympic
   { id: "clean", name: "Clean", category: "olympic", repSchemes: ["1RM", "3RM"] },
   { id: "power_clean", name: "Power Clean", category: "olympic", repSchemes: ["1RM", "3RM"] },
   { id: "clean_jerk", name: "Clean & Jerk", category: "olympic", repSchemes: ["1RM"] },
   { id: "snatch", name: "Snatch", category: "olympic", repSchemes: ["1RM", "3RM"] },
   { id: "power_snatch", name: "Power Snatch", category: "olympic", repSchemes: ["1RM", "3RM"] },
-  { id: "thruster", name: "Thruster", category: "olympic", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "hang_clean", name: "Hang Clean", category: "olympic", repSchemes: ["1RM", "3RM"] },
   { id: "hang_snatch", name: "Hang Snatch", category: "olympic", repSchemes: ["1RM", "3RM"] },
-  // Squats
+  { id: "thruster", name: "Thruster", category: "olympic", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "back_squat", name: "Back Squat", category: "squat", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "front_squat", name: "Front Squat", category: "squat", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "overhead_squat", name: "Overhead Squat", category: "squat", repSchemes: ["1RM", "3RM"] },
-  { id: "pistol_squat", name: "Pistol Squat", category: "squat", repSchemes: ["Max Reps"] },
-  // Press
   { id: "strict_press", name: "Strict Press", category: "press", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "push_press", name: "Push Press", category: "press", repSchemes: ["1RM", "3RM"] },
   { id: "push_jerk", name: "Push Jerk", category: "press", repSchemes: ["1RM", "3RM"] },
   { id: "split_jerk", name: "Split Jerk", category: "press", repSchemes: ["1RM"] },
   { id: "bench_press", name: "Bench Press", category: "press", repSchemes: ["1RM", "3RM", "5RM"] },
-  { id: "hspu", name: "Handstand Push-up", category: "press", repSchemes: ["Max Reps"] },
-  // Pull
   { id: "deadlift", name: "Deadlift", category: "pull", repSchemes: ["1RM", "3RM", "5RM"] },
   { id: "sumo_deadlift", name: "Sumo Deadlift", category: "pull", repSchemes: ["1RM", "3RM", "5RM"] },
-  { id: "pull_up", name: "Pull-up", category: "gymnastics", repSchemes: ["Max Reps"] },
+  { id: "pull_up", name: "Pull-up (weighted)", category: "pull", repSchemes: ["1RM", "3RM"] },
   { id: "strict_pull_up", name: "Strict Pull-up", category: "gymnastics", repSchemes: ["Max Reps"] },
   { id: "muscle_up_ring", name: "Ring Muscle-up", category: "gymnastics", repSchemes: ["Max Reps"] },
   { id: "muscle_up_bar", name: "Bar Muscle-up", category: "gymnastics", repSchemes: ["Max Reps"] },
+  { id: "hspu", name: "Handstand Push-up", category: "gymnastics", repSchemes: ["Max Reps"] },
   { id: "toes_to_bar", name: "Toes-to-Bar", category: "gymnastics", repSchemes: ["Max Reps"] },
+  { id: "double_under", name: "Double-unders", category: "gymnastics", repSchemes: ["Max Reps"] },
   { id: "rope_climb", name: "Rope Climb", category: "gymnastics", repSchemes: ["Max Reps"] },
-  { id: "double_under", name: "Double-under", category: "gymnastics", repSchemes: ["Max Reps"] },
-];
-
-const CATEGORIES: { key: LiftCategory; label: string }[] = [
-  { key: "olympic", label: "Olympic" },
-  { key: "squat", label: "Squat" },
-  { key: "press", label: "Press" },
-  { key: "pull", label: "Pull" },
-  { key: "gymnastics", label: "Gymnastics" },
+  { id: "pistol_squat", name: "Pistol Squat", category: "gymnastics", repSchemes: ["Max Reps"] },
 ];
 
 // ═══════════════════════════════════════════════
-// Benchmark WOD definitions
+// Data — Benchmark WODs
 // ═══════════════════════════════════════════════
 
-type WodType = "time" | "amrap" | "rounds_time";
+type WodType = "time" | "amrap";
+type WodCategory = "girl" | "hero" | "open";
 
 interface BenchmarkWOD {
   id: string;
@@ -76,11 +73,16 @@ interface BenchmarkWOD {
   description: string;
   type: WodType;
   amrapMinutes?: number;
-  category: "girl" | "hero" | "open";
+  category: WodCategory;
 }
 
+const WOD_CATEGORY_META: Record<WodCategory, { label: string; color: string; softBg: string }> = {
+  girl: { label: "The Girls",  color: "var(--accent-red)",    softBg: "var(--accent-red-soft)" },
+  hero: { label: "Hero",       color: "var(--accent-blue)",   softBg: "var(--accent-blue-soft)" },
+  open: { label: "Open",       color: "var(--accent-yellow)", softBg: "var(--accent-yellow-soft)" },
+};
+
 const BENCHMARK_WODS: BenchmarkWOD[] = [
-  // Girl WODs
   { id: "fran", name: "Fran", description: "21-15-9: Thrusters (95/65) & Pull-ups", type: "time", category: "girl" },
   { id: "grace", name: "Grace", description: "30 Clean & Jerks (135/95)", type: "time", category: "girl" },
   { id: "isabel", name: "Isabel", description: "30 Snatches (135/95)", type: "time", category: "girl" },
@@ -94,91 +96,82 @@ const BENCHMARK_WODS: BenchmarkWOD[] = [
   { id: "amanda", name: "Amanda", description: "9-7-5: Muscle-ups & Snatches (135/95)", type: "time", category: "girl" },
   { id: "cindy", name: "Cindy", description: "AMRAP 20: 5 Pull-ups, 10 Push-ups, 15 Squats", type: "amrap", amrapMinutes: 20, category: "girl" },
   { id: "mary", name: "Mary", description: "AMRAP 20: 5 HSPUs, 10 Pistols, 15 Pull-ups", type: "amrap", amrapMinutes: 20, category: "girl" },
-  // Hero WODs
-  { id: "murph", name: "Murph", description: "1mi Run, 100 Pull-ups, 200 Push-ups, 300 Squats, 1mi Run (w/ vest)", type: "time", category: "hero" },
+  { id: "murph", name: "Murph", description: "1mi Run, 100 Pull-ups, 200 Push-ups, 300 Squats, 1mi Run (vest)", type: "time", category: "hero" },
   { id: "dt", name: "DT", description: "5 RFT: 12 DL (155/105), 9 Hang Cleans, 6 Push Jerks", type: "time", category: "hero" },
   { id: "nate", name: "Nate", description: "AMRAP 20: 2 Muscle-ups, 4 HSPUs, 8 KB Swings (70/53)", type: "amrap", amrapMinutes: 20, category: "hero" },
   { id: "jt", name: "JT", description: "21-15-9: HSPUs, Ring Dips, Push-ups", type: "time", category: "hero" },
   { id: "michael", name: "Michael", description: "3 RFT: 800m Run, 50 Back Ext, 50 Sit-ups", type: "time", category: "hero" },
-  { id: "daniel", name: "Daniel", description: "50 Pull-ups, 400m Run, 21 Thrusters (95/65), 800m Run, 21 Thrusters, 400m Run, 50 Pull-ups", type: "time", category: "hero" },
-  // Open Classics
-  { id: "open_2301", name: "23.1", description: "AMRAP 14: 60 Cal Row, 50 T2B, 40 Wall Balls, 30 Cleans, 20 MU", type: "amrap", amrapMinutes: 14, category: "open" },
-  { id: "open_2401", name: "24.1", description: "AMRAP 15: 21-15-9-15-21 Cal Row & Lateral Burpees", type: "amrap", amrapMinutes: 15, category: "open" },
-];
-
-const WOD_CATEGORIES: { key: BenchmarkWOD["category"]; label: string }[] = [
-  { key: "girl", label: "The Girls" },
-  { key: "hero", label: "Hero" },
-  { key: "open", label: "Open" },
+  { id: "daniel", name: "Daniel", description: "50 Pull-ups, 400m, 21 Thrusters, 800m, 21 Thrusters, 400m, 50 Pull-ups", type: "time", category: "hero" },
 ];
 
 // ═══════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════
 
-function fmtTime(totalSec: number): string {
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
+function fmtTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function parseTimeInput(str: string): number | null {
-  // Accept "m:ss" or total seconds
-  const colonMatch = str.match(/^(\d+):(\d{1,2})$/);
-  if (colonMatch) return parseInt(colonMatch[1]) * 60 + parseInt(colonMatch[2]);
-  const num = parseInt(str);
-  if (!isNaN(num) && num > 0) return num;
-  return null;
+  const c = str.match(/^(\d+):(\d{1,2})$/);
+  if (c) return parseInt(c[1]) * 60 + parseInt(c[2]);
+  const n = parseInt(str);
+  return !isNaN(n) && n > 0 ? n : null;
 }
 
-interface PRRecord {
-  lift: string;
-  liftName: string;
-  weight: number;
-  unit: string;
-  scheme: string;
-  date: string;
-}
+interface PRData { lift: string; liftName: string; weight: number; unit: string; scheme: string; }
+interface WODData { wod: string; wodName: string; type: WodType; timeSeconds?: number; rounds?: number; extraReps?: number; rx: boolean; }
 
-function parsePRNotes(notes: string | null): Partial<PRRecord> {
-  if (!notes) return {};
-  try { return JSON.parse(notes); } catch { return {}; }
-}
-
-interface WODRecord {
-  wod: string;
-  wodName: string;
-  type: WodType;
-  timeSeconds?: number;
-  rounds?: number;
-  extraReps?: number;
-  rx: boolean;
-}
-
-function parseWODNotes(notes: string | null): Partial<WODRecord> {
+function parseJSON<T>(notes: string | null): Partial<T> {
   if (!notes) return {};
   try { return JSON.parse(notes); } catch { return {}; }
 }
 
 // ═══════════════════════════════════════════════
-// Components
+// Shared: Tab Bar
 // ═══════════════════════════════════════════════
 
-function TabBar({ active, onChange }: { active: "pr" | "wod"; onChange: (t: "pr" | "wod") => void }) {
+function TabBar({ active, tabs, onChange }: {
+  active: string; tabs: { key: string; label: string }[]; onChange: (k: string) => void;
+}) {
   return (
-    <div className="flex rounded-xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-      {(["pr", "wod"] as const).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => { hapticSelection(); onChange(t); }}
-          className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-center transition-all"
+    <div className="flex rounded-2xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+      {tabs.map((t) => (
+        <button key={t.key} type="button"
+          onClick={() => { hapticSelection(); onChange(t.key); }}
+          className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-center transition-all duration-200"
           style={{
-            background: active === t ? "var(--accent-primary)" : "transparent",
-            color: active === t ? "#fff" : "var(--text-muted)",
-          }}
-        >
-          {t === "pr" ? "PRs" : "WODs"}
+            background: active === t.key ? "var(--btn-primary-bg)" : "transparent",
+            color: active === t.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+          }}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// Shared: Category Chips
+// ═══════════════════════════════════════════════
+
+function CategoryChips<T extends string>({ active, items, onChange }: {
+  active: T; items: { key: T; label: string; color: string; softBg: string }[]; onChange: (k: T) => void;
+}) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+      {items.map((c) => (
+        <button key={c.key} type="button"
+          onClick={() => { hapticLight(); onChange(c.key); }}
+          className="shrink-0 rounded-full px-4 py-2 text-xs font-bold transition-all active:scale-95"
+          style={{
+            background: active === c.key ? c.softBg : "var(--bg-card)",
+            color: active === c.key ? c.color : "var(--text-faint)",
+            border: `1.5px solid ${active === c.key ? c.color : "var(--border-primary)"}`,
+          }}>
+          {c.label}
         </button>
       ))}
     </div>
@@ -189,501 +182,468 @@ function TabBar({ active, onChange }: { active: "pr" | "wod"; onChange: (t: "pr"
 // PR Tab
 // ═══════════════════════════════════════════════
 
-function PRTab() {
+function PRTab({ allPRs, reload }: { allPRs: ActivityLogRow[]; reload: () => void }) {
   const { dateKey } = useToday();
   const [category, setCategory] = useState<LiftCategory>("olympic");
-  const [selectedLift, setSelectedLift] = useState<Lift | null>(null);
+  const [sheetLift, setSheetLift] = useState<Lift | null>(null);
   const [scheme, setScheme] = useState("1RM");
   const [weight, setWeight] = useState("");
   const [weightUnit, setWeightUnit] = useState<"lb" | "kg">("lb");
   const [toast, setToast] = useState<ToastState>("idle");
   const [justSaved, setJustSaved] = useState(false);
-  const [recentPRs, setRecentPRs] = useState<ActivityLogRow[]>([]);
-  const [prLoading, setPRLoading] = useState(true);
+  const [newPR, setNewPR] = useState(false);
 
   const liftsInCategory = LIFTS.filter((l) => l.category === category);
+  const catItems = Object.entries(CATEGORY_META).map(([k, v]) => ({ key: k as LiftCategory, ...v }));
 
-  // Load recent PRs
-  const loadPRs = useCallback(async () => {
-    setPRLoading(true);
-    try {
-      const to = format(new Date(), "yyyy-MM-dd");
-      const from = format(subDays(new Date(), 365), "yyyy-MM-dd");
-      const rows = await listActivityLogs({ from, to, activityKey: "pr" as any });
-      setRecentPRs(rows);
-    } catch { /* empty */ }
-    finally { setPRLoading(false); }
-  }, []);
-
-  useEffect(() => { void loadPRs(); }, [loadPRs]);
-
-  // When category changes, select first lift
-  useEffect(() => {
-    const first = liftsInCategory[0] ?? null;
-    setSelectedLift(first);
-    if (first) setScheme(first.repSchemes[0]);
-  }, [category]); // eslint-disable-line
-
-  // When lift changes, reset scheme
-  useEffect(() => {
-    if (selectedLift && !selectedLift.repSchemes.includes(scheme)) {
-      setScheme(selectedLift.repSchemes[0]);
+  // Build best-PR lookup: "liftId:scheme" → PRData
+  const bestPRs = useMemo(() => {
+    const map = new Map<string, PRData>();
+    for (const row of allPRs) {
+      const d = parseJSON<PRData>(row.notes);
+      if (!d.lift || !d.scheme) continue;
+      const key = `${d.lift}:${d.scheme}`;
+      const existing = map.get(key);
+      if (!existing || (d.weight ?? 0) > (existing.weight ?? 0)) {
+        map.set(key, d as PRData);
+      }
     }
-  }, [selectedLift]); // eslint-disable-line
+    return map;
+  }, [allPRs]);
+
+  const openSheet = (lift: Lift) => {
+    hapticMedium();
+    setSheetLift(lift);
+    setScheme(lift.repSchemes[0]);
+    setWeight("");
+    setJustSaved(false);
+    setNewPR(false);
+  };
 
   const handleSave = async () => {
-    if (!selectedLift || !weight.trim()) return;
+    if (!sheetLift || !weight.trim()) return;
     const num = Number(weight);
     if (isNaN(num) || num <= 0) return;
 
+    // Check if it's a new PR
+    const key = `${sheetLift.id}:${scheme}`;
+    const prev = bestPRs.get(key);
+    const isNewPR = !prev || num > prev.weight;
+
     setToast("saving");
     try {
-      const notes: PRRecord = {
-        lift: selectedLift.id,
-        liftName: selectedLift.name,
-        weight: num,
-        unit: weightUnit,
-        scheme,
-        date: dateKey,
+      const notes: PRData = {
+        lift: sheetLift.id, liftName: sheetLift.name,
+        weight: num, unit: weightUnit, scheme,
       };
       await addActivityLog({
-        dateKey,
-        activityKey: "pr" as any,
-        value: num,
-        unit: "count" as any,
+        dateKey, activityKey: "pr" as any,
+        value: num, unit: "count" as any,
         notes: JSON.stringify(notes),
       });
-      hapticSuccess();
-      setWeight("");
+
+      if (isNewPR) {
+        hapticHeavy();
+        setNewPR(true);
+      } else {
+        hapticSuccess();
+      }
       setJustSaved(true);
       setToast("saved");
-      setTimeout(() => { setToast("idle"); setJustSaved(false); }, 2000);
-      void loadPRs();
+      reload();
+      setTimeout(() => { setToast("idle"); }, 2000);
     } catch {
       setToast("error");
       setTimeout(() => setToast("idle"), 3000);
     }
   };
 
-  // Build best PR map from recent data
-  const bestPRs = new Map<string, PRRecord>();
-  for (const row of recentPRs) {
-    const data = parsePRNotes(row.notes);
-    if (!data.lift || !data.scheme) continue;
-    const key = `${data.lift}:${data.scheme}`;
-    const existing = bestPRs.get(key);
-    if (!existing || (data.weight ?? 0) > (existing.weight ?? 0)) {
-      bestPRs.set(key, data as PRRecord);
-    }
-  }
+  const currentBest = sheetLift ? bestPRs.get(`${sheetLift.id}:${scheme}`) : null;
 
   return (
     <>
       <Toast state={toast} />
 
-      {/* Category selector */}
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            onClick={() => { hapticLight(); setCategory(c.key); }}
-            className="shrink-0 rounded-lg px-3.5 py-2 text-xs font-bold tracking-wider uppercase transition-all"
-            style={{
-              background: category === c.key ? "var(--accent-primary)" : "var(--bg-card)",
-              color: category === c.key ? "#fff" : "var(--text-muted)",
-              border: `1px solid ${category === c.key ? "var(--accent-primary)" : "var(--border-primary)"}`,
-            }}
-          >
-            {c.label}
-          </button>
-        ))}
+      <CategoryChips active={category} items={catItems} onChange={setCategory} />
+
+      {/* Lift cards */}
+      <div className="space-y-2">
+        {liftsInCategory.map((lift) => {
+          const cat = CATEGORY_META[lift.category];
+          // Find best across all schemes
+          const bests = lift.repSchemes
+            .map((s) => bestPRs.get(`${lift.id}:${s}`))
+            .filter(Boolean) as PRData[];
+          const topPR = bests.length > 0 ? bests.reduce((a, b) => a.weight > b.weight ? a : b) : null;
+
+          return (
+            <button key={lift.id} type="button"
+              onClick={() => openSheet(lift)}
+              className="w-full rounded-2xl p-4 text-left transition-all active:scale-[0.98]"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 rounded-full" style={{ width: 8, height: 8, background: cat.color }} />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{lift.name}</p>
+                    <div className="flex gap-1.5 mt-1">
+                      {lift.repSchemes.map((s) => {
+                        const pr = bestPRs.get(`${lift.id}:${s}`);
+                        return (
+                          <span key={s} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: pr ? cat.softBg : "var(--bg-card-hover)",
+                              color: pr ? cat.color : "var(--text-faint)",
+                            }}>
+                            {s}{pr ? `: ${pr.scheme === "Max Reps" ? `${pr.weight}` : `${pr.weight}${pr.unit}`}` : ""}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                {topPR && (
+                  <div className="text-right shrink-0 ml-3">
+                    <p className="text-lg font-black tabular-nums" style={{ color: cat.color }}>
+                      {topPR.weight}
+                    </p>
+                    <p className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>
+                      {topPR.scheme === "Max Reps" ? "reps" : topPR.unit}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Lift selector + form */}
-      <section className="card p-5 space-y-4">
-        {/* Lift dropdown */}
-        <div>
-          <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Lift</label>
-          <div className="relative mt-1.5">
-            <select
-              className="w-full rounded-xl px-4 py-3.5 text-base font-semibold appearance-none pr-10"
-              style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              value={selectedLift?.id ?? ""}
-              onChange={(e) => {
-                const lift = LIFTS.find((l) => l.id === e.target.value);
-                setSelectedLift(lift ?? null);
-              }}
-            >
-              {liftsInCategory.map((l) => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-faint)" }} />
-          </div>
-        </div>
-
-        {/* Rep scheme */}
-        {selectedLift && (
-          <div>
-            <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Type</label>
-            <div className="flex gap-2 mt-1.5">
-              {selectedLift.repSchemes.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => { hapticLight(); setScheme(s); }}
-                  className="rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
-                  style={{
-                    background: scheme === s ? "var(--accent-primary)" : "var(--bg-input)",
-                    color: scheme === s ? "#fff" : "var(--text-muted)",
-                    border: `1px solid ${scheme === s ? "var(--accent-primary)" : "var(--border-primary)"}`,
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Weight input */}
-        <div>
-          <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>
-            {scheme === "Max Reps" ? "Reps" : "Weight"}
-          </label>
-          <div className="flex gap-2 mt-1.5">
-            <input
-              className="flex-1 rounded-xl px-4 py-3.5 text-base font-semibold tabular-nums"
-              style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-                fontSize: "1.125rem",
-              }}
-              inputMode="numeric"
-              placeholder={scheme === "Max Reps" ? "25" : "225"}
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-            />
-            {scheme !== "Max Reps" && (
-              <button
-                type="button"
-                onClick={() => { hapticLight(); setWeightUnit(weightUnit === "lb" ? "kg" : "lb"); }}
-                className="shrink-0 rounded-xl px-4 py-3.5 text-sm font-bold"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-primary)",
-                  color: "var(--accent-primary)",
-                }}
-              >
-                {weightUnit}
-              </button>
+      {/* ── PR Entry Bottom Sheet ── */}
+      <BottomSheet open={!!sheetLift} onClose={() => setSheetLift(null)} title={sheetLift?.name ?? "Log PR"}>
+        {sheetLift && (
+          <div className="space-y-5">
+            {/* New PR celebration */}
+            {newPR && (
+              <div className="rounded-2xl p-4 text-center"
+                style={{ background: "var(--accent-yellow-soft)", border: "1px solid var(--accent-yellow)" }}>
+                <p className="text-2xl mb-1">🎉</p>
+                <p className="text-base font-black" style={{ color: "var(--accent-yellow)" }}>New Personal Record!</p>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Save */}
-        <button type="button" className="btn-primary text-sm w-full flex items-center justify-center gap-2" onClick={handleSave}>
-          {justSaved ? <><Check size={16} /> Saved!</> : <><Trophy size={16} /> Log PR</>}
-        </button>
-      </section>
+            {/* Rep scheme selector */}
+            <div>
+              <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Type</p>
+              <div className="flex gap-2">
+                {sheetLift.repSchemes.map((s) => (
+                  <button key={s} type="button"
+                    onClick={() => { hapticLight(); setScheme(s); setJustSaved(false); setNewPR(false); }}
+                    className="flex-1 rounded-xl py-3 text-sm font-bold text-center transition-all active:scale-95"
+                    style={{
+                      background: scheme === s ? "var(--btn-primary-bg)" : "var(--bg-card)",
+                      color: scheme === s ? "var(--btn-primary-text)" : "var(--text-muted)",
+                      border: `1.5px solid ${scheme === s ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
+                    }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-      {/* PR Board */}
-      <section className="card p-4">
-        <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-faint)" }}>
-          PR Board
-        </p>
-        {prLoading ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
-        ) : bestPRs.size === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No PRs yet. Start logging!</p>
-        ) : (
-          <div className="space-y-2">
-            {Array.from(bestPRs.entries())
-              .sort(([, a], [, b]) => a.liftName.localeCompare(b.liftName))
-              .map(([key, pr]) => (
-                <div key={key} className="flex items-center justify-between py-2 px-1" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{pr.liftName}</p>
-                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>{pr.scheme}</p>
-                  </div>
-                  <p className="text-base font-bold tabular-nums" style={{ color: "var(--accent-primary)" }}>
-                    {pr.scheme === "Max Reps" ? `${pr.weight} reps` : `${pr.weight} ${pr.unit}`}
-                  </p>
-                </div>
-              ))}
+            {/* Current best */}
+            {currentBest && !newPR && (
+              <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+                style={{ background: "var(--bg-card-hover)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Current best</p>
+                <p className="text-base font-black tabular-nums" style={{ color: "var(--text-primary)" }}>
+                  {currentBest.scheme === "Max Reps" ? `${currentBest.weight} reps` : `${currentBest.weight} ${currentBest.unit}`}
+                </p>
+              </div>
+            )}
+
+            {/* Weight/reps input */}
+            <div>
+              <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                {scheme === "Max Reps" ? "Reps completed" : "Weight"}
+              </p>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 rounded-xl px-4 py-4 text-center text-xl font-black tabular-nums"
+                  style={{
+                    background: "var(--bg-input)", border: "1.5px solid var(--border-primary)",
+                    color: "var(--text-primary)",
+                  }}
+                  inputMode="numeric"
+                  placeholder={scheme === "Max Reps" ? "25" : "225"}
+                  value={weight}
+                  onChange={(e) => { setWeight(e.target.value); setJustSaved(false); setNewPR(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+                  autoFocus
+                />
+                {scheme !== "Max Reps" && (
+                  <button type="button"
+                    onClick={() => { hapticLight(); setWeightUnit(weightUnit === "lb" ? "kg" : "lb"); }}
+                    className="shrink-0 rounded-xl px-5 py-4 text-base font-black transition-all active:scale-95"
+                    style={{ background: "var(--bg-card)", border: "1.5px solid var(--border-primary)", color: "var(--text-primary)" }}>
+                    {weightUnit}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Save */}
+            <button type="button" onClick={handleSave}
+              disabled={justSaved}
+              className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
+              style={justSaved ? { opacity: 0.6 } : {}}>
+              {justSaved
+                ? <><Check size={18} /> {newPR ? "PR Saved!" : "Logged!"}</>
+                : <><Trophy size={18} /> Log {scheme === "Max Reps" ? "Reps" : "PR"}</>}
+            </button>
           </div>
         )}
-      </section>
+      </BottomSheet>
     </>
   );
 }
 
 // ═══════════════════════════════════════════════
-// WOD Tab
+// Benchmarks Tab
 // ═══════════════════════════════════════════════
 
-function WODTab() {
+function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload: () => void }) {
   const { dateKey } = useToday();
-  const [wodCategory, setWodCategory] = useState<BenchmarkWOD["category"]>("girl");
-  const [selectedWOD, setSelectedWOD] = useState<BenchmarkWOD | null>(BENCHMARK_WODS[0]);
+  const [wodCategory, setWodCategory] = useState<WodCategory>("girl");
+  const [sheetWOD, setSheetWOD] = useState<BenchmarkWOD | null>(null);
   const [timeInput, setTimeInput] = useState("");
   const [rounds, setRounds] = useState("");
   const [extraReps, setExtraReps] = useState("");
   const [rx, setRx] = useState(true);
   const [toast, setToast] = useState<ToastState>("idle");
   const [justSaved, setJustSaved] = useState(false);
-  const [recentWODs, setRecentWODs] = useState<ActivityLogRow[]>([]);
-  const [wodLoading, setWodLoading] = useState(true);
 
   const wodsInCategory = BENCHMARK_WODS.filter((w) => w.category === wodCategory);
+  const catItems = Object.entries(WOD_CATEGORY_META).map(([k, v]) => ({ key: k as WodCategory, ...v }));
 
-  const loadWODs = useCallback(async () => {
-    setWodLoading(true);
-    try {
-      const to = format(new Date(), "yyyy-MM-dd");
-      const from = format(subDays(new Date(), 90), "yyyy-MM-dd");
-      const rows = await listActivityLogs({ from, to, activityKey: "wod" as any });
-      setRecentWODs(rows);
-    } catch { /* empty */ }
-    finally { setWodLoading(false); }
-  }, []);
+  // Build best-WOD lookup
+  const bestWODs = useMemo(() => {
+    const map = new Map<string, WODData>();
+    for (const row of allWODs) {
+      const d = parseJSON<WODData>(row.notes);
+      if (!d.wod) continue;
+      const existing = map.get(d.wod);
+      if (!existing) { map.set(d.wod, d as WODData); continue; }
+      // For time: lower is better. For AMRAP: higher is better.
+      if (d.type === "time" && d.timeSeconds && existing.timeSeconds && d.timeSeconds < existing.timeSeconds) {
+        map.set(d.wod, d as WODData);
+      } else if (d.type === "amrap") {
+        const score = (d.rounds ?? 0) * 1000 + (d.extraReps ?? 0);
+        const existScore = (existing.rounds ?? 0) * 1000 + (existing.extraReps ?? 0);
+        if (score > existScore) map.set(d.wod, d as WODData);
+      }
+    }
+    return map;
+  }, [allWODs]);
 
-  useEffect(() => { void loadWODs(); }, [loadWODs]);
-
-  useEffect(() => {
-    const first = wodsInCategory[0] ?? null;
-    setSelectedWOD(first);
+  const openSheet = (wod: BenchmarkWOD) => {
+    hapticMedium();
+    setSheetWOD(wod);
     setTimeInput("");
     setRounds("");
     setExtraReps("");
-  }, [wodCategory]); // eslint-disable-line
+    setRx(true);
+    setJustSaved(false);
+  };
 
   const handleSave = async () => {
-    if (!selectedWOD) return;
-
+    if (!sheetWOD) return;
     let timeSeconds: number | undefined;
     let roundsVal: number | undefined;
     let extraRepsVal: number | undefined;
     let primaryValue: number;
 
-    if (selectedWOD.type === "time") {
+    if (sheetWOD.type === "time") {
       const parsed = parseTimeInput(timeInput);
       if (!parsed) return;
       timeSeconds = parsed;
       primaryValue = parsed;
     } else {
-      // AMRAP
       const r = parseInt(rounds);
       if (isNaN(r) || r < 0) return;
       roundsVal = r;
       extraRepsVal = parseInt(extraReps) || 0;
-      primaryValue = r * 100 + extraRepsVal; // encoded for sorting
+      primaryValue = r * 1000 + extraRepsVal;
     }
 
     setToast("saving");
     try {
-      const notes: WODRecord = {
-        wod: selectedWOD.id,
-        wodName: selectedWOD.name,
-        type: selectedWOD.type,
-        timeSeconds,
-        rounds: roundsVal,
-        extraReps: extraRepsVal,
-        rx,
+      const notes: WODData = {
+        wod: sheetWOD.id, wodName: sheetWOD.name,
+        type: sheetWOD.type, timeSeconds, rounds: roundsVal, extraReps: extraRepsVal, rx,
       };
       await addActivityLog({
-        dateKey,
-        activityKey: "wod" as any,
-        value: primaryValue,
-        unit: "count" as any,
+        dateKey, activityKey: "wod" as any,
+        value: primaryValue, unit: "count" as any,
         notes: JSON.stringify(notes),
       });
       hapticSuccess();
-      setTimeInput("");
-      setRounds("");
-      setExtraReps("");
       setJustSaved(true);
       setToast("saved");
-      setTimeout(() => { setToast("idle"); setJustSaved(false); }, 2000);
-      void loadWODs();
+      reload();
+      setTimeout(() => setToast("idle"), 2000);
     } catch {
       setToast("error");
       setTimeout(() => setToast("idle"), 3000);
     }
   };
 
+  const currentBest = sheetWOD ? bestWODs.get(sheetWOD.id) : null;
+
   return (
     <>
       <Toast state={toast} />
 
-      {/* WOD Category selector */}
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-        {WOD_CATEGORIES.map((c) => (
-          <button
-            key={c.key}
-            type="button"
-            onClick={() => { hapticLight(); setWodCategory(c.key); }}
-            className="shrink-0 rounded-lg px-3.5 py-2 text-xs font-bold tracking-wider uppercase transition-all"
-            style={{
-              background: wodCategory === c.key ? "var(--accent-primary)" : "var(--bg-card)",
-              color: wodCategory === c.key ? "#fff" : "var(--text-muted)",
-              border: `1px solid ${wodCategory === c.key ? "var(--accent-primary)" : "var(--border-primary)"}`,
-            }}
-          >
-            {c.label}
-          </button>
-        ))}
+      <CategoryChips active={wodCategory} items={catItems} onChange={setWodCategory} />
+
+      {/* WOD cards */}
+      <div className="space-y-3">
+        {wodsInCategory.map((wod) => {
+          const cat = WOD_CATEGORY_META[wod.category];
+          const best = bestWODs.get(wod.id);
+          const bestStr = best
+            ? best.type === "time" && best.timeSeconds ? fmtTime(best.timeSeconds) : `${best.rounds ?? 0}+${best.extraReps ?? 0}`
+            : null;
+
+          return (
+            <button key={wod.id} type="button"
+              onClick={() => openSheet(wod)}
+              className="w-full rounded-2xl p-5 text-left transition-all active:scale-[0.98]"
+              style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              <div className="flex items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5">
+                    <p className="text-base font-black" style={{ color: "var(--text-primary)" }}>{wod.name}</p>
+                    {best?.rx === false && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>Scaled</span>
+                    )}
+                  </div>
+                  <p className="text-sm mt-1.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>{wod.description}</p>
+                  <div className="flex gap-2 mt-2.5">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: cat.softBg, color: cat.color }}>
+                      {wod.type === "time" ? "For Time" : `AMRAP ${wod.amrapMinutes}`}
+                    </span>
+                  </div>
+                </div>
+                {bestStr && (
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] font-bold uppercase" style={{ color: "var(--text-faint)" }}>Best</p>
+                    <p className="text-lg font-black tabular-nums mt-0.5" style={{ color: "var(--accent-green)" }}>{bestStr}</p>
+                  </div>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* WOD Picker */}
-      <section className="card p-5 space-y-4">
-        <div>
-          <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Workout</label>
-          <div className="relative mt-1.5">
-            <select
-              className="w-full rounded-xl px-4 py-3.5 text-base font-semibold appearance-none pr-10"
-              style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-              }}
-              value={selectedWOD?.id ?? ""}
-              onChange={(e) => {
-                const wod = BENCHMARK_WODS.find((w) => w.id === e.target.value);
-                setSelectedWOD(wod ?? null);
-                setTimeInput("");
-                setRounds("");
-                setExtraReps("");
-              }}
-            >
-              {wodsInCategory.map((w) => (
-                <option key={w.id} value={w.id}>{w.name}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-faint)" }} />
-          </div>
-        </div>
+      {/* ── WOD Entry Bottom Sheet ── */}
+      <BottomSheet open={!!sheetWOD} onClose={() => setSheetWOD(null)} title={sheetWOD?.name ?? "Log WOD"}>
+        {sheetWOD && (
+          <div className="space-y-5">
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>{sheetWOD.description}</p>
 
-        {/* WOD description */}
-        {selectedWOD && (
-          <p className="text-sm leading-relaxed px-1" style={{ color: "var(--text-muted)" }}>
-            {selectedWOD.description}
-          </p>
-        )}
+            {/* Previous best */}
+            {currentBest && (
+              <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+                style={{ background: "var(--bg-card-hover)" }}>
+                <p className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Previous best</p>
+                <p className="text-base font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+                  {currentBest.type === "time" && currentBest.timeSeconds
+                    ? fmtTime(currentBest.timeSeconds)
+                    : `${currentBest.rounds ?? 0}+${currentBest.extraReps ?? 0}`}
+                  {currentBest.rx === false ? " (Scaled)" : ""}
+                </p>
+              </div>
+            )}
 
-        {/* Time or AMRAP input */}
-        {selectedWOD?.type === "time" ? (
-          <div>
-            <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Time (m:ss or seconds)</label>
-            <input
-              className="mt-1.5 w-full rounded-xl px-4 py-3.5 text-base font-semibold tabular-nums"
-              style={{
-                background: "var(--bg-input)",
-                border: "1px solid var(--border-primary)",
-                color: "var(--text-primary)",
-                fontSize: "1.125rem",
-              }}
-              placeholder="3:45"
-              value={timeInput}
-              onChange={(e) => setTimeInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Rounds</label>
-              <input
-                className="mt-1.5 w-full rounded-xl px-4 py-3.5 text-base font-semibold tabular-nums"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-primary)",
-                  color: "var(--text-primary)",
-                  fontSize: "1.125rem",
-                }}
-                inputMode="numeric"
-                placeholder="20"
-                value={rounds}
-                onChange={(e) => setRounds(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>+ Reps</label>
-              <input
-                className="mt-1.5 w-full rounded-xl px-4 py-3.5 text-base font-semibold tabular-nums"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-primary)",
-                  color: "var(--text-primary)",
-                  fontSize: "1.125rem",
-                }}
-                inputMode="numeric"
-                placeholder="7"
-                value={extraReps}
-                onChange={(e) => setExtraReps(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Rx toggle */}
-        <button
-          type="button"
-          onClick={() => { hapticLight(); setRx(!rx); }}
-          className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all"
-          style={{
-            background: rx ? "var(--accent-primary)" : "var(--bg-input)",
-            color: rx ? "#fff" : "var(--text-muted)",
-            border: `1px solid ${rx ? "var(--accent-primary)" : "var(--border-primary)"}`,
-          }}
-        >
-          <Crown size={14} /> {rx ? "Rx'd" : "Scaled"}
-        </button>
-
-        {/* Save */}
-        <button type="button" className="btn-primary text-sm w-full flex items-center justify-center gap-2" onClick={handleSave}>
-          {justSaved ? <><Check size={16} /> Logged!</> : <><Timer size={16} /> Log WOD</>}
-        </button>
-      </section>
-
-      {/* Recent WODs */}
-      <section className="card p-4">
-        <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-faint)" }}>
-          Recent Results
-        </p>
-        {wodLoading ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
-        ) : recentWODs.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No WODs logged yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {recentWODs.slice(0, 10).map((row) => {
-              const data = parseWODNotes(row.notes);
-              return (
-                <div key={row.id} className="flex items-center justify-between py-2 px-1" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                      {data.wodName ?? "WOD"}
-                      {data.rx === false && <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--text-faint)" }}>(Scaled)</span>}
-                    </p>
-                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>{row.date}</p>
+            {/* Time input or AMRAP input */}
+            {sheetWOD.type === "time" ? (
+              <div>
+                <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                  Time (m:ss)
+                </p>
+                <input
+                  className="w-full rounded-xl px-4 py-4 text-center text-xl font-black tabular-nums"
+                  style={{ background: "var(--bg-input)", border: "1.5px solid var(--border-primary)", color: "var(--text-primary)" }}
+                  placeholder="3:45"
+                  value={timeInput}
+                  onChange={(e) => { setTimeInput(e.target.value); setJustSaved(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSave(); }}
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <div>
+                <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>
+                  Score (rounds + reps)
+                </p>
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-semibold mb-1 text-center" style={{ color: "var(--text-faint)" }}>Rounds</p>
+                    <input
+                      className="w-full rounded-xl px-4 py-4 text-center text-xl font-black tabular-nums"
+                      style={{ background: "var(--bg-input)", border: "1.5px solid var(--border-primary)", color: "var(--text-primary)" }}
+                      inputMode="numeric" placeholder="20" value={rounds}
+                      onChange={(e) => { setRounds(e.target.value); setJustSaved(false); }}
+                      autoFocus
+                    />
                   </div>
-                  <p className="text-base font-bold tabular-nums" style={{ color: "var(--accent-primary)" }}>
-                    {data.type === "time" && data.timeSeconds ? fmtTime(data.timeSeconds) : `${data.rounds ?? 0}+${data.extraReps ?? 0}`}
-                  </p>
+                  <p className="text-xl font-black pb-4" style={{ color: "var(--text-faint)" }}>+</p>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-semibold mb-1 text-center" style={{ color: "var(--text-faint)" }}>Reps</p>
+                    <input
+                      className="w-full rounded-xl px-4 py-4 text-center text-xl font-black tabular-nums"
+                      style={{ background: "var(--bg-input)", border: "1.5px solid var(--border-primary)", color: "var(--text-primary)" }}
+                      inputMode="numeric" placeholder="7" value={extraReps}
+                      onChange={(e) => { setExtraReps(e.target.value); setJustSaved(false); }}
+                    />
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* Rx toggle */}
+            <div className="flex rounded-2xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+              {([
+                { key: true, label: "Rx'd", icon: "👑" },
+                { key: false, label: "Scaled", icon: "📏" },
+              ] as const).map(({ key, label, icon }) => (
+                <button key={String(key)} type="button"
+                  onClick={() => { hapticLight(); setRx(key); }}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-center transition-all duration-200"
+                  style={{
+                    background: rx === key ? "var(--btn-primary-bg)" : "transparent",
+                    color: rx === key ? "var(--btn-primary-text)" : "var(--text-muted)",
+                  }}>
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Save */}
+            <button type="button" onClick={handleSave}
+              disabled={justSaved}
+              className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
+              style={justSaved ? { opacity: 0.6 } : {}}>
+              {justSaved
+                ? <><Check size={18} /> Logged!</>
+                : <><Timer size={18} /> Log Result</>}
+            </button>
           </div>
         )}
-      </section>
+      </BottomSheet>
     </>
   );
 }
@@ -693,7 +653,24 @@ function WODTab() {
 // ═══════════════════════════════════════════════
 
 export default function WODPage() {
-  const [tab, setTab] = useState<"pr" | "wod">("pr");
+  const [tab, setTab] = useState("pr");
+  const [allPRs, setAllPRs] = useState<ActivityLogRow[]>([]);
+  const [allWODs, setAllWODs] = useState<ActivityLogRow[]>([]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const to = format(new Date(), "yyyy-MM-dd");
+      const from = format(subDays(new Date(), 730), "yyyy-MM-dd");
+      const [prs, wods] = await Promise.all([
+        listActivityLogs({ from, to, activityKey: "pr" as any }),
+        listActivityLogs({ from, to, activityKey: "wod" as any }),
+      ]);
+      setAllPRs(prs);
+      setAllWODs(wods);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { void loadAll(); }, [loadAll]);
 
   return (
     <div className="space-y-5">
@@ -702,16 +679,20 @@ export default function WODPage() {
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
             🏋️ Barbell & WODs
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Track PRs and benchmark workouts</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>Track PRs and benchmark workouts</p>
         </div>
-        <Link href="/app/wod/history" className="p-2.5 rounded-xl transition-colors" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+        <Link href="/app/wod/history"
+          className="tap-btn shrink-0 flex items-center justify-center rounded-full"
+          style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           <History size={18} style={{ color: "var(--text-muted)" }} />
         </Link>
       </header>
 
-      <TabBar active={tab} onChange={setTab} />
+      <TabBar active={tab} tabs={[{ key: "pr", label: "PRs" }, { key: "wod", label: "Benchmarks" }]} onChange={setTab} />
 
-      {tab === "pr" ? <PRTab /> : <WODTab />}
+      {tab === "pr"
+        ? <PRTab allPRs={allPRs} reload={loadAll} />
+        : <BenchmarksTab allWODs={allWODs} reload={loadAll} />}
     </div>
   );
 }

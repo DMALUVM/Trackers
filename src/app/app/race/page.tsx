@@ -1,43 +1,53 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { History, Check, ChevronDown, Timer, Dumbbell, Flag, Play } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { History, Check, ChevronDown, ChevronUp, Play, Flag, Zap } from "lucide-react";
 import Link from "next/link";
 import { useToday } from "@/lib/hooks";
 import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/activity";
-import { Toast, type ToastState } from "@/app/app/_components/ui";
-import { hapticSuccess, hapticLight, hapticSelection, hapticMedium } from "@/lib/haptics";
+import { Toast, BottomSheet, type ToastState } from "@/app/app/_components/ui";
+import { hapticSuccess, hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { format, subDays } from "date-fns";
 
 // ═══════════════════════════════════════════════
-// Race Format — 8 stations with 8x 1km runs
+// Race Format — 8 stations + 8 runs
 // ═══════════════════════════════════════════════
 
-interface Station {
+interface RaceSegment {
   id: string;
-  name: string;
-  description: string;
-  emoji: string;
+  label: string;
+  detail: string;
+  type: "run" | "station";
+  icon: string;
+  color: string;
 }
 
-const STATIONS: Station[] = [
-  { id: "skierg", name: "SkiErg", description: "1000m", emoji: "⛷️" },
-  { id: "sled_push", name: "Sled Push", description: "50m", emoji: "🛷" },
-  { id: "sled_pull", name: "Sled Pull", description: "50m", emoji: "🪢" },
-  { id: "burpee_broad_jump", name: "Burpee Broad Jump", description: "80m", emoji: "🐸" },
-  { id: "row", name: "Row", description: "1000m", emoji: "🚣" },
-  { id: "farmers_carry", name: "Farmers Carry", description: "200m", emoji: "🏋️" },
-  { id: "sandbag_lunges", name: "Sandbag Lunges", description: "100m", emoji: "🏃" },
-  { id: "wall_balls", name: "Wall Balls", description: "75–100 reps", emoji: "🎯" },
+const SEGMENTS: RaceSegment[] = [
+  { id: "run1",  label: "Run 1",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "ski",   label: "SkiErg",    detail: "1,000 m",  type: "station", icon: "⛷️", color: "var(--accent-blue)" },
+  { id: "run2",  label: "Run 2",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "push",  label: "Sled Push", detail: "50 m",     type: "station", icon: "🛷", color: "var(--accent-blue)" },
+  { id: "run3",  label: "Run 3",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "pull",  label: "Sled Pull", detail: "50 m",     type: "station", icon: "🪢", color: "var(--accent-blue)" },
+  { id: "run4",  label: "Run 4",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "bbj",   label: "Burpee BJ", detail: "80 m",     type: "station", icon: "💥", color: "var(--accent-blue)" },
+  { id: "run5",  label: "Run 5",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "row",   label: "Row",       detail: "1,000 m",  type: "station", icon: "🚣", color: "var(--accent-blue)" },
+  { id: "run6",  label: "Run 6",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "carry", label: "Farmers Carry", detail: "200 m", type: "station", icon: "🧑‍🌾", color: "var(--accent-blue)" },
+  { id: "run7",  label: "Run 7",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "lunge", label: "Lunges",    detail: "100 m",    type: "station", icon: "🏋️", color: "var(--accent-blue)" },
+  { id: "run8",  label: "Run 8",     detail: "1 km",     type: "run",     icon: "🏃", color: "var(--accent-green)" },
+  { id: "wall",  label: "Wall Balls", detail: "75–100 reps", type: "station", icon: "🎯", color: "var(--accent-blue)" },
 ];
 
 type Division = "open_m" | "open_f" | "pro_m" | "pro_f";
 
-const DIVISIONS: { key: Division; label: string }[] = [
-  { key: "open_m", label: "Open (M)" },
-  { key: "open_f", label: "Open (F)" },
-  { key: "pro_m", label: "Pro (M)" },
-  { key: "pro_f", label: "Pro (F)" },
+const DIVISIONS: { key: Division; label: string; short: string }[] = [
+  { key: "open_m", label: "Open Men",  short: "Open M" },
+  { key: "open_f", label: "Open Women", short: "Open W" },
+  { key: "pro_m",  label: "Pro Men",   short: "Pro M" },
+  { key: "pro_f",  label: "Pro Women",  short: "Pro W" },
 ];
 
 // ═══════════════════════════════════════════════
@@ -48,136 +58,60 @@ interface TrainingWorkout {
   id: string;
   name: string;
   focus: string;
-  targetStations: string[];
-  description: string;
+  emoji: string;
+  stations: string[];
   exercises: string[];
-  estimatedMinutes: number;
+  duration: string;
 }
 
 const TRAINING_WORKOUTS: TrainingWorkout[] = [
   {
-    id: "ergo_endurance",
-    name: "Erg Endurance",
-    focus: "SkiErg & Row",
-    targetStations: ["skierg", "row"],
-    description: "Build erg pacing and cardio base",
-    exercises: [
-      "Buy-in: 1000m SkiErg",
-      "3 rounds: 500m Row + 500m SkiErg",
-      "Cash-out: 1000m Row",
-      "Target: Maintain consistent pace across all sets",
-    ],
-    estimatedMinutes: 30,
+    id: "erg_endurance", name: "Erg Endurance", focus: "Aerobic Base",
+    emoji: "⛷️", stations: ["SkiErg", "Row"],
+    exercises: ["4 x 500m SkiErg (90s rest)", "4 x 500m Row (90s rest)", "2 x 1000m alternating (2min rest)"],
+    duration: "35 min",
   },
   {
-    id: "sled_power",
-    name: "Sled Power",
-    focus: "Sled Push & Pull",
-    targetStations: ["sled_push", "sled_pull"],
-    description: "Build pushing and pulling strength under fatigue",
-    exercises: [
-      "5 rounds:",
-      "  50m Sled Push (race weight)",
-      "  50m Sled Pull (race weight)",
-      "  200m Run",
-      "  Rest 90 seconds",
-      "Focus on leg drive and steady breathing",
-    ],
-    estimatedMinutes: 35,
+    id: "sled_power", name: "Sled Power", focus: "Strength Endurance",
+    emoji: "🛷", stations: ["Sled Push", "Sled Pull"],
+    exercises: ["6 x 25m Sled Push (heavy)", "6 x 25m Sled Pull (heavy)", "3 x 50m Push-Pull combo (race weight)"],
+    duration: "25 min",
   },
   {
-    id: "carry_lunge",
-    name: "Carry & Lunge Grind",
-    focus: "Farmers Carry & Lunges",
-    targetStations: ["farmers_carry", "sandbag_lunges"],
-    description: "Grip endurance and leg stamina",
-    exercises: [
-      "4 rounds:",
-      "  200m Farmers Carry (race weight)",
-      "  50m Sandbag Lunges",
-      "  400m Run",
-      "  Rest 2 minutes",
-    ],
-    estimatedMinutes: 40,
+    id: "carry_lunge", name: "Carry & Lunge Grind", focus: "Lower Body",
+    emoji: "🏋️", stations: ["Farmers Carry", "Lunges"],
+    exercises: ["4 x 100m Farmers Carry (race weight)", "4 x 50m Sandbag Lunges", "2 x 200m Carry + 100m Lunge combo"],
+    duration: "30 min",
   },
   {
-    id: "wall_ball_blast",
-    name: "Wall Ball Blast",
-    focus: "Wall Balls & Conditioning",
-    targetStations: ["wall_balls"],
-    description: "Build wall ball endurance for the final station",
-    exercises: [
-      "5 rounds:",
-      "  25 Wall Balls (race weight)",
-      "  200m Run",
-      "  Rest 60 seconds",
-      "Then: 50 unbroken Wall Balls for time",
-    ],
-    estimatedMinutes: 25,
+    id: "wall_ball", name: "Wall Ball Blast", focus: "Stamina",
+    emoji: "🎯", stations: ["Wall Balls"],
+    exercises: ["5 x 20 Wall Balls (30s rest)", "3 x 30 Wall Balls (60s rest)", "1 x 75 Wall Balls (time trial)"],
+    duration: "20 min",
   },
   {
-    id: "bbj_conditioning",
-    name: "BBJ Conditioning",
-    focus: "Burpee Broad Jumps",
-    targetStations: ["burpee_broad_jump"],
-    description: "Pacing and efficiency for the hardest station",
-    exercises: [
-      "6 rounds:",
-      "  20m Burpee Broad Jumps",
-      "  200m Run",
-      "  Rest 90 seconds",
-      "Focus on consistent jump distance and breathing rhythm",
-    ],
-    estimatedMinutes: 30,
+    id: "bbj_condition", name: "BBJ Conditioning", focus: "Full Body",
+    emoji: "💥", stations: ["Burpee BJ"],
+    exercises: ["5 x 20m Burpee Broad Jumps", "10 Burpees + 20m BBJ x 4 rounds", "80m BBJ time trial"],
+    duration: "20 min",
   },
   {
-    id: "race_simulation",
-    name: "Full Race Simulation",
-    focus: "All Stations",
-    targetStations: STATIONS.map((s) => s.id),
-    description: "Complete race rehearsal at 80% effort",
-    exercises: [
-      "Run 1km → 1000m SkiErg",
-      "Run 1km → 50m Sled Push",
-      "Run 1km → 50m Sled Pull",
-      "Run 1km → 80m Burpee Broad Jumps",
-      "Run 1km → 1000m Row",
-      "Run 1km → 200m Farmers Carry",
-      "Run 1km → 100m Sandbag Lunges",
-      "Run 1km → 75–100 Wall Balls",
-      "Record all split times!",
-    ],
-    estimatedMinutes: 75,
+    id: "full_sim", name: "Full Race Simulation", focus: "Race Prep",
+    emoji: "🏁", stations: ["All Stations"],
+    exercises: ["Complete all 8 runs (1km each)", "All 8 stations at race standards", "Record total time and splits"],
+    duration: "60–90 min",
   },
   {
-    id: "running_base",
-    name: "Running Base Builder",
-    focus: "Running Endurance",
-    targetStations: [],
-    description: "Build the aerobic base — running is 50%+ of race time",
-    exercises: [
-      "8 x 1km repeats",
-      "Run each at your target race pace",
-      "Rest 60–90 seconds between each",
-      "Goal: Even splits across all 8 intervals",
-    ],
-    estimatedMinutes: 45,
+    id: "running_base", name: "Running Base Builder", focus: "Cardio",
+    emoji: "🏃", stations: ["Running"],
+    exercises: ["8 x 1km intervals (target: race pace)", "Rest 60s between intervals", "Final km: all-out effort"],
+    duration: "45 min",
   },
   {
-    id: "station_sandwich",
-    name: "Station Sandwich",
-    focus: "Mixed Stations",
-    targetStations: ["skierg", "sled_push", "row", "wall_balls"],
-    description: "Run-station-run transitions under fatigue",
-    exercises: [
-      "3 rounds of:",
-      "  800m Run → 500m SkiErg",
-      "  800m Run → 25m Sled Push",
-      "  800m Run → 500m Row",
-      "  800m Run → 30 Wall Balls",
-      "Minimal rest between transitions",
-    ],
-    estimatedMinutes: 50,
+    id: "station_sandwich", name: "Station Sandwich", focus: "Transitions",
+    emoji: "🥪", stations: ["Mixed"],
+    exercises: ["1km Run → 500m SkiErg → 1km Run", "1km Run → 25m Sled Push → 25m Sled Pull → 1km Run", "1km Run → 50 Wall Balls → 1km Run"],
+    duration: "40 min",
   },
 ];
 
@@ -185,64 +119,63 @@ const TRAINING_WORKOUTS: TrainingWorkout[] = [
 // Helpers
 // ═══════════════════════════════════════════════
 
-function fmtTime(totalSec: number): string {
-  if (totalSec >= 3600) {
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
+function fmtTime(sec: number): string {
+  if (sec >= 3600) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
     return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   }
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, "0")}`;
 }
 
-function parseTimeInput(str: string): number | null {
+function parseTimeStr(str: string): number | null {
   if (!str.trim()) return null;
   // h:mm:ss
-  const hMatch = str.match(/^(\d+):(\d{1,2}):(\d{1,2})$/);
-  if (hMatch) return parseInt(hMatch[1]) * 3600 + parseInt(hMatch[2]) * 60 + parseInt(hMatch[3]);
+  const hms = str.match(/^(\d+):(\d{1,2}):(\d{1,2})$/);
+  if (hms) return parseInt(hms[1]) * 3600 + parseInt(hms[2]) * 60 + parseInt(hms[3]);
   // m:ss
-  const mMatch = str.match(/^(\d+):(\d{1,2})$/);
-  if (mMatch) return parseInt(mMatch[1]) * 60 + parseInt(mMatch[2]);
-  // seconds
-  const num = parseInt(str);
-  if (!isNaN(num) && num > 0) return num;
-  return null;
+  const ms = str.match(/^(\d+):(\d{1,2})$/);
+  if (ms) return parseInt(ms[1]) * 60 + parseInt(ms[2]);
+  // plain seconds
+  const n = parseInt(str);
+  return !isNaN(n) && n > 0 ? n : null;
 }
 
-interface RaceLog {
+interface RaceLogData {
   division: Division;
-  runs: (number | null)[]; // 8 run times in seconds
-  stations: (number | null)[]; // 8 station times in seconds
+  splits: Record<string, number>; // segment id → seconds
   totalSeconds: number;
-  date: string;
 }
 
-function parseRaceNotes(notes: string | null): Partial<RaceLog> {
+interface TrainLogData {
+  workout: string;
+  workoutName: string;
+}
+
+function parseJSON<T>(notes: string | null): Partial<T> {
   if (!notes) return {};
   try { return JSON.parse(notes); } catch { return {}; }
 }
 
 // ═══════════════════════════════════════════════
-// Components
+// Shared: Tab Bar
 // ═══════════════════════════════════════════════
 
-function TabBar({ active, onChange }: { active: "race" | "training"; onChange: (t: "race" | "training") => void }) {
+function TabBar({ active, tabs, onChange }: {
+  active: string; tabs: { key: string; label: string }[]; onChange: (k: string) => void;
+}) {
   return (
-    <div className="flex rounded-xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-      {(["race", "training"] as const).map((t) => (
-        <button
-          key={t}
-          type="button"
-          onClick={() => { hapticSelection(); onChange(t); }}
-          className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-center transition-all"
+    <div className="flex rounded-2xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+      {tabs.map((t) => (
+        <button key={t.key} type="button"
+          onClick={() => { hapticSelection(); onChange(t.key); }}
+          className="flex-1 rounded-xl py-2.5 text-sm font-semibold text-center transition-all duration-200"
           style={{
-            background: active === t ? "var(--accent-primary)" : "transparent",
-            color: active === t ? "#fff" : "var(--text-muted)",
-          }}
-        >
-          {t === "race" ? "Race Log" : "Training"}
+            background: active === t.key ? "var(--btn-primary-bg)" : "transparent",
+            color: active === t.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+          }}>
+          {t.label}
         </button>
       ))}
     </div>
@@ -250,218 +183,83 @@ function TabBar({ active, onChange }: { active: "race" | "training"; onChange: (
 }
 
 // ═══════════════════════════════════════════════
-// Race Log Tab
+// Race Log Tab — Stepped Split Entry
 // ═══════════════════════════════════════════════
 
-function RaceLogTab() {
+function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: () => void }) {
   const { dateKey } = useToday();
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [division, setDivision] = useState<Division>("open_m");
-  const [runInputs, setRunInputs] = useState<string[]>(Array(8).fill(""));
-  const [stationInputs, setStationInputs] = useState<string[]>(Array(8).fill(""));
+  const [splits, setSplits] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<ToastState>("idle");
   const [justSaved, setJustSaved] = useState(false);
-  const [recentRaces, setRecentRaces] = useState<ActivityLogRow[]>([]);
-  const [raceLoading, setRaceLoading] = useState(true);
+  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const loadRaces = useCallback(async () => {
-    setRaceLoading(true);
-    try {
-      const to = format(new Date(), "yyyy-MM-dd");
-      const from = format(subDays(new Date(), 365), "yyyy-MM-dd");
-      const rows = await listActivityLogs({ from, to, activityKey: "race_log" as any });
-      setRecentRaces(rows);
-    } catch { /* empty */ }
-    finally { setRaceLoading(false); }
-  }, []);
+  // Best race lookup
+  const bestRace = useMemo(() => {
+    let best: RaceLogData | null = null;
+    for (const row of allRaces) {
+      const d = parseJSON<RaceLogData>(row.notes);
+      if (!d.totalSeconds) continue;
+      if (!best || d.totalSeconds < best.totalSeconds) best = d as RaceLogData;
+    }
+    return best;
+  }, [allRaces]);
 
-  useEffect(() => { void loadRaces(); }, [loadRaces]);
+  const openSheet = () => {
+    hapticMedium();
+    setSheetOpen(true);
+    setSplits({});
+    setJustSaved(false);
+  };
 
-  // Calculate total
-  const runTimes = runInputs.map(parseTimeInput);
-  const stationTimes = stationInputs.map(parseTimeInput);
-  const totalSeconds = [...runTimes, ...stationTimes].reduce((sum: number, t) => sum + (t ?? 0), 0);
-  const filledCount = [...runTimes, ...stationTimes].filter((t) => t !== null).length;
+  const updateSplit = (segId: string, val: string) => {
+    setSplits((prev) => ({ ...prev, [segId]: val }));
+    setJustSaved(false);
+  };
 
-  const handleSave = async () => {
-    if (filledCount === 0) return;
-
-    setToast("saving");
-    try {
-      const notes: RaceLog = {
-        division,
-        runs: runTimes,
-        stations: stationTimes,
-        totalSeconds,
-        date: dateKey,
-      };
-      await addActivityLog({
-        dateKey,
-        activityKey: "race_log" as any,
-        value: totalSeconds,
-        unit: "seconds" as any,
-        notes: JSON.stringify(notes),
-      });
-      hapticSuccess();
-      setRunInputs(Array(8).fill(""));
-      setStationInputs(Array(8).fill(""));
-      setJustSaved(true);
-      setToast("saved");
-      setTimeout(() => { setToast("idle"); setJustSaved(false); }, 2000);
-      void loadRaces();
-    } catch {
-      setToast("error");
-      setTimeout(() => setToast("idle"), 3000);
+  // Auto-advance to next input on valid entry
+  const handleKeyDown = (segId: string, e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const idx = SEGMENTS.findIndex((s) => s.id === segId);
+      if (idx < SEGMENTS.length - 1) {
+        const nextId = SEGMENTS[idx + 1].id;
+        inputRefs.current[nextId]?.focus();
+      } else {
+        // Last segment — blur to dismiss keyboard
+        (e.target as HTMLInputElement).blur();
+      }
     }
   };
 
-  const updateRun = (i: number, val: string) => {
-    setRunInputs((prev) => { const next = [...prev]; next[i] = val; return next; });
-  };
-  const updateStation = (i: number, val: string) => {
-    setStationInputs((prev) => { const next = [...prev]; next[i] = val; return next; });
-  };
+  // Calculate total
+  const parsedSplits: Record<string, number> = {};
+  let totalSeconds = 0;
+  let filledCount = 0;
+  for (const seg of SEGMENTS) {
+    const parsed = parseTimeStr(splits[seg.id] ?? "");
+    if (parsed !== null) {
+      parsedSplits[seg.id] = parsed;
+      totalSeconds += parsed;
+      filledCount++;
+    }
+  }
 
-  return (
-    <>
-      <Toast state={toast} />
-
-      {/* Division selector */}
-      <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-        {DIVISIONS.map((d) => (
-          <button
-            key={d.key}
-            type="button"
-            onClick={() => { hapticLight(); setDivision(d.key); }}
-            className="shrink-0 rounded-lg px-3.5 py-2 text-xs font-bold tracking-wider uppercase transition-all"
-            style={{
-              background: division === d.key ? "var(--accent-primary)" : "var(--bg-card)",
-              color: division === d.key ? "#fff" : "var(--text-muted)",
-              border: `1px solid ${division === d.key ? "var(--accent-primary)" : "var(--border-primary)"}`,
-            }}
-          >
-            {d.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Station entries */}
-      <section className="card p-4 space-y-1">
-        <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-faint)" }}>
-          Split Times (m:ss)
-        </p>
-
-        {STATIONS.map((station, i) => (
-          <div key={station.id}>
-            {/* Run */}
-            <div className="flex items-center gap-3 py-2">
-              <span className="text-sm shrink-0 w-8 text-center" style={{ color: "var(--text-faint)" }}>🏃</span>
-              <p className="text-sm flex-1" style={{ color: "var(--text-muted)" }}>Run {i + 1} (1km)</p>
-              <input
-                className="w-20 rounded-lg px-3 py-2 text-sm font-semibold tabular-nums text-right"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-primary)",
-                  color: "var(--text-primary)",
-                }}
-                placeholder="5:00"
-                value={runInputs[i]}
-                onChange={(e) => updateRun(i, e.target.value)}
-              />
-            </div>
-            {/* Station */}
-            <div className="flex items-center gap-3 py-2" style={{ borderBottom: i < 7 ? "1px solid var(--border-primary)" : "none" }}>
-              <span className="text-sm shrink-0 w-8 text-center">{station.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>{station.name}</p>
-                <p className="text-xs" style={{ color: "var(--text-faint)" }}>{station.description}</p>
-              </div>
-              <input
-                className="w-20 rounded-lg px-3 py-2 text-sm font-semibold tabular-nums text-right"
-                style={{
-                  background: "var(--bg-input)",
-                  border: "1px solid var(--border-primary)",
-                  color: "var(--text-primary)",
-                }}
-                placeholder="4:30"
-                value={stationInputs[i]}
-                onChange={(e) => updateStation(i, e.target.value)}
-              />
-            </div>
-          </div>
-        ))}
-
-        {/* Total */}
-        {filledCount > 0 && (
-          <div className="flex items-center justify-between pt-4 mt-2" style={{ borderTop: "2px solid var(--border-primary)" }}>
-            <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Total Time</p>
-            <p className="text-xl font-bold tabular-nums" style={{ color: "var(--accent-primary)" }}>
-              {fmtTime(totalSeconds)}
-            </p>
-          </div>
-        )}
-
-        {/* Save */}
-        <button type="button" className="btn-primary text-sm w-full flex items-center justify-center gap-2 mt-3" onClick={handleSave}>
-          {justSaved ? <><Check size={16} /> Saved!</> : <><Flag size={16} /> Log Race</>}
-        </button>
-      </section>
-
-      {/* Recent races */}
-      <section className="card p-4">
-        <p className="text-xs font-bold tracking-wider uppercase mb-3" style={{ color: "var(--text-faint)" }}>
-          Recent Races
-        </p>
-        {raceLoading ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Loading...</p>
-        ) : recentRaces.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>No races logged yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {recentRaces.slice(0, 5).map((row) => {
-              const data = parseRaceNotes(row.notes);
-              const divLabel = DIVISIONS.find((d) => d.key === data.division)?.label ?? "Open";
-              return (
-                <div key={row.id} className="flex items-center justify-between py-2 px-1" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{divLabel}</p>
-                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>{row.date}</p>
-                  </div>
-                  <p className="text-lg font-bold tabular-nums" style={{ color: "var(--accent-primary)" }}>
-                    {data.totalSeconds ? fmtTime(data.totalSeconds) : row.value}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </>
-  );
-}
-
-// ═══════════════════════════════════════════════
-// Training Tab
-// ═══════════════════════════════════════════════
-
-function TrainingTab() {
-  const { dateKey } = useToday();
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [toast, setToast] = useState<ToastState>("idle");
-  const [loggedToday, setLoggedToday] = useState<Set<string>>(new Set());
-
-  const handleLog = async (workout: TrainingWorkout) => {
+  const handleSave = async () => {
+    if (filledCount === 0) return;
     setToast("saving");
     try {
+      const notes: RaceLogData = { division, splits: parsedSplits, totalSeconds };
       await addActivityLog({
-        dateKey,
-        activityKey: "race_train" as any,
-        value: workout.estimatedMinutes,
-        unit: "minutes" as any,
-        notes: JSON.stringify({ workoutId: workout.id, workoutName: workout.name, focus: workout.focus }),
+        dateKey, activityKey: "race_log" as any,
+        value: totalSeconds, unit: "count" as any,
+        notes: JSON.stringify(notes),
       });
-      hapticSuccess();
-      setLoggedToday((prev) => new Set(prev).add(workout.id));
+      hapticHeavy();
+      setJustSaved(true);
       setToast("saved");
+      reload();
       setTimeout(() => setToast("idle"), 2000);
     } catch {
       setToast("error");
@@ -473,75 +271,316 @@ function TrainingTab() {
     <>
       <Toast state={toast} />
 
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        Training workouts targeting each race station. Tap to expand, then log when complete.
+      {/* Best Race Summary Card */}
+      {bestRace && (
+        <div className="rounded-2xl p-5"
+          style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(59,130,246,0.06))", border: "1px solid rgba(16,185,129,0.2)" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Flag size={14} style={{ color: "var(--accent-green)" }} />
+            <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>Personal Best</p>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+              {fmtTime(bestRace.totalSeconds)}
+            </p>
+            <p className="text-xs font-semibold" style={{ color: "var(--text-faint)" }}>
+              {DIVISIONS.find((d) => d.key === bestRace.division)?.short ?? ""}
+            </p>
+          </div>
+          <div className="flex gap-4 mt-3">
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: "var(--text-faint)" }}>Runs</p>
+              <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                {fmtTime(Object.entries(bestRace.splits).filter(([k]) => k.startsWith("run")).reduce((s, [, v]) => s + v, 0))}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: "var(--text-faint)" }}>Stations</p>
+              <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                {fmtTime(Object.entries(bestRace.splits).filter(([k]) => !k.startsWith("run")).reduce((s, [, v]) => s + v, 0))}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold" style={{ color: "var(--text-faint)" }}>Segments</p>
+              <p className="text-sm font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
+                {Object.keys(bestRace.splits).length}/16
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Log New Race CTA */}
+      <button type="button" onClick={openSheet}
+        className="w-full rounded-2xl p-5 text-center transition-all active:scale-[0.98]"
+        style={{
+          background: "var(--accent-green)",
+          boxShadow: "0 4px 24px rgba(16,185,129,0.3)",
+        }}>
+        <div className="flex items-center justify-center gap-3">
+          <Flag size={22} style={{ color: "var(--text-inverse)" }} />
+          <p className="text-base font-bold" style={{ color: "var(--text-inverse)" }}>Log Race Result</p>
+        </div>
+        <p className="text-xs mt-1 font-medium" style={{ color: "var(--text-inverse)", opacity: 0.8 }}>
+          Enter your split times for each segment
+        </p>
+      </button>
+
+      {/* Recent Races */}
+      {allRaces.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1"
+            style={{ color: "var(--text-faint)" }}>Recent Races</p>
+          <div className="space-y-2">
+            {allRaces.slice(0, 5).map((row) => {
+              const d = parseJSON<RaceLogData>(row.notes);
+              if (!d.totalSeconds) return null;
+              const div = DIVISIONS.find((dv) => dv.key === d.division);
+              return (
+                <div key={row.id} className="rounded-2xl p-4 flex items-center justify-between"
+                  style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                      {format(new Date(row.date), "MMM d, yyyy")}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{div?.label ?? "Open"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+                      {fmtTime(d.totalSeconds)}
+                    </p>
+                    <p className="text-[10px] font-semibold" style={{ color: "var(--text-faint)" }}>
+                      {Object.keys(d.splits ?? {}).length}/16 splits
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Race Entry Bottom Sheet ── */}
+      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Log Race">
+        <div className="space-y-5">
+          {/* Division selector */}
+          <div>
+            <p className="text-[10px] font-bold tracking-wider uppercase mb-2" style={{ color: "var(--text-faint)" }}>Division</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {DIVISIONS.map((d) => (
+                <button key={d.key} type="button"
+                  onClick={() => { hapticLight(); setDivision(d.key); }}
+                  className="rounded-xl py-2.5 text-xs font-bold text-center transition-all active:scale-95"
+                  style={{
+                    background: division === d.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
+                    color: division === d.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+                    border: `1.5px solid ${division === d.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
+                  }}>
+                  {d.short}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Split times — visual timeline */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: "var(--text-faint)" }}>
+                Split Times (m:ss)
+              </p>
+              <p className="text-[10px] font-bold tabular-nums" style={{ color: "var(--text-faint)" }}>
+                {filledCount}/16
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              {SEGMENTS.map((seg, idx) => (
+                <div key={seg.id} className="flex items-center gap-2.5">
+                  {/* Timeline dot + line */}
+                  <div className="flex flex-col items-center" style={{ width: 20 }}>
+                    <div className="rounded-full shrink-0" style={{
+                      width: 10, height: 10,
+                      background: parsedSplits[seg.id] ? seg.color : "var(--bg-card-hover)",
+                      border: `2px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
+                    }} />
+                    {idx < SEGMENTS.length - 1 && (
+                      <div style={{
+                        width: 2, height: 16,
+                        background: parsedSplits[seg.id] ? seg.color : "var(--border-primary)",
+                        opacity: 0.4,
+                      }} />
+                    )}
+                  </div>
+
+                  {/* Label */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs">{seg.icon}</span>
+                      <span className="text-xs font-bold truncate" style={{ color: "var(--text-primary)" }}>{seg.label}</span>
+                      <span className="text-[10px]" style={{ color: "var(--text-faint)" }}>{seg.detail}</span>
+                    </div>
+                  </div>
+
+                  {/* Time input */}
+                  <input
+                    ref={(el) => { inputRefs.current[seg.id] = el; }}
+                    className="shrink-0 rounded-lg px-3 py-2 text-right text-sm font-bold tabular-nums"
+                    style={{
+                      width: 80,
+                      background: "var(--bg-input)",
+                      border: `1.5px solid ${parsedSplits[seg.id] ? seg.color : "var(--border-primary)"}`,
+                      color: "var(--text-primary)",
+                    }}
+                    placeholder="0:00"
+                    value={splits[seg.id] ?? ""}
+                    onChange={(e) => updateSplit(seg.id, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(seg.id, e)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Total time */}
+          {filledCount > 0 && (
+            <div className="rounded-xl px-4 py-3 flex items-center justify-between"
+              style={{ background: "var(--accent-green-soft)", border: "1px solid var(--accent-green)" }}>
+              <p className="text-xs font-bold" style={{ color: "var(--accent-green)" }}>Total Time</p>
+              <p className="text-xl font-black tabular-nums" style={{ color: "var(--accent-green)" }}>
+                {fmtTime(totalSeconds)}
+              </p>
+            </div>
+          )}
+
+          {/* Save */}
+          <button type="button" onClick={handleSave}
+            disabled={filledCount === 0 || justSaved}
+            className="btn-primary w-full py-4 rounded-xl text-base font-bold flex items-center justify-center gap-2"
+            style={(filledCount === 0 || justSaved) ? { opacity: 0.5 } : {}}>
+            {justSaved
+              ? <><Check size={18} /> Race Logged!</>
+              : <><Flag size={18} /> Save Race</>}
+          </button>
+        </div>
+      </BottomSheet>
+    </>
+  );
+}
+
+// ═══════════════════════════════════════════════
+// Training Tab
+// ═══════════════════════════════════════════════
+
+function TrainingTab({ allTraining, reload }: { allTraining: ActivityLogRow[]; reload: () => void }) {
+  const { dateKey } = useToday();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState>("idle");
+
+  // Today's completed workouts
+  const todayDone = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of allTraining) {
+      if (row.date !== dateKey) continue;
+      const d = parseJSON<TrainLogData>(row.notes);
+      if (d.workout) set.add(d.workout);
+    }
+    return set;
+  }, [allTraining, dateKey]);
+
+  const handleLog = async (workout: TrainingWorkout) => {
+    if (todayDone.has(workout.id)) return;
+    setToast("saving");
+    try {
+      const notes: TrainLogData = { workout: workout.id, workoutName: workout.name };
+      await addActivityLog({
+        dateKey, activityKey: "race_train" as any,
+        value: 1, unit: "count" as any,
+        notes: JSON.stringify(notes),
+      });
+      hapticSuccess();
+      setToast("saved");
+      reload();
+      setTimeout(() => setToast("idle"), 1500);
+    } catch {
+      setToast("error");
+      setTimeout(() => setToast("idle"), 3000);
+    }
+  };
+
+  const toggle = (id: string) => {
+    hapticLight();
+    setExpanded((prev) => prev === id ? null : id);
+  };
+
+  return (
+    <>
+      <Toast state={toast} />
+
+      <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+        Curated workouts targeting each race station. Tap to expand, then log when complete.
       </p>
 
       <div className="space-y-3">
         {TRAINING_WORKOUTS.map((w) => {
-          const isExpanded = expanded === w.id;
-          const isLogged = loggedToday.has(w.id);
+          const isOpen = expanded === w.id;
+          const done = todayDone.has(w.id);
+
           return (
-            <section key={w.id} className="card overflow-hidden">
-              <button
-                type="button"
-                onClick={() => { hapticLight(); setExpanded(isExpanded ? null : w.id); }}
-                className="w-full p-4 flex items-center gap-3 text-left"
-              >
+            <div key={w.id} className="rounded-2xl overflow-hidden transition-all"
+              style={{
+                background: done ? "var(--accent-green-soft)" : "var(--bg-card)",
+                border: `1px solid ${done ? "var(--accent-green)" : "var(--border-primary)"}`,
+              }}>
+              <button type="button" onClick={() => toggle(w.id)}
+                className="w-full p-4 text-left flex items-center gap-3">
+                <span className="text-2xl shrink-0">{w.emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                    {w.name}
-                    {isLogged && <span className="ml-2 text-xs" style={{ color: "var(--accent-green)" }}>✓ Logged</span>}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {w.focus} — ~{w.estimatedMinutes} min
-                  </p>
-                </div>
-                <ChevronDown
-                  size={16}
-                  style={{
-                    color: "var(--text-faint)",
-                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}
-                />
-              </button>
-              {isExpanded && (
-                <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
-                  <p className="text-xs pt-3" style={{ color: "var(--text-muted)" }}>{w.description}</p>
-                  <div className="rounded-xl p-3 space-y-1" style={{ background: "var(--bg-input)" }}>
-                    {w.exercises.map((ex, i) => (
-                      <p key={i} className="text-sm" style={{ color: "var(--text-primary)", paddingLeft: ex.startsWith("  ") ? "1rem" : 0 }}>
-                        {ex.trim()}
-                      </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>{w.name}</p>
+                    {done && <Check size={14} style={{ color: "var(--accent-green)" }} />}
+                  </div>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{w.focus}</p>
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
+                      {w.duration}
+                    </span>
+                    {w.stations.map((s) => (
+                      <span key={s} className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--accent-blue-soft)", color: "var(--accent-blue)" }}>
+                        {s}
+                      </span>
                     ))}
                   </div>
-                  {/* Station tags */}
-                  {w.targetStations.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {w.targetStations.map((sid) => {
-                        const station = STATIONS.find((s) => s.id === sid);
-                        if (!station) return null;
-                        return (
-                          <span key={sid} className="rounded-md px-2 py-1 text-xs font-medium" style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
-                            {station.emoji} {station.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleLog(w)}
-                    disabled={isLogged}
-                    className="btn-primary text-sm w-full flex items-center justify-center gap-2"
-                    style={isLogged ? { opacity: 0.5, cursor: "default" } : {}}
-                  >
-                    {isLogged ? <><Check size={16} /> Done!</> : <><Dumbbell size={16} /> Log Workout</>}
+                </div>
+                <div className="shrink-0" style={{ color: "var(--text-faint)" }}>
+                  {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </div>
+              </button>
+
+              {isOpen && (
+                <div className="px-4 pb-4 pt-0 space-y-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
+                  <div className="pt-3 space-y-2">
+                    {w.exercises.map((ex, i) => (
+                      <div key={i} className="flex items-start gap-2.5">
+                        <div className="shrink-0 mt-1.5 rounded-full"
+                          style={{ width: 5, height: 5, background: "var(--accent-blue)" }} />
+                        <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{ex}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button type="button" onClick={() => handleLog(w)}
+                    disabled={done}
+                    className="btn-primary w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2"
+                    style={done ? { opacity: 0.5 } : {}}>
+                    {done
+                      ? <><Check size={16} /> Completed Today</>
+                      : <><Zap size={16} /> Log Workout</>}
                   </button>
                 </div>
               )}
-            </section>
+            </div>
           );
         })}
       </div>
@@ -554,7 +593,24 @@ function TrainingTab() {
 // ═══════════════════════════════════════════════
 
 export default function RacePage() {
-  const [tab, setTab] = useState<"race" | "training">("race");
+  const [tab, setTab] = useState("race");
+  const [allRaces, setAllRaces] = useState<ActivityLogRow[]>([]);
+  const [allTraining, setAllTraining] = useState<ActivityLogRow[]>([]);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const to = format(new Date(), "yyyy-MM-dd");
+      const from = format(subDays(new Date(), 730), "yyyy-MM-dd");
+      const [races, training] = await Promise.all([
+        listActivityLogs({ from, to, activityKey: "race_log" as any }),
+        listActivityLogs({ from, to, activityKey: "race_train" as any }),
+      ]);
+      setAllRaces(races);
+      setAllTraining(training);
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => { void loadAll(); }, [loadAll]);
 
   return (
     <div className="space-y-5">
@@ -563,16 +619,20 @@ export default function RacePage() {
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
             🏁 Hybrid Race
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>Run + 8 functional stations</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>Train for 8-station fitness races</p>
         </div>
-        <Link href="/app/race/history" className="p-2.5 rounded-xl transition-colors" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+        <Link href="/app/race/history"
+          className="tap-btn shrink-0 flex items-center justify-center rounded-full"
+          style={{ width: 40, height: 40, background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
           <History size={18} style={{ color: "var(--text-muted)" }} />
         </Link>
       </header>
 
-      <TabBar active={tab} onChange={setTab} />
+      <TabBar active={tab} tabs={[{ key: "race", label: "Race Log" }, { key: "train", label: "Training" }]} onChange={setTab} />
 
-      {tab === "race" ? <RaceLogTab /> : <TrainingTab />}
+      {tab === "race"
+        ? <RaceLogTab allRaces={allRaces} reload={loadAll} />
+        : <TrainingTab allTraining={allTraining} reload={loadAll} />}
     </div>
   );
 }

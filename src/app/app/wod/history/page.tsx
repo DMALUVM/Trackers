@@ -1,127 +1,73 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { format, subDays, parseISO } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ChevronLeft, Trash2, ChevronDown, ChevronUp, Trophy, Timer } from "lucide-react";
+import Link from "next/link";
 import { listActivityLogs, deleteActivityLog, type ActivityLogRow } from "@/lib/activity";
-import { SkeletonCard, Toast, EmptyState, SubPageHeader, type ToastState } from "@/app/app/_components/ui";
+import { Toast, type ToastState } from "@/app/app/_components/ui";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
+import { format, subDays, parseISO } from "date-fns";
 
-function fmtTime(totalSec: number): string {
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+interface PRData { lift: string; liftName: string; weight: number; unit: string; scheme: string; }
+interface WODData { wod: string; wodName: string; type: "time" | "amrap"; timeSeconds?: number; rounds?: number; extraReps?: number; rx: boolean; }
 
-function parseNotes(notes: string | null): Record<string, any> {
+function parseJSON<T>(notes: string | null): Partial<T> {
   if (!notes) return {};
   try { return JSON.parse(notes); } catch { return {}; }
 }
 
-function PRRow({ row, onDelete }: { row: ActivityLogRow; onDelete: () => void }) {
-  const data = parseNotes(row.notes);
-  const [confirm, setConfirm] = useState(false);
-  return (
-    <div className="card-interactive px-4 py-3 flex items-center justify-between">
-      <div>
-        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          {data.liftName ?? "Lift"} — {data.scheme ?? ""}
-        </p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-faint)" }}>
-          {data.scheme === "Max Reps" ? `${data.weight} reps` : `${data.weight} ${data.unit ?? "lb"}`}
-        </p>
-      </div>
-      {confirm ? (
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onDelete}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-            style={{ background: "var(--accent-red-soft)", color: "var(--accent-red-text)" }}>
-            Delete
-          </button>
-          <button type="button" onClick={() => setConfirm(false)}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-            style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button type="button" onClick={() => { setConfirm(true); hapticLight(); }}
-          className="p-2 rounded-lg" style={{ color: "var(--text-faint)" }}>
-          <Trash2 size={16} />
-        </button>
-      )}
-    </div>
-  );
+function fmtTime(sec: number): string {
+  if (sec >= 3600) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function WODRow({ row, onDelete }: { row: ActivityLogRow; onDelete: () => void }) {
-  const data = parseNotes(row.notes);
-  const [confirm, setConfirm] = useState(false);
-  const result = data.type === "time" && data.timeSeconds ? fmtTime(data.timeSeconds) : `${data.rounds ?? 0}+${data.extraReps ?? 0}`;
-
-  return (
-    <div className="card-interactive px-4 py-3 flex items-center justify-between">
-      <div>
-        <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-          {data.wodName ?? "WOD"}
-          {data.rx === false && <span className="ml-1.5 text-xs font-normal" style={{ color: "var(--text-faint)" }}>(Scaled)</span>}
-        </p>
-        <p className="text-xs mt-0.5 tabular-nums" style={{ color: "var(--accent-primary)" }}>{result}</p>
-      </div>
-      {confirm ? (
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={onDelete}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-            style={{ background: "var(--accent-red-soft)", color: "var(--accent-red-text)" }}>
-            Delete
-          </button>
-          <button type="button" onClick={() => setConfirm(false)}
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold"
-            style={{ background: "var(--bg-card-hover)", color: "var(--text-muted)" }}>
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button type="button" onClick={() => { setConfirm(true); hapticLight(); }}
-          className="p-2 rounded-lg" style={{ color: "var(--text-faint)" }}>
-          <Trash2 size={16} />
-        </button>
-      )}
-    </div>
-  );
+function fmtDate(dateKey: string): string {
+  try { return format(parseISO(dateKey), "EEE, MMM d"); } catch { return dateKey; }
 }
+
+type HistoryItem = { id: string; dateKey: string; kind: "pr" | "wod"; pr?: PRData; wod?: WODData };
 
 export default function WODHistoryPage() {
-  const [prRows, setPrRows] = useState<ActivityLogRow[]>([]);
-  const [wodRows, setWodRows] = useState<ActivityLogRow[]>([]);
+  const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<ToastState>("idle");
-  const [tab, setTab] = useState<"pr" | "wod">("pr");
+  const [filter, setFilter] = useState<"all" | "pr" | "wod">("all");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const to = format(new Date(), "yyyy-MM-dd");
-      const from = format(subDays(new Date(), 365), "yyyy-MM-dd");
+      const from = format(subDays(new Date(), 730), "yyyy-MM-dd");
       const [prs, wods] = await Promise.all([
         listActivityLogs({ from, to, activityKey: "pr" as any }),
         listActivityLogs({ from, to, activityKey: "wod" as any }),
       ]);
-      setPrRows(prs);
-      setWodRows(wods);
-    } catch { /* empty */ }
-    finally { setLoading(false); }
-  };
+      const combined: HistoryItem[] = [
+        ...prs.map((r) => ({ id: r.id, dateKey: r.date, kind: "pr" as const, pr: parseJSON<PRData>(r.notes) as PRData })),
+        ...wods.map((r) => ({ id: r.id, dateKey: r.date, kind: "wod" as const, wod: parseJSON<WODData>(r.notes) as WODData })),
+      ];
+      combined.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+      setItems(combined);
+    } catch { /* silent */ }
+    setLoading(false);
+  }, []);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
-  const handleDelete = async (id: string, type: "pr" | "wod") => {
+  const handleDelete = async (id: string) => {
+    hapticMedium();
     setToast("saving");
     try {
       await deleteActivityLog(id);
-      hapticMedium();
-      if (type === "pr") setPrRows((prev) => prev.filter((r) => r.id !== id));
-      else setWodRows((prev) => prev.filter((r) => r.id !== id));
+      setItems((prev) => prev.filter((i) => i.id !== id));
       setToast("saved");
       setTimeout(() => setToast("idle"), 1500);
     } catch {
@@ -130,59 +76,139 @@ export default function WODHistoryPage() {
     }
   };
 
-  const rows = tab === "pr" ? prRows : wodRows;
+  const toggle = (id: string) => {
+    hapticLight();
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const filtered = filter === "all" ? items : items.filter((i) => i.kind === filter);
 
   // Group by date
-  const grouped = rows.reduce<Record<string, ActivityLogRow[]>>((acc, row) => {
-    (acc[row.date] ??= []).push(row);
-    return acc;
-  }, {});
+  const grouped = new Map<string, HistoryItem[]>();
+  for (const item of filtered) {
+    const arr = grouped.get(item.dateKey) || [];
+    arr.push(item);
+    grouped.set(item.dateKey, arr);
+  }
 
   return (
     <div className="space-y-5">
       <Toast state={toast} />
-      <SubPageHeader title="🏋️ Barbell & WODs" subtitle="History" backHref="/app/wod" />
 
-      {/* Tab bar */}
-      <div className="flex rounded-xl p-1" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-        {(["pr", "wod"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-center transition-all"
+      <div className="flex items-center gap-3">
+        <Link href="/app/wod" className="tap-btn rounded-full p-1.5" style={{ background: "var(--bg-card)" }}>
+          <ChevronLeft size={20} style={{ color: "var(--text-muted)" }} />
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>History</h1>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>All PRs and benchmark results</p>
+        </div>
+      </div>
+
+      {/* Filter chips */}
+      <div className="flex gap-2">
+        {([
+          { key: "all" as const, label: "All" },
+          { key: "pr" as const, label: "PRs" },
+          { key: "wod" as const, label: "WODs" },
+        ]).map((f) => (
+          <button key={f.key} type="button"
+            onClick={() => { hapticLight(); setFilter(f.key); }}
+            className="rounded-full px-4 py-2 text-xs font-bold transition-all active:scale-95"
             style={{
-              background: tab === t ? "var(--accent-primary)" : "transparent",
-              color: tab === t ? "#fff" : "var(--text-muted)",
-            }}
-          >
-            {t === "pr" ? "PRs" : "WODs"}
+              background: filter === f.key ? "var(--btn-primary-bg)" : "var(--bg-card)",
+              color: filter === f.key ? "var(--btn-primary-text)" : "var(--text-muted)",
+              border: `1.5px solid ${filter === f.key ? "var(--btn-primary-bg)" : "var(--border-primary)"}`,
+            }}>
+            {f.label}
           </button>
         ))}
       </div>
 
-      {loading ? (
-        <SkeletonCard lines={5} />
-      ) : rows.length === 0 ? (
-        <EmptyState emoji="📭" title="No entries yet" description={`Log your first ${tab === "pr" ? "PR" : "WOD"} to see history here.`} />
-      ) : (
-        <div className="space-y-5">
-          {Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([date, entries]) => (
-            <section key={date}>
-              <p className="text-xs font-bold tracking-wider uppercase mb-2 px-1" style={{ color: "var(--text-faint)" }}>
-                {format(parseISO(date), "EEE, MMM d")}
-              </p>
-              <div className="space-y-1.5">
-                {entries.map((row) => (
-                  tab === "pr"
-                    ? <PRRow key={row.id} row={row} onDelete={() => handleDelete(row.id, "pr")} />
-                    : <WODRow key={row.id} row={row} onDelete={() => handleDelete(row.id, "wod")} />
-                ))}
-              </div>
-            </section>
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl p-4 skeleton" style={{ height: 72 }} />
           ))}
         </div>
       )}
+
+      {!loading && filtered.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-3xl mb-3">📋</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>No entries yet</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-faint)" }}>Log a PR or WOD to see it here</p>
+        </div>
+      )}
+
+      {!loading && Array.from(grouped.entries()).map(([dateKey, dayItems]) => (
+        <div key={dateKey}>
+          <p className="text-[10px] font-bold tracking-wider uppercase mb-2 px-1"
+            style={{ color: "var(--text-faint)" }}>
+            {fmtDate(dateKey)}
+          </p>
+          <div className="space-y-2">
+            {dayItems.map((item) => {
+              const isOpen = expanded.has(item.id);
+              const isPR = item.kind === "pr" && item.pr;
+              const isWOD = item.kind === "wod" && item.wod;
+
+              return (
+                <div key={item.id} className="rounded-2xl overflow-hidden"
+                  style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
+                  <button type="button" onClick={() => toggle(item.id)}
+                    className="w-full p-4 text-left flex items-center gap-3">
+                    <div className="shrink-0 rounded-full flex items-center justify-center"
+                      style={{
+                        width: 36, height: 36,
+                        background: isPR ? "var(--accent-yellow-soft)" : "var(--accent-blue-soft)",
+                      }}>
+                      {isPR ? <Trophy size={16} style={{ color: "var(--accent-yellow)" }} />
+                             : <Timer size={16} style={{ color: "var(--accent-blue)" }} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate" style={{ color: "var(--text-primary)" }}>
+                        {isPR ? item.pr!.liftName : isWOD ? item.wod!.wodName : "Unknown"}
+                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {isPR
+                          ? `${item.pr!.scheme}: ${item.pr!.scheme === "Max Reps" ? `${item.pr!.weight} reps` : `${item.pr!.weight} ${item.pr!.unit}`}`
+                          : isWOD
+                            ? item.wod!.type === "time" && item.wod!.timeSeconds
+                              ? `${fmtTime(item.wod!.timeSeconds)}${item.wod!.rx === false ? " (Scaled)" : " Rx'd"}`
+                              : `${item.wod!.rounds ?? 0}+${item.wod!.extraReps ?? 0}${item.wod!.rx === false ? " (Scaled)" : " Rx'd"}`
+                            : ""}
+                      </p>
+                    </div>
+                    <div className="shrink-0" style={{ color: "var(--text-faint)" }}>
+                      {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-4 pb-4 pt-0 border-t" style={{ borderColor: "var(--border-primary)" }}>
+                      <div className="flex items-center justify-between pt-3">
+                        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                          {isPR ? `${item.pr!.liftName} · ${item.pr!.scheme}` : isWOD ? `${item.wod!.wodName} · ${item.wod!.type === "time" ? "For Time" : "AMRAP"}` : ""}
+                        </p>
+                        <button type="button" onClick={() => handleDelete(item.id)}
+                          className="rounded-full p-2 transition-all active:scale-90"
+                          style={{ background: "var(--accent-red-soft)" }}>
+                          <Trash2 size={14} style={{ color: "var(--accent-red)" }} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
