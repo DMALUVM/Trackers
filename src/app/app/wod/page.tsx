@@ -8,6 +8,7 @@ import { addActivityLog, listActivityLogs, type ActivityLogRow } from "@/lib/act
 import { Toast, BottomSheet, type ToastState } from "@/app/app/_components/ui";
 import { hapticSuccess, hapticLight, hapticMedium, hapticHeavy, hapticSelection } from "@/lib/haptics";
 import { format, subDays } from "date-fns";
+import { BENCHMARK_WODS, WOD_CATEGORY_META, type WodType, type WodCategory, type BenchmarkWOD } from "./wod-data";
 
 // ═══════════════════════════════════════════════
 // Data — Lifts
@@ -86,75 +87,7 @@ const LIFTS: Lift[] = [
 // Data — Benchmark WODs (comprehensive CrossFit)
 // ═══════════════════════════════════════════════
 
-type WodType = "time" | "amrap";
-type WodCategory = "girl" | "hero" | "other";
-
-interface BenchmarkWOD {
-  id: string;
-  name: string;
-  description: string;
-  type: WodType;
-  amrapMinutes?: number;
-  category: WodCategory;
-}
-
-const WOD_CATEGORY_META: Record<WodCategory, { label: string; color: string; softBg: string }> = {
-  girl:  { label: "The Girls",  color: "var(--accent-red)",    softBg: "var(--accent-red-soft)" },
-  hero:  { label: "Hero",       color: "var(--accent-blue)",   softBg: "var(--accent-blue-soft)" },
-  other: { label: "Open/Other", color: "var(--accent-yellow)", softBg: "var(--accent-yellow-soft)" },
-};
-
-const BENCHMARK_WODS: BenchmarkWOD[] = [
-  // ── The Girls ──
-  { id: "fran", name: "Fran", description: "21-15-9: Thrusters (95/65) & Pull-ups", type: "time", category: "girl" },
-  { id: "grace", name: "Grace", description: "30 Clean & Jerks (135/95)", type: "time", category: "girl" },
-  { id: "isabel", name: "Isabel", description: "30 Snatches (135/95)", type: "time", category: "girl" },
-  { id: "helen", name: "Helen", description: "3 RFT: 400m Run, 21 KB Swings (53/35), 12 Pull-ups", type: "time", category: "girl" },
-  { id: "diane", name: "Diane", description: "21-15-9: Deadlifts (225/155) & HSPUs", type: "time", category: "girl" },
-  { id: "elizabeth", name: "Elizabeth", description: "21-15-9: Cleans (135/95) & Ring Dips", type: "time", category: "girl" },
-  { id: "jackie", name: "Jackie", description: "1000m Row, 50 Thrusters (45/35), 30 Pull-ups", type: "time", category: "girl" },
-  { id: "karen", name: "Karen", description: "150 Wall Balls (20/14)", type: "time", category: "girl" },
-  { id: "annie", name: "Annie", description: "50-40-30-20-10: Double-unders & Sit-ups", type: "time", category: "girl" },
-  { id: "nancy", name: "Nancy", description: "5 RFT: 400m Run, 15 OHS (95/65)", type: "time", category: "girl" },
-  { id: "amanda", name: "Amanda", description: "9-7-5: Muscle-ups & Snatches (135/95)", type: "time", category: "girl" },
-  { id: "angie", name: "Angie", description: "100 Pull-ups, 100 Push-ups, 100 Sit-ups, 100 Squats", type: "time", category: "girl" },
-  { id: "barbara", name: "Barbara", description: "5 RFT: 20 Pull-ups, 30 Push-ups, 40 Sit-ups, 50 Squats (3 min rest)", type: "time", category: "girl" },
-  { id: "kelly", name: "Kelly", description: "5 RFT: 400m Run, 30 Box Jumps (24/20), 30 Wall Balls (20/14)", type: "time", category: "girl" },
-  { id: "eva", name: "Eva", description: "5 RFT: 800m Run, 30 KB Swings (70/53), 30 Pull-ups", type: "time", category: "girl" },
-  { id: "chelsea", name: "Chelsea", description: "EMOM 30: 5 Pull-ups, 10 Push-ups, 15 Squats", type: "time", category: "girl" },
-  { id: "cindy", name: "Cindy", description: "AMRAP 20: 5 Pull-ups, 10 Push-ups, 15 Squats", type: "amrap", amrapMinutes: 20, category: "girl" },
-  { id: "mary", name: "Mary", description: "AMRAP 20: 5 HSPUs, 10 Pistols, 15 Pull-ups", type: "amrap", amrapMinutes: 20, category: "girl" },
-  { id: "nicole", name: "Nicole", description: "AMRAP 20: 400m Run, max Pull-ups", type: "amrap", amrapMinutes: 20, category: "girl" },
-  { id: "lynne", name: "Lynne", description: "5 rounds: max reps Bench Press (BW) & max Pull-ups", type: "amrap", category: "girl" },
-  // ── Hero WODs ──
-  { id: "murph", name: "Murph", description: "1mi Run, 100 Pull-ups, 200 Push-ups, 300 Squats, 1mi Run (vest)", type: "time", category: "hero" },
-  { id: "dt", name: "DT", description: "5 RFT: 12 DL (155/105), 9 Hang Cleans, 6 Push Jerks", type: "time", category: "hero" },
-  { id: "jt", name: "JT", description: "21-15-9: HSPUs, Ring Dips, Push-ups", type: "time", category: "hero" },
-  { id: "michael", name: "Michael", description: "3 RFT: 800m Run, 50 Back Extensions, 50 Sit-ups", type: "time", category: "hero" },
-  { id: "daniel", name: "Daniel", description: "50 Pull-ups, 400m Run, 21 Thrusters (95/65), 800m Run, 21 Thrusters, 400m Run, 50 Pull-ups", type: "time", category: "hero" },
-  { id: "ryan", name: "Ryan", description: "5 RFT: 7 Muscle-ups, 21 Burpees", type: "time", category: "hero" },
-  { id: "josh", name: "Josh", description: "21-15-9: OHS (95/65), Pull-ups, Deadlifts (185/135)", type: "time", category: "hero" },
-  { id: "tommy_v", name: "Tommy V", description: "21-15-9: Thrusters (115/85) & Rope Climbs", type: "time", category: "hero" },
-  { id: "randy", name: "Randy", description: "75 Power Snatches (75/55)", type: "time", category: "hero" },
-  { id: "badger", name: "Badger", description: "3 RFT: 30 Squat Cleans (95/65), 30 Pull-ups, 800m Run", type: "time", category: "hero" },
-  { id: "lumberjack", name: "Lumberjack 20", description: "20 DL, 400m, 20 KB Swings, 400m, 20 OHS, 400m, 20 Burpees, 400m, 20 C&J, 400m, 20 Box Jumps", type: "time", category: "hero" },
-  { id: "pequot", name: "Pequot", description: "10 RFT: 3 HSPUs, 6 C&J (135/95), 12 T2B, 24 Squats", type: "time", category: "hero" },
-  { id: "nate", name: "Nate", description: "AMRAP 20: 2 Muscle-ups, 4 HSPUs, 8 KB Swings (70/53)", type: "amrap", amrapMinutes: 20, category: "hero" },
-  { id: "griff", name: "Griff", description: "2 RFT: 800m Run, 400m backwards Run, 800m Run, 400m backwards Run", type: "time", category: "hero" },
-  { id: "clovis", name: "Clovis", description: "10mi Run. Every 1mi, 20 Burpees", type: "time", category: "hero" },
-  // ── Open / Competition / Other ──
-  { id: "fight_gone_bad", name: "Fight Gone Bad", description: "3 RFT: 1min each Wall Balls, SDHP, Box Jumps, Push Press, Row Cal (1 min rest)", type: "amrap", amrapMinutes: 17, category: "other" },
-  { id: "filthy_fifty", name: "Filthy Fifty", description: "50 each: Box Jumps, Pull-ups, KB Swings, Lunges, K2E, Push Press, Back Ext, Wall Balls, Burpees, DUs", type: "time", category: "other" },
-  { id: "kalsu", name: "Kalsu", description: "EMOM 5 Burpees, then max Thrusters (135/95) to 100 total", type: "time", category: "other" },
-  { id: "chief", name: "The Chief", description: "5x AMRAP 3: 3 Power Cleans (135/95), 6 Push-ups, 9 Squats (1 min rest)", type: "amrap", category: "other" },
-  { id: "seven", name: "Seven", description: "7 RFT: 7 HSPUs, 7 Thrusters (135/95), 7 K2E, 7 DL (245/170), 7 Burpees, 7 KB Swings, 7 Pull-ups", type: "time", category: "other" },
-  { id: "king_kong", name: "King Kong", description: "3 RFT: 1 DL (460/315), 2 Muscle-ups, 3 Squat Cleans (250/170), 4 HSPUs", type: "time", category: "other" },
-  { id: "open_145", name: "Open 14.5", description: "21-18-15-12-9-6-3: Thrusters (95/65) & Burpees", type: "time", category: "other" },
-  { id: "open_165", name: "Open 16.5", description: "21-18-15-12-9-6-3: Thrusters (95/65) & Bar-Facing Burpees", type: "time", category: "other" },
-  { id: "open_185", name: "Open 18.5", description: "AMRAP 7: 3 Thrusters + 3 C2B, 6+6, 9+9... (100/70)", type: "amrap", amrapMinutes: 7, category: "other" },
-  { id: "sprint_couplet", name: "Sprint Couplet", description: "3 RFT: 10 Power Cleans (135/95), 10 Bar-Facing Burpees", type: "time", category: "other" },
-  { id: "nasty_girls", name: "Nasty Girls", description: "3 RFT: 50 Squats, 7 Muscle-ups, 10 Hang Cleans (135/95)", type: "time", category: "other" },
-];
+// WOD types and data imported from ./wod-data
 
 // ═══════════════════════════════════════════════
 // Helpers
@@ -174,7 +107,7 @@ function parseTimeInput(str: string): number | null {
 }
 
 interface PRData { lift: string; liftName: string; weight: number; unit: string; scheme: string; }
-interface WODData { wod: string; wodName: string; type: WodType; timeSeconds?: number; rounds?: number; extraReps?: number; rx: boolean; }
+interface WODData { wod: string; wodName: string; type: WodType; timeSeconds?: number; rounds?: number; extraReps?: number; rx: boolean; level?: "rx" | "l2" | "l1"; }
 
 function parseJSON<T>(notes: string | null): Partial<T> {
   if (!notes) return {};
@@ -501,7 +434,7 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
   const [timeInput, setTimeInput] = useState("");
   const [rounds, setRounds] = useState("");
   const [extraReps, setExtraReps] = useState("");
-  const [rx, setRx] = useState(true);
+  const [level, setLevel] = useState<"rx" | "l2" | "l1">("rx");
   const [toast, setToast] = useState<ToastState>("idle");
   const [justSaved, setJustSaved] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
@@ -529,13 +462,13 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
     hapticMedium();
     setSheetWOD(wod);
     setTimeInput(""); setRounds(""); setExtraReps("");
-    setRx(true); setJustSaved(false);
+    setLevel("rx"); setJustSaved(false);
   };
 
   const handleCustomCreate = () => {
     if (!customName.trim()) return;
     const id = `custom_${customName.trim().toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
-    const wod: BenchmarkWOD = { id, name: customName.trim(), description: customDesc.trim() || "Custom workout", type: customType, category: "other" };
+    const wod: BenchmarkWOD = { id, name: customName.trim(), type: customType, category: "other", rx: customDesc.trim() || "Custom workout", l2: customDesc.trim() || "Custom workout (scaled)", l1: customDesc.trim() || "Custom workout (beginner)" };
     setShowCustom(false);
     openSheet(wod);
   };
@@ -545,7 +478,7 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
     setToast("saving");
     try {
       const notes: WODData = {
-        wod: sheetWOD.id, wodName: sheetWOD.name, type: sheetWOD.type, rx,
+        wod: sheetWOD.id, wodName: sheetWOD.name, type: sheetWOD.type, rx: level === "rx", level,
         ...(sheetWOD.type === "time" ? { timeSeconds: parseTimeInput(timeInput) ?? 0 } : {}),
         ...(sheetWOD.type === "amrap" ? { rounds: parseInt(rounds) || 0, extraReps: parseInt(extraReps) || 0 } : {}),
       };
@@ -572,7 +505,7 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{wod.name}</p>
-                  <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--text-muted)" }}>{wod.description}</p>
+                  <p className="text-xs mt-0.5 line-clamp-2" style={{ color: "var(--text-muted)", whiteSpace: "pre-line" }}>{wod.rx.split("\n").slice(0, 2).join(" · ")}</p>
                   <div className="flex gap-1.5 mt-2">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                       style={{ background: "var(--bg-card-hover)", color: "var(--text-faint)" }}>
@@ -580,7 +513,15 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
                     </span>
                     {best?.rx && (
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>Rx</span>
+                        style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>
+                        {best.level === "l2" ? "L2" : best.level === "l1" ? "L1" : "Rx"}
+                      </span>
+                    )}
+                    {best && !best.rx && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: "var(--accent-yellow-soft)", color: "var(--accent-yellow)" }}>
+                        {best.level === "l2" ? "L2" : best.level === "l1" ? "L1" : "Scaled"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -657,7 +598,9 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
             ) : (
               <>
                 <div className="rounded-xl p-3" style={{ background: "var(--bg-card-hover)" }}>
-                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)" }}>{sheetWOD.description}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--text-primary)", whiteSpace: "pre-line" }}>
+                    {level === "l1" ? sheetWOD.l1 : level === "l2" ? sheetWOD.l2 : sheetWOD.rx}
+                  </p>
                 </div>
 
                 {prevBest && (
@@ -666,7 +609,7 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
                     <span className="text-xs font-semibold" style={{ color: "var(--text-muted)" }}>Previous Best</span>
                     <span className="text-base font-bold tabular-nums" style={{ color: "var(--text-primary)" }}>
                       {prevBest.type === "time" && prevBest.timeSeconds ? fmtTime(prevBest.timeSeconds) : `${prevBest.rounds ?? 0}+${prevBest.extraReps ?? 0}`}
-                      {prevBest.rx ? " Rx" : " Scaled"}
+                      {prevBest.level ? ` ${prevBest.level === "rx" ? "Rx" : prevBest.level === "l2" ? "L2" : "L1"}` : prevBest.rx ? " Rx" : " Scaled"}
                     </span>
                   </div>
                 )}
@@ -699,17 +642,22 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
                 )}
 
                 <div className="flex gap-2">
-                  {[true, false].map((isRx) => (
-                    <button key={String(isRx)} type="button" onClick={() => { hapticLight(); setRx(isRx); }}
-                      className="flex-1 rounded-xl py-2.5 text-xs font-bold text-center transition-all active:scale-95"
-                      style={{
-                        background: rx === isRx ? (isRx ? "var(--accent-green-soft)" : "var(--accent-yellow-soft)") : "var(--bg-card)",
-                        color: rx === isRx ? (isRx ? "var(--accent-green)" : "var(--accent-yellow)") : "var(--text-muted)",
-                        border: `1.5px solid ${rx === isRx ? (isRx ? "var(--accent-green)" : "var(--accent-yellow)") : "var(--border-primary)"}`,
-                      }}>
-                      {isRx ? "Rx\u2019d" : "Scaled"}
-                    </button>
-                  ))}
+                  {([["rx", "Rx (L3)"], ["l2", "L2"], ["l1", "L1"]] as const).map(([lv, label]) => {
+                    const active = level === lv;
+                    const color = lv === "rx" ? "var(--accent-green)" : lv === "l2" ? "var(--accent-blue)" : "var(--accent-yellow)";
+                    const soft = lv === "rx" ? "var(--accent-green-soft)" : lv === "l2" ? "var(--accent-blue-soft)" : "var(--accent-yellow-soft)";
+                    return (
+                      <button key={lv} type="button" onClick={() => { hapticLight(); setLevel(lv); }}
+                        className="flex-1 rounded-xl py-2.5 text-xs font-bold text-center transition-all active:scale-95"
+                        style={{
+                          background: active ? soft : "var(--bg-card)",
+                          color: active ? color : "var(--text-muted)",
+                          border: `1.5px solid ${active ? color : "var(--border-primary)"}`,
+                        }}>
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button type="button" onClick={handleSave}
@@ -750,7 +698,15 @@ function BenchmarksTab({ allWODs, reload }: { allWODs: ActivityLogRow[]; reload:
                                 </p>
                                 {data.rx && (
                                   <span className="text-[9px] font-bold px-1 py-0.5 rounded"
-                                    style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>Rx</span>
+                                    style={{ background: "var(--accent-green-soft)", color: "var(--accent-green)" }}>
+                                    {data.level === "l2" ? "L2" : data.level === "l1" ? "L1" : "Rx"}
+                                  </span>
+                                )}
+                                {!data.rx && (
+                                  <span className="text-[9px] font-bold px-1 py-0.5 rounded"
+                                    style={{ background: "var(--accent-yellow-soft)", color: "var(--accent-yellow)" }}>
+                                    {data.level === "l2" ? "L2" : data.level === "l1" ? "L1" : "Scaled"}
+                                  </span>
                                 )}
                                 {improved && <TrendingUp size={12} style={{ color: "var(--accent-green)" }} />}
                                 {declined && <TrendingDown size={12} style={{ color: "var(--accent-red)" }} />}
