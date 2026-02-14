@@ -3,9 +3,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { getUserId } from "@/lib/supabaseData";
 
 export type ActivityKey = "rowing" | "walking" | "running" | "sauna" | "cold" | "neuro"
-  | "workout" | "sleep_hours" | "sleep_score" | "supplements" | "meditation" | "hydration";
+  | "workout" | "sleep_hours" | "sleep_score" | "supplements" | "meditation" | "hydration"
+  | "pr" | "wod" | "race_log" | "race_train";
 export type ActivityUnit = "meters" | "minutes" | "miles" | "steps" | "sessions"
-  | "hours" | "glasses" | "count" | "score";
+  | "hours" | "glasses" | "count" | "score" | "seconds" | "pounds";
 
 export function dateKey(d: Date) {
   return format(d, "yyyy-MM-dd");

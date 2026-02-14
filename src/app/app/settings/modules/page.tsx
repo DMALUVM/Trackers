@@ -49,6 +49,13 @@ const MODULE_GROUPS: ModuleGroup[] = [
       { key: "neuro", label: "Neuro", desc: "Neurofeedback session tracking", emoji: "🧠" },
     ],
   },
+  {
+    title: "Competition",
+    items: [
+      { key: "wod", label: "Barbell & WODs", desc: "Track PRs and benchmark workouts", emoji: "🏋️" },
+      { key: "race", label: "Hybrid Race", desc: "Train for 8-station fitness races", emoji: "🏁" },
+    ],
+  },
 ];
 
 // Home and Progress are always in the nav bar.
