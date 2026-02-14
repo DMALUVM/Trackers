@@ -17,7 +17,9 @@ export function SettingsGear() {
     pathname === "/app/movement" ||
     pathname === "/app/focus" ||
     pathname === "/app/streaks" ||
-    pathname === "/app/partner"
+    pathname === "/app/partner" ||
+    pathname === "/app/race" ||
+    pathname === "/app/wod"
   ) {
     return null;
   }
