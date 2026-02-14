@@ -122,37 +122,13 @@ export async function createInvite(displayName: string): Promise<string> {
 // ── Accept Invite ──
 
 export async function acceptInvite(code: string, displayName: string): Promise<boolean> {
-  const userId = await getUserId();
-
-  // Find the pending partnership
-  const { data: partnership, error: findErr } = await supabase
-    .from("partnerships")
-    .select("*")
-    .eq("invite_code", code.toUpperCase().trim())
-    .eq("status", "pending")
-    .single();
-
-  if (findErr || !partnership) return false;
-  if (partnership.user_id === userId) return false; // Can't partner with yourself
-
-  // Upsert my stats
-  await supabase.from("partner_stats").upsert({
-    user_id: userId,
-    display_name: displayName,
-    current_streak: 0,
-    best_streak: 0,
-    today_done: 0,
-    today_total: 0,
-    last_active: tzDateKey(new Date()),
+  const { data, error } = await supabase.rpc("accept_invite", {
+    invite_code_input: code.toUpperCase().trim(),
+    display_name_input: displayName,
   });
 
-  // Activate the partnership
-  const { error } = await supabase
-    .from("partnerships")
-    .update({ partner_id: userId, status: "active" })
-    .eq("id", partnership.id);
-
-  return !error;
+  if (error) return false;
+  return data === true;
 }
 
 // ── Update My Stats (call after completing habits) ──

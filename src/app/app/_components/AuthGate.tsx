@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { BrandIcon } from "@/app/app/_components/BrandIcon";
 import { persistSessionToCookies, readSessionFromCookies } from "@/lib/sessionCookie";
+import { syncTimezone } from "@/lib/supabaseData";
 
 /**
  * Ensures /app routes never render in a "half-auth" state.
@@ -54,6 +55,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         persistSessionToCookies(data.session);
         if (cancelled) return;
         setHasSession(!!data.session);
+        // Sync timezone on login (fire-and-forget)
+        if (data.session) void syncTimezone();
       } finally {
         if (!cancelled) setReady(true);
       }

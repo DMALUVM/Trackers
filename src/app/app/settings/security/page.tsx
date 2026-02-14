@@ -65,7 +65,7 @@ export default function SecurityPage() {
       clearPasskey();
       clearSessionCookies();
       await supabase.auth.signOut();
-      // Preserve user preferences (quests, theme, layout toggles) — only clear cached data
+      // Clear cached data but preserve user preferences (theme, quest config, etc.)
       const PREFS = new Set([
         "routines365:quests:v1", "routines365:theme", "routines365:pageTints",
         "routines365:quests:hidden", "routines365:quickActions:hidden",
@@ -104,7 +104,7 @@ export default function SecurityPage() {
         supabase.from("routine_items").delete().eq("user_id", uid),
         supabase.from("user_settings").delete().eq("user_id", uid),
         supabase.from("partner_stats").delete().eq("user_id", uid),
-        supabase.from("partnerships").delete().or(`user_a.eq.${uid},user_b.eq.${uid}`),
+        supabase.from("partnerships").delete().or(`user_id.eq.${uid},partner_id.eq.${uid}`),
         supabase.from("profiles").delete().eq("id", uid),
       ]);
 

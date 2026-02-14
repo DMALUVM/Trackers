@@ -95,9 +95,22 @@ export type UserSettingsRow = {
   user_id: string;
   enabled_modules: string[];
   theme?: "system" | "dark" | "light";
+  timezone?: string;
 };
 
 const DEFAULT_ENABLED_MODULES = ["progress", "settings"];
+
+/** Sync browser timezone to user_settings. Call on login + daily. Fails silently. */
+export async function syncTimezone() {
+  try {
+    const userId = await getUserId();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz) return;
+    await supabase
+      .from("user_settings")
+      .upsert({ user_id: userId, timezone: tz }, { onConflict: "user_id" });
+  } catch { /* ignore — non-critical */ }
+}
 
 /** Synchronous read from localStorage — for instant UI renders. */
 export function getUserSettingsSync(): UserSettingsRow | null {
