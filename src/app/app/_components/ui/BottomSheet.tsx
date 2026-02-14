@@ -118,6 +118,6 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
         </div>
       </div>
     </div>,
-    document.body
+    document.querySelector(".theme-shell") || document.body
   );
 }
