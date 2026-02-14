@@ -279,7 +279,7 @@ function RaceLogTab() {
   // Calculate total
   const runTimes = runInputs.map(parseTimeInput);
   const stationTimes = stationInputs.map(parseTimeInput);
-  const totalSeconds = [...runTimes, ...stationTimes].reduce((sum, t) => sum + (t ?? 0), 0);
+  const totalSeconds = [...runTimes, ...stationTimes].reduce((sum: number, t) => sum + (t ?? 0), 0);
   const filledCount = [...runTimes, ...stationTimes].filter((t) => t !== null).length;
 
   const handleSave = async () => {
