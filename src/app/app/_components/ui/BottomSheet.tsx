@@ -11,7 +11,7 @@ interface BottomSheetProps {
 }
 
 export function BottomSheet({ open, onClose, title, children, className = "" }: BottomSheetProps) {
-  const handleRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
   const dragStartRef = useRef<{ y: number; time: number } | null>(null);
@@ -25,11 +25,16 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
   }, [open, onClose]);
 
+  // Focus sheet
+  useEffect(() => { if (open && sheetRef.current) sheetRef.current.focus(); }, [open]);
+
   // Reset drag on close
   useEffect(() => { if (!open) { setDragY(0); setDragging(false); } }, [open]);
 
-  // Drag-to-dismiss — ONLY from the handle area
+  // Drag-to-dismiss — ONLY from the drag handle bar
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest("[data-drag-handle]")) return;
     dragStartRef.current = { y: e.touches[0].clientY, time: Date.now() };
   }, []);
 
@@ -61,55 +66,41 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
 
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0, left: 0, right: 0, bottom: 0,
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "flex-end",
-        background: `rgba(0,0,0,${0.5 * (1 - dismissProgress)})`,
-        transition: dragging ? "none" : "background 0.2s",
-      }}
+      className="fixed inset-0 z-50 flex items-end"
+      style={{ background: `rgba(0,0,0,${0.5 * (1 - dismissProgress)})`, transition: dragging ? "none" : "background 0.2s" }}
       role="dialog"
       aria-modal="true"
       aria-label={title}
       onClick={onClose}
     >
       <div
-        className={className}
+        ref={sheetRef}
+        tabIndex={-1}
+        className={`w-full max-w-md mx-auto rounded-t-2xl outline-none ${className}`}
         style={{
-          position: "relative",
-          width: "100%",
-          maxWidth: 448,
-          margin: "0 auto",
-          maxHeight: "85vh",
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--bg-sheet, #fff)",
-          borderRadius: "16px 16px 0 0",
+          background: "var(--bg-sheet)",
           border: "1px solid var(--border-primary)",
           borderBottom: "none",
-          outline: "none",
+          maxHeight: "85vh",
+          overflowY: "auto",
           transform: `translateY(${dragY}px)`,
           transition: dragging ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           animation: dragY === 0 && !dragging ? "slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
+          WebkitOverflowScrolling: "touch" as any,
         }}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        {/* Drag handle — ONLY this area triggers drag-to-dismiss */}
-        <div
-          ref={handleRef}
-          style={{ flexShrink: 0, cursor: "grab", padding: title ? "12px 16px 16px" : "12px 16px 8px" }}
-          data-drag-handle
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: title ? 8 : 0 }}>
-            <div style={{ height: 6, width: 40, borderRadius: 999, background: "var(--border-primary)" }} />
-          </div>
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-2 cursor-grab" data-drag-handle>
+          <div className="h-1.5 w-10 rounded-full" style={{ background: "var(--border-primary)" }} />
+        </div>
+
+        <div className="px-4 pb-4" style={{ paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           {title && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>{title}</h3>
               <button type="button" onClick={onClose}
                 className="rounded-full px-3.5 py-2 text-xs font-semibold"
@@ -118,20 +109,6 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
               </button>
             </div>
           )}
-        </div>
-
-        {/* Scrollable content — minHeight:0 is critical for flex overflow */}
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch" as any,
-            overscrollBehavior: "contain",
-            padding: title ? "0 16px 16px" : "0 16px 16px",
-            paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
-          }}
-        >
           {children}
         </div>
       </div>
