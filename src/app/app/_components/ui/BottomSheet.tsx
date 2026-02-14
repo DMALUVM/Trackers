@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface BottomSheetProps {
   open: boolean;
@@ -31,16 +32,20 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
   // Reset drag on close
   useEffect(() => { if (!open) { setDragY(0); setDragging(false); } }, [open]);
 
-  // Drag-to-dismiss — ONLY from the drag handle bar
+  // Drag-to-dismiss handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (!target.closest("[data-drag-handle]")) return;
+    // Don't start drag from interactive elements (buttons, links, inputs)
+    if (target.closest("button, a, input, select, textarea, [role=button]")) return;
+    const sheet = sheetRef.current;
+    if (sheet && sheet.scrollTop > 0 && !target.closest("[data-drag-handle]")) return;
     dragStartRef.current = { y: e.touches[0].clientY, time: Date.now() };
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!dragStartRef.current) return;
     const dy = e.touches[0].clientY - dragStartRef.current.y;
+    // Only allow downward drag, with a minimum threshold to avoid accidental drags
     if (dy > 8) {
       if (!dragging) setDragging(true);
       setDragY(dy);
@@ -52,6 +57,7 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
     if (!dragStartRef.current) { setDragging(false); return; }
     const elapsed = Date.now() - dragStartRef.current.time;
     const velocity = dragY / Math.max(elapsed, 1);
+    // Dismiss if dragged >100px or fast flick
     if (dragY > 100 || (velocity > 0.5 && dragY > 30)) {
       onClose();
     }
@@ -64,7 +70,7 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
 
   const dismissProgress = Math.min(dragY / 300, 1);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end"
       style={{ background: `rgba(0,0,0,${0.5 * (1 - dismissProgress)})`, transition: dragging ? "none" : "background 0.2s" }}
@@ -82,11 +88,10 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
           border: "1px solid var(--border-primary)",
           borderBottom: "none",
           maxHeight: "85vh",
-          overflowY: "auto",
+          overflowY: dragging ? "hidden" : "auto",
           transform: `translateY(${dragY}px)`,
           transition: dragging ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
           animation: dragY === 0 && !dragging ? "slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1)" : undefined,
-          WebkitOverflowScrolling: "touch" as any,
         }}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={handleTouchStart}
@@ -112,6 +117,7 @@ export function BottomSheet({ open, onClose, title, children, className = "" }: 
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
