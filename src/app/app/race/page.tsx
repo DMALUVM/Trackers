@@ -417,25 +417,44 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
 
       {/* ── Race Entry Full-Screen Overlay — no drag conflict ── */}
       {sheetOpen && (
-        <div className="fixed inset-0 z-50" style={{ background: "rgba(0,0,0,0.5)" }}
-          onClick={() => setSheetOpen(false)}>
+        <div
+          style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setSheetOpen(false)}
+        >
           <div
-            className="absolute inset-x-0 bottom-0 w-full max-w-md mx-auto flex flex-col rounded-t-2xl"
             style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              maxWidth: 448,
+              margin: "0 auto",
+              height: "92vh",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              overscrollBehavior: "contain",
               background: "var(--bg-sheet)",
+              borderRadius: "16px 16px 0 0",
               border: "1px solid var(--border-primary)",
               borderBottom: "none",
-              height: "92vh",
               animation: "slide-up 0.32s cubic-bezier(0.32, 0.72, 0, 1)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Fixed header — drag handle + title + done */}
-            <div className="shrink-0 px-4 pt-3 pb-2">
-              <div className="flex justify-center mb-2">
-                <div className="h-1.5 w-10 rounded-full" style={{ background: "var(--border-primary)" }} />
+            {/* Sticky header */}
+            <div
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                background: "var(--bg-sheet)",
+                padding: "12px 16px 8px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                <div style={{ height: 6, width: 40, borderRadius: 999, background: "var(--border-primary)" }} />
               </div>
-              <div className="flex items-center justify-between">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <h3 className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>Log Race</h3>
                 <button type="button" onClick={() => setSheetOpen(false)}
                   className="rounded-full px-3.5 py-2 text-xs font-semibold"
@@ -445,9 +464,8 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
               </div>
             </div>
 
-            {/* Scrollable content — free scroll, no drag interference */}
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4"
-              style={{ minHeight: 0, paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))", WebkitOverflowScrolling: "touch" as any }}>
+            {/* Content — flows naturally, scrolls with sheet */}
+            <div style={{ padding: "0 16px 16px", paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))" }}>
               <div className="space-y-4">
                 {/* Division selector */}
                 <div>
@@ -484,7 +502,7 @@ function RaceLogTab({ allRaces, reload }: { allRaces: ActivityLogRow[]; reload: 
                   ))}
                 </div>
 
-                {/* Split inputs — scrolls freely now */}
+                {/* Split inputs */}
                 <div className="space-y-1.5">
                   {visibleSegs.map((seg) => (
                     <div key={seg.id} className="flex items-center gap-2 rounded-xl px-3 py-2"
