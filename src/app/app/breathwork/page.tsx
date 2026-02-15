@@ -306,6 +306,14 @@ const TECHNIQUES: BreathTechnique[] = [
 // Streak Helper
 // ═══════════════════════════════════════════════
 
+/** Format date as YYYY-MM-DD in local time (not UTC) */
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function getBreathworkStreak(): number {
   try {
     const today = new Date();
@@ -313,7 +321,7 @@ function getBreathworkStreak(): number {
     for (let i = 0; i < 365; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      const dk = d.toISOString().slice(0, 10);
+      const dk = localDateKey(d);
       const raw = localStorage.getItem(`routines365:sessions:${dk}`);
       if (!raw) { if (i === 0) continue; break; } // today not done yet is ok
       const sessions = JSON.parse(raw);
@@ -334,7 +342,7 @@ function getTotalBreathworkSessions(): number {
     for (let i = 0; i < 365; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dk = d.toISOString().slice(0, 10);
+      const dk = localDateKey(d);
       const raw = localStorage.getItem(`routines365:sessions:${dk}`);
       if (!raw) continue;
       const sessions = JSON.parse(raw);
