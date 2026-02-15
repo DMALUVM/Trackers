@@ -137,6 +137,9 @@ export function checkMilestones(opts: {
     try { localStorage.setItem(LS_PENDING, JSON.stringify(winner)); } catch { /* ignore */ }
   }
 
+  // Background sync to Supabase (fire and forget)
+  void syncMilestonesToCloud([...achieved]);
+
   return winner;
 }
 
@@ -155,4 +158,82 @@ export function getNextMilestone(currentStreak: number, totalGreenDays: number):
   const streakNext = STREAK_MILESTONES.find((m) => m.threshold > currentStreak) ?? null;
   const greenNext = GREEN_TOTAL_MILESTONES.find((m) => m.threshold > totalGreenDays) ?? null;
   return { streakNext, greenNext };
+}
+
+// ===========================================================================
+// SUPABASE PERSISTENCE LAYER
+// ===========================================================================
+// Milestones are ALSO stored in Supabase so they survive device wipes,
+// reinstalls, and device switches. localStorage is the fast path;
+// Supabase is the durable backup. On app load we merge both sources.
+// ===========================================================================
+
+const LS_SYNCED = "routines365:milestones:lastSync";
+
+/**
+ * Push current milestones to Supabase (idempotent upsert).
+ * Called automatically after checkMilestones() and on restore.
+ */
+async function syncMilestonesToCloud(achievedIds: string[]): Promise<void> {
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const { getUserId } = await import("@/lib/supabaseData");
+    const userId = await getUserId();
+    
+    await supabase
+      .from("user_milestones")
+      .upsert(
+        { user_id: userId, achieved_ids: achievedIds, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    
+    localStorage.setItem(LS_SYNCED, Date.now().toString());
+  } catch {
+    // Offline or table doesn't exist yet — silently skip.
+    // Milestones stay safe in localStorage and will sync next time.
+  }
+}
+
+/**
+ * Restore milestones from Supabase on app load.
+ * Merges cloud data with local data (union of both sets).
+ * Call this once during app initialization.
+ */
+export async function restoreMilestonesFromCloud(): Promise<void> {
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const { getUserId } = await import("@/lib/supabaseData");
+    const userId = await getUserId();
+
+    const { data, error } = await supabase
+      .from("user_milestones")
+      .select("achieved_ids")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error || !data?.achieved_ids) return;
+
+    const cloudIds: string[] = data.achieved_ids;
+    const localIds = getAchievedMilestones();
+
+    // Merge: union of both
+    let changed = false;
+    for (const id of cloudIds) {
+      if (!localIds.has(id)) {
+        localIds.add(id);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      saveAchieved(localIds);
+    }
+
+    // If local has IDs cloud doesn't, push back
+    if (cloudIds.length < localIds.size) {
+      void syncMilestonesToCloud([...localIds]);
+    }
+  } catch {
+    // Offline or table doesn't exist — silently skip.
+  }
 }

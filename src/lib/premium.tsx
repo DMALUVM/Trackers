@@ -78,6 +78,8 @@ function saveState(state: PremiumState) {
 
 interface PremiumContextValue {
   isPremium: boolean;
+  /** True when user is in the 7-day free trial period */
+  isTrialPeriod: boolean;
   /** Check if a specific feature is available */
   hasFeature: (feature: PremiumFeature) => boolean;
   /** Activate premium (will be called by StoreKit callback in native) */
@@ -92,6 +94,7 @@ interface PremiumContextValue {
 
 const PremiumContext = createContext<PremiumContextValue>({
   isPremium: false,
+  isTrialPeriod: false,
   hasFeature: () => false,
   activate: () => {},
   deactivate: () => {},
@@ -152,6 +155,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isPremium = state.isPremium;
+  const isTrialPeriod = state.isTrialPeriod;
 
   const hasFeature = (feature: PremiumFeature): boolean => {
     if (isPremium) return true;
@@ -208,7 +212,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PremiumContext.Provider value={{ isPremium, hasFeature, activate, deactivate, redeemCode, redeemedCode: state.redeemedCode }}>
+    <PremiumContext.Provider value={{ isPremium, isTrialPeriod, hasFeature, activate, deactivate, redeemCode, redeemedCode: state.redeemedCode }}>
       {children}
     </PremiumContext.Provider>
   );

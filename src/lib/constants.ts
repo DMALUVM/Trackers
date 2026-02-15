@@ -112,7 +112,7 @@ export function isWeightsLabel(label: string): boolean {
 export const AUTOSAVE_DELAY_MS = 350;
 
 /** Number of days of history to load for streak calculations. */
-export const STREAK_LOOKBACK_DAYS = 90;
+export const STREAK_LOOKBACK_DAYS = 400;
 
 /** Default timezone for date normalisation. */
 

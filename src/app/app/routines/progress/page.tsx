@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Award, FileText, Activity } from "lucide-react";
 import { computeDayColor, type DayColor } from "@/lib/progress";
+import { YearHeatmap } from "@/app/app/_components/YearHeatmap";
 import { monthGridDates, monthLabel, nextMonth, prevMonth } from "@/lib/calendar";
 import { listRoutineItems, loadRangeStates } from "@/lib/supabaseData";
 import type { DailyLogRow, RoutineItemRow } from "@/lib/types";
@@ -63,6 +64,67 @@ export default function RoutinesProgressPage() {
 
   const streaks = useStreaks(dateKey);
   const { hasFeature, isPremium } = usePremium();
+
+  // ── Year heatmap data (separate from month calendar) ──
+  const [yearLogs, setYearLogs] = useState<DailyLogRow[]>([]);
+  const [yearChecks, setYearChecks] = useState<Array<{ date: string; routine_item_id: string; done: boolean }>>([]);
+  const [yearLoading, setYearLoading] = useState(true);
+
+  // Load 365 days of data for heatmap (runs once on mount)
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const yearAgo = new Date();
+        yearAgo.setDate(yearAgo.getDate() - 370);
+        const yearFromKey = format(yearAgo, "yyyy-MM-dd");
+        const dataRange = await loadRangeStates({ from: yearFromKey, to: dateKey });
+        if (cancelled) return;
+        setYearLogs(dataRange.logs);
+        setYearChecks(dataRange.checks);
+      } catch { /* ignore — heatmap just won't show */ }
+      finally { if (!cancelled) setYearLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [dateKey]);
+
+  const yearLogMap = useMemo(() => {
+    const m = new Map<string, DailyLogRow>();
+    for (const l of yearLogs) m.set(l.date, l);
+    return m;
+  }, [yearLogs]);
+
+  const yearChecksByDate = useMemo(() => {
+    const m = new Map<string, Array<{ routine_item_id: string; done: boolean }>>();
+    for (const c of yearChecks) {
+      const arr = m.get(c.date) ?? [];
+      arr.push({ routine_item_id: c.routine_item_id, done: c.done });
+      m.set(c.date, arr);
+    }
+    return m;
+  }, [yearChecks]);
+
+  const yearDayColors = useMemo(() => {
+    const map = new Map<string, DayColor>();
+    if (yearLoading || routineItems.length === 0) return map;
+    // Generate date keys for last 370 days
+    const today = new Date();
+    for (let i = 370; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dk = format(d, "yyyy-MM-dd");
+      const color = computeDayColor({
+        dateKey: dk,
+        routineItems,
+        checks: yearChecksByDate.get(dk) ?? [],
+        log: yearLogMap.get(dk) ?? null,
+        todayKey: dateKey,
+        accountStartKey,
+      });
+      map.set(dk, color);
+    }
+    return map;
+  }, [yearLoading, routineItems, yearChecksByDate, yearLogMap, dateKey, accountStartKey]);
 
   // Dynamically detect which activities to show totals for based on user's routine items
   // Always include hydration since the WaterTracker is on the Today page
@@ -255,6 +317,11 @@ export default function RoutinesProgressPage() {
             Go to Today →
           </Link>
         </section>
+      )}
+
+      {/* ── YEAR HEATMAP ── */}
+      {!yearLoading && yearDayColors.size > 0 && streaks.totalGreenDays > 0 && (
+        <YearHeatmap dayColors={yearDayColors} todayKey={dateKey} />
       )}
 
       {/* ── STREAKS ── */}

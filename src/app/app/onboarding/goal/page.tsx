@@ -15,6 +15,24 @@ const GOALS: Array<{ key: Goal; title: string; desc: string; emoji: string; iden
   { key: "sleep",   title: "Sleep",   desc: "Wind-down routines and recovery tracking.",           emoji: "😴", identity: "Someone who prioritizes rest" },
 ];
 
+/** Persist the onboarding goal to Supabase (fire and forget) */
+async function persistGoal(goal: Goal): Promise<void> {
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+
+    await supabase
+      .from("user_settings")
+      .upsert(
+        { user_id: session.user.id, onboarding_goal: goal },
+        { onConflict: "user_id" }
+      );
+  } catch {
+    // Offline or table not migrated yet — goal stays in localStorage
+  }
+}
+
 export default function OnboardingGoalPage() {
   const router = useRouter();
   const [busy, setBusy] = useState("");
@@ -29,8 +47,14 @@ export default function OnboardingGoalPage() {
   const choose = (g: Goal) => {
     setBusy(g);
     hapticMedium();
-    try { localStorage.setItem("routines365:onboarding:goal", g); router.push("/app/onboarding/templates"); }
-    finally { setBusy(""); }
+    try {
+      localStorage.setItem("routines365:onboarding:goal", g);
+      // Persist to Supabase in background (survives device wipes)
+      void persistGoal(g);
+      router.push("/app/onboarding/templates");
+    } finally {
+      setBusy("");
+    }
   };
 
   return (
@@ -42,7 +66,7 @@ export default function OnboardingGoalPage() {
           What are you building toward?
         </h1>
         <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-          Pick one. We'll suggest habits that match.
+          Pick one. We&apos;ll suggest habits that match.
         </p>
       </header>
 
@@ -63,7 +87,7 @@ export default function OnboardingGoalPage() {
                 <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{g.title}</p>
                 <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>{g.desc}</p>
                 <p className="text-xs mt-1 italic" style={{ color: "var(--text-faint)" }}>
-                  "{g.identity}"
+                  &quot;{g.identity}&quot;
                 </p>
               </div>
             </div>

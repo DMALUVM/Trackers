@@ -149,3 +149,54 @@ export async function scheduleStreakReminder(hour = 20, minute = 0): Promise<boo
     minute,
   });
 }
+
+/**
+ * Schedule a SMART streak-aware notification that includes the actual streak count.
+ * Call this whenever the streak changes (after green day, on app open).
+ * Replaces the generic streak reminder with a personalized one.
+ *
+ * Example: "Your 23-day streak ends at midnight! 🔥"
+ */
+export async function scheduleSmartStreakReminder(opts: {
+  streakCount: number;
+  hour?: number;
+  minute?: number;
+}): Promise<boolean> {
+  const { streakCount, hour = 20, minute = 30 } = opts;
+
+  // Don't bother for very short streaks
+  if (streakCount < 2) {
+    // Cancel any existing smart notification
+    await cancelReminder("smart_streak");
+    return false;
+  }
+
+  // Cancel the old generic one — the smart one replaces it
+  await cancelReminder("streak_reminder");
+
+  // Personalized message based on streak length
+  let title: string;
+  let body: string;
+
+  if (streakCount >= 50) {
+    title = `🔥 ${streakCount}-day streak at stake!`;
+    body = `You've built something incredible. Don't lose it — check off your habits tonight.`;
+  } else if (streakCount >= 21) {
+    title = `🔥 ${streakCount}-day streak at risk!`;
+    body = `Three weeks of consistency is rare. Protect it — open the app before midnight.`;
+  } else if (streakCount >= 7) {
+    title = `🔥 Your ${streakCount}-day streak ends at midnight!`;
+    body = `You still have habits to complete. A few taps is all it takes.`;
+  } else {
+    title = `Don't break your ${streakCount}-day streak! 🔥`;
+    body = `You're building momentum. Check off your habits before bed.`;
+  }
+
+  return scheduleDailyReminder({
+    id: "smart_streak",
+    title,
+    body,
+    hour,
+    minute,
+  });
+}

@@ -6,7 +6,7 @@
  * Each module dispatches a "routines365:sessionComplete" event on finish.
  */
 
-import { format } from "date-fns";
+import { tzDateKey } from "@/lib/time";
 import { ratingOnModuleComplete } from "@/lib/ratingPrompt";
 
 export type ModuleKey = "breathwork" | "movement" | "focus";
@@ -21,7 +21,7 @@ export interface SessionEntry {
 const LS_PREFIX = "routines365:sessions:";
 
 function todayKey(): string {
-  return format(new Date(), "yyyy-MM-dd");
+  return tzDateKey(new Date());
 }
 
 function storageKey(dateKey?: string): string {
@@ -86,6 +86,14 @@ export function todayTotalMinutes(): number {
   return getSessions().reduce((sum, s) => sum + s.minutes, 0);
 }
 
+/** Format date as YYYY-MM-DD in local time (not UTC) */
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Count sessions for a module this week (Mon-Sun) */
 export function weeklyModuleSessions(module: ModuleKey): number {
   const now = new Date();
@@ -94,7 +102,7 @@ export function weeklyModuleSessions(module: ModuleKey): number {
   for (let i = dow; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dk = format(d, "yyyy-MM-dd");
+    const dk = localDateKey(d);
     count += getSessions(dk).filter((s) => s.module === module).length;
   }
   return count;
@@ -108,7 +116,7 @@ export function weeklyTotalSessions(): number {
   for (let i = dow; i >= 0; i--) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    count += getSessions(format(d, "yyyy-MM-dd")).length;
+    count += getSessions(localDateKey(d)).length;
   }
   return count;
 }

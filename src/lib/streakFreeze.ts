@@ -16,6 +16,8 @@ function load(): FreezeLog {
 
 function save(log: FreezeLog) {
   localStorage.setItem(LS_KEY, JSON.stringify(log));
+  // Background sync to Supabase
+  void syncFreezesToCloud(log.used);
 }
 
 /** How many freezes used this calendar month */
@@ -68,4 +70,56 @@ export function canUseFreeze(isPremium: boolean): boolean {
 export function remainingFreezes(isPremium: boolean): number | "unlimited" {
   if (isPremium) return "unlimited";
   return Math.max(0, 1 - freezesUsedThisMonth());
+}
+
+// ===========================================================================
+// SUPABASE SYNC
+// ===========================================================================
+
+async function syncFreezesToCloud(dates: string[]): Promise<void> {
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const { getUserId } = await import("@/lib/supabaseData");
+    const userId = await getUserId();
+
+    await supabase
+      .from("user_settings")
+      .update({ streak_freeze_dates: dates })
+      .eq("user_id", userId);
+  } catch {
+    // Offline — will sync next time
+  }
+}
+
+/**
+ * Restore freeze dates from Supabase on app load.
+ * Merges cloud data with local data (union of both sets).
+ */
+export async function restoreFreezesFromCloud(): Promise<void> {
+  try {
+    const { supabase } = await import("@/lib/supabaseClient");
+    const { getUserId } = await import("@/lib/supabaseData");
+    const userId = await getUserId();
+
+    const { data, error } = await supabase
+      .from("user_settings")
+      .select("streak_freeze_dates")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error || !data?.streak_freeze_dates) return;
+
+    const cloudDates: string[] = data.streak_freeze_dates;
+    const local = load();
+
+    // Merge: union of both
+    const merged = new Set([...local.used, ...cloudDates]);
+    const mergedArr = [...merged].sort();
+
+    if (mergedArr.length !== local.used.length) {
+      save({ used: mergedArr });
+    }
+  } catch {
+    // Offline — silently skip
+  }
 }

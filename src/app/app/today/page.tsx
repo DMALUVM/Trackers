@@ -45,6 +45,10 @@ import { ratingOnGreenDay, ratingOnStreakMilestone } from "@/lib/ratingPrompt";
 import { checkMilestones, popPendingMilestone } from "@/lib/milestones";
 import type { Milestone } from "@/lib/milestones";
 import type { MotivationContext } from "@/lib/motivation";
+import { BreathworkDiscoveryCard } from "@/app/app/_components/BreathworkDiscoveryCard";
+import { restoreMilestonesFromCloud } from "@/lib/milestones";
+import { restoreFreezesFromCloud } from "@/lib/streakFreeze";
+import { scheduleSmartStreakReminder } from "@/lib/nativeNotify";
 
 // ---------------------------------------------------------------------------
 // Greeting helper
@@ -126,6 +130,30 @@ export default function TodayPage() {
   // Clear notification badge when app opens
   useEffect(() => {
     void import("@/lib/nativeNotify").then(({ clearBadge }) => clearBadge()).catch(() => {});
+  }, []);
+
+  // Restore milestones & freezes from cloud on mount
+  useEffect(() => {
+    void restoreMilestonesFromCloud();
+    void restoreFreezesFromCloud();
+  }, []);
+
+  // Smart streak notification — updates when streak changes
+  useEffect(() => {
+    if (streaks.loading || streaks.activeStreak < 2) return;
+    void scheduleSmartStreakReminder({ streakCount: streaks.activeStreak });
+  }, [streaks.loading, streaks.activeStreak]);
+
+  // Account creation date (for BreathworkDiscoveryCard)
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { supabase } = await import("@/lib/supabaseClient");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.created_at) setAccountCreatedAt(session.user.created_at);
+      } catch {}
+    })();
   }, []);
 
   // Psychology state
@@ -779,6 +807,9 @@ export default function TodayPage() {
           )}
         </div>
       )}
+
+      {/* Breathwork discovery for new users (first week only) */}
+      <BreathworkDiscoveryCard accountCreatedAt={accountCreatedAt} />
 
       {/* Smart Recommendations */}
       {!smartTipsHidden && <SmartRecommendations streaks={streaks} />}

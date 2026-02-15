@@ -610,8 +610,8 @@ function RoundSelector({ technique, rounds, onChange, onStart, onClose, soundOn,
 // Breath Session (Enhanced)
 // ═══════════════════════════════════════════════
 
-function BreathSession({ technique, onClose, rounds: initialRounds }: {
-  technique: BreathTechnique; onClose: () => void; rounds: number;
+function BreathSession({ technique, onClose, rounds: initialRounds, showTrialUpsell }: {
+  technique: BreathTechnique; onClose: () => void; rounds: number; showTrialUpsell?: boolean;
 }) {
   const [phase, setPhase] = useState<"countdown" | "breathing" | "post" | "done">("countdown");
   const [soundOn, setSoundOn] = useState(true);
@@ -843,6 +843,24 @@ function BreathSession({ technique, onClose, rounds: initialRounds }: {
           </div>
         )}
 
+        {/* Post-session premium upsell — shows after free trial session */}
+        {showTrialUpsell && technique.premium && (
+          <div className="w-full max-w-[300px] rounded-2xl p-4 mb-5 text-center"
+            style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.06))", border: "1px solid rgba(99,102,241,0.2)" }}>
+            <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+              You just experienced a premium session ✨
+            </p>
+            <p className="text-xs mt-1.5 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Unlock all 5 premium techniques with guided Om audio. Start your 7-day free trial.
+            </p>
+            <Link href="/app/settings/premium"
+              className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl text-xs font-bold"
+              style={{ background: "#6366f1", color: "white", textDecoration: "none" }}>
+              Start Free Trial →
+            </Link>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button type="button" onClick={reset} className="px-6 py-3.5 rounded-2xl text-base font-bold transition-all active:scale-[0.97]"
             style={{ background: "var(--bg-card)", color: "var(--text-primary)", border: "1px solid var(--border-primary)" }}>Repeat</button>
@@ -946,22 +964,36 @@ function BreathSession({ technique, onClose, rounds: initialRounds }: {
 // Technique List (Main Page)
 // ═══════════════════════════════════════════════
 
+const LS_FREE_TRIAL_USED = "routines365:breathwork:freeTrialUsed";
+
 export default function BreathworkPage() {
   const router = useRouter();
-  const { isPremium } = usePremium();
+  const { isPremium, isTrialPeriod } = usePremium();
   const [activeTechnique, setActiveTechnique] = useState<BreathTechnique | null>(null);
   const [sessionRounds, setSessionRounds] = useState(0);
   const [showSession, setShowSession] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [intent, setIntent] = useState<Intent>("all");
   const [streak, setStreak] = useState(0);
+  const [freeTrialUsed, setFreeTrialUsed] = useState(false);
 
   useEffect(() => {
     try {
       if (!localStorage.getItem("routines365:breathwork:introduced")) setShowIntro(true);
       setStreak(getBreathworkStreak());
+      setFreeTrialUsed(localStorage.getItem(LS_FREE_TRIAL_USED) === "1");
     } catch {}
   }, []);
+
+  // During trial period or premium: all techniques unlocked
+  // Free user who hasn't used free trial: one premium session allowed
+  // Free user who used free trial: locked
+  const canAccessPremium = (t: BreathTechnique): boolean => {
+    if (!t.premium) return true;
+    if (isPremium) return true; // Covers both paid and trial
+    if (!freeTrialUsed) return true; // One free premium session
+    return false;
+  };
 
   const dismissIntro = () => {
     setShowIntro(false);
@@ -969,7 +1001,16 @@ export default function BreathworkPage() {
   };
 
   const selectTechnique = (t: BreathTechnique) => {
-    if (t.premium && !isPremium) { hapticLight(); router.push("/app/settings/premium"); return; }
+    if (!canAccessPremium(t)) {
+      hapticLight();
+      router.push("/app/settings/premium");
+      return;
+    }
+    // If free user accessing a premium technique, mark the free trial as used
+    if (t.premium && !isPremium && !freeTrialUsed) {
+      setFreeTrialUsed(true);
+      try { localStorage.setItem(LS_FREE_TRIAL_USED, "1"); } catch {}
+    }
     hapticMedium();
     setActiveTechnique(t);
     setSessionRounds(t.defaultRounds);
@@ -989,7 +1030,7 @@ export default function BreathworkPage() {
 
   // Active session
   if (activeTechnique && showSession) {
-    return <BreathSession technique={activeTechnique} onClose={closeSession} rounds={sessionRounds} />;
+    return <BreathSession technique={activeTechnique} onClose={closeSession} rounds={sessionRounds} showTrialUpsell={!isPremium && freeTrialUsed && activeTechnique.premium} />;
   }
 
   // Round selector / technique detail
@@ -1075,7 +1116,8 @@ export default function BreathworkPage() {
       {/* Technique cards */}
       <div className="space-y-3">
         {filteredTechniques.map((t) => {
-          const locked = t.premium && !isPremium;
+          const locked = t.premium && !canAccessPremium(t);
+          const isTrialAccess = t.premium && !isPremium && !freeTrialUsed;
           const cycleTime = t.phases.reduce((s, p) => s + p.seconds, 0);
           const totalTime = cycleTime * t.defaultRounds + (t.postPhases?.reduce((s, p) => s + p.seconds, 0) ?? 0);
           const timeLabel = totalTime >= 90 ? `~${Math.round(totalTime / 60)} min` : `~${Math.round(totalTime)}s`;
@@ -1090,7 +1132,13 @@ export default function BreathworkPage() {
                   <div className="flex items-center gap-2">
                     <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>{t.name}</p>
                     {locked && <Lock size={13} style={{ color: "var(--text-faint)" }} />}
-                    {t.premium && isPremium && <Crown size={13} style={{ color: "#f59e0b" }} />}
+                    {t.premium && isPremium && !isTrialPeriod && <Crown size={13} style={{ color: "#f59e0b" }} />}
+                    {t.premium && isPremium && isTrialPeriod && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}>TRIAL</span>
+                    )}
+                    {isTrialAccess && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: "rgba(16,185,129,0.1)", color: "#10b981" }}>TRY FREE</span>
+                    )}
                   </div>
                   <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--text-muted)" }}>{t.description}</p>
                   <div className="flex items-center gap-2 mt-2.5 flex-wrap">
@@ -1127,12 +1175,31 @@ export default function BreathworkPage() {
         })}
       </div>
 
-      {!isPremium && (
+      {/* Trial period banner */}
+      {isPremium && isTrialPeriod && (
+        <div className="rounded-2xl p-4 text-center"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.08), rgba(16,185,129,0.06))", border: "1px solid rgba(99,102,241,0.2)" }}>
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>🎉 Free Trial Active</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>All 8 techniques are unlocked during your trial. Explore them all!</p>
+        </div>
+      )}
+
+      {/* Free user who used their trial session */}
+      {!isPremium && freeTrialUsed && (
         <Link href="/app/settings/premium" className="block rounded-2xl p-5 text-center"
           style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))", border: "1px solid rgba(99,102,241,0.2)", textDecoration: "none" }}>
           <p className="text-base font-bold" style={{ color: "var(--text-primary)" }}>🔓 Unlock All Techniques</p>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>5 premium methods with guided Om audio</p>
+          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>5 premium methods with guided Om audio — start your 7-day free trial</p>
         </Link>
+      )}
+
+      {/* Free user who hasn't tried yet */}
+      {!isPremium && !freeTrialUsed && (
+        <div className="rounded-2xl p-4 text-center"
+          style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)" }}>
+          <p className="text-sm font-bold" style={{ color: "var(--accent-green-text)" }}>✨ Try any premium technique free</p>
+          <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>Your first premium session is on us. Pick one and experience the full guided audio.</p>
+        </div>
       )}
     </div>
   );
