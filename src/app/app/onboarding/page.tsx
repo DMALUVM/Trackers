@@ -11,7 +11,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
-  const [step, setStep] = useState(0); // 0 = welcome, 1 = how it works, 2 = pick template
+  const [step, setStep] = useState(0); // 0 = welcome, 1 = pick template
 
   useEffect(() => {
     void (async () => {
@@ -73,22 +73,19 @@ export default function OnboardingPage() {
               Welcome! 👋
             </h1>
             <p className="mt-3 text-lg leading-relaxed mx-auto max-w-xs" style={{ color: "var(--text-secondary)" }}>
-              You&apos;re about to build a daily routine that sticks.
+              Build a daily routine that actually sticks.
             </p>
           </div>
         </header>
 
+        {/* Core value props — 4 items, focused and scannable */}
         <div className="rounded-2xl p-5" style={{ background: "var(--bg-card)", border: "1px solid var(--border-primary)" }}>
-          <p className="text-base font-bold mb-3" style={{ color: "var(--text-primary)" }}>Here&apos;s how it works:</p>
           <div className="space-y-4">
             {[
-              { emoji: "✅", title: "Pick your daily habits", desc: "We'll give you a starter set — you can always change them later." },
-              { emoji: "⭐", title: "Some habits are \"Core\"", desc: "These are your must-dos. Complete all core habits = a green day." },
-              { emoji: "📅", title: "Track every day", desc: "Open the app, check off what you did. Takes about 10 seconds." },
-              { emoji: "🔥", title: "Build streaks", desc: "Consecutive green days build streaks. Watch consistency compound." },
-              { emoji: "🫁", title: "Guided breathwork & movement", desc: "Box breathing, Wim Hof, mobility flows, and lymphatic drainage routines built in." },
-              { emoji: "🧠", title: "Focus timer", desc: "Pomodoro and deep work sessions to stay productive." },
-              { emoji: "💚", title: "Connect Apple Health", desc: "See steps, sleep, HRV, and heart rate — discover how habits affect your body." },
+              { emoji: "✅", title: "Track your habits in seconds", desc: "Choose your daily habits, mark the important ones as \"Core\", and check them off each day. All core done = a green day." },
+              { emoji: "🔥", title: "Build streaks and earn trophies", desc: "Consecutive green days build your streak. Hit milestones at 7, 14, 21, and 30+ days. Watch consistency compound." },
+              { emoji: "🫁", title: "Breathwork, movement & focus tools", desc: "8 guided breathing techniques, mobility routines, and a focus timer — all built in, no extra apps needed." },
+              { emoji: "💚", title: "See how habits affect your body", desc: "Connect Apple Health to track sleep, HRV, heart rate, and steps alongside your routines." },
             ].map(({ emoji, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
                 <span className="text-xl shrink-0 mt-0.5">{emoji}</span>
@@ -100,6 +97,11 @@ export default function OnboardingPage() {
             ))}
           </div>
         </div>
+
+        {/* Social proof nudge */}
+        <p className="text-center text-xs" style={{ color: "var(--text-faint)" }}>
+          Free to start. Takes about 30 seconds to set up.
+        </p>
 
         <button type="button"
           className="w-full rounded-2xl py-4 text-lg font-bold transition-all active:scale-[0.98]"
@@ -247,7 +249,7 @@ export default function OnboardingPage() {
       </button>
 
       <p className="text-center text-sm pb-4" style={{ color: "var(--text-faint)" }}>
-        You can change everything anytime in Settings → Routines. Not sure about something? Check Settings → How it works.
+        You can change everything anytime in Settings → Routines.
       </p>
     </div>
   );

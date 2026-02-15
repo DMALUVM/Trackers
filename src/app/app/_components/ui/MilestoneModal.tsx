@@ -14,7 +14,7 @@ export function MilestoneModal({
   milestone,
   onDismiss,
 }: {
-  milestone: Milestone | null;
+  milestone: (Milestone & { _displayStreak?: number }) | null;
   onDismiss: () => void;
 }) {
   const [phase, setPhase] = useState<"enter" | "show" | "exit">("enter");
@@ -49,9 +49,15 @@ export function MilestoneModal({
 
   if (!visible || !milestone) return null;
 
+  // Use _displayStreak (actual current streak) when available,
+  // fall back to threshold for milestones that triggered on the exact threshold day
+  const displayCount = milestone.type === "streak"
+    ? (milestone._displayStreak ?? milestone.threshold)
+    : milestone.threshold;
+
   // Badge text with proper grammar
   const badgeText =
-    milestone.type === "streak" ? `${milestone.threshold}-day streak` :
+    milestone.type === "streak" ? `${displayCount}-day streak` :
     milestone.type === "green_total" ? `${milestone.threshold} green day${milestone.threshold !== 1 ? "s" : ""}` :
     "New personal best";
 
@@ -141,7 +147,7 @@ export function MilestoneModal({
               e.stopPropagation();
               hapticMedium();
               const text = milestone.type === "streak"
-                ? `🔥 ${milestone.threshold}-day streak on Routines365! ${milestone.message}`
+                ? `🔥 ${displayCount}-day streak on Routines365! ${milestone.message}`
                 : milestone.type === "green_total"
                   ? `🏆 ${milestone.threshold} green days on Routines365! ${milestone.message}`
                   : `⭐ New personal best on Routines365! ${milestone.message}`;
